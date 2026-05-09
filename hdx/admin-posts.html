@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>文章管理 — vBlog Admin</title>
+  <style>
+    :root {
+      --bg:#fafafa;--surface:#fff;--fg:#171717;--muted:#737373;--border:#e5e5e5;
+      --accent:#2563eb;--accent-soft:#eff6ff;--nav-bg:rgba(250,250,250,.85);
+      --card-hover:#f5f5f5;--tag-bg:#f0f0f0;--tag-fg:#525252;
+      --success:#16a34a;--success-soft:#f0fdf4;--warning:#f59e0b;--warning-soft:#fffbeb;
+      --error:#dc2626;--error-soft:#fef2f2;--sidebar-bg:#f5f5f5;
+      --radius:8px;--radius-lg:12px;
+      --font-sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;
+      --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;
+      --font-mono:'JetBrains Mono','IBM Plex Mono',ui-monospace,Menlo,monospace;
+    }
+    [data-theme="dark"] {
+      --bg:#0a0a0a;--surface:#141414;--fg:#ededed;--muted:#a3a3a3;--border:#262626;
+      --accent:#3b82f6;--accent-soft:#172554;--nav-bg:rgba(10,10,10,.85);
+      --card-hover:#1a1a1a;--tag-bg:#1f1f1f;--tag-fg:#a3a3a3;
+      --success:#22c55e;--success-soft:#052e16;--warning:#eab308;--warning-soft:#422006;
+      --error:#ef4444;--error-soft:#450a0a;--sidebar-bg:#111;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--fg);font-family:var(--font-sans);font-size:14px;line-height:1.6;transition:background .3s,color .3s;-webkit-font-smoothing:antialiased;display:flex;min-height:100vh}
+    .sidebar{width:220px;min-height:100vh;background:var(--sidebar-bg);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;transition:background .3s,border-color .3s;flex-shrink:0}
+    .sidebar-brand{padding:0 20px 24px;display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:16px;font-weight:600;letter-spacing:-.02em;color:var(--fg);text-decoration:none;border-bottom:1px solid var(--border);margin-bottom:16px}
+    .sidebar-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+    .sidebar-brand .badge{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--accent-soft);color:var(--accent);margin-left:auto}
+    .sidebar-section{padding:0 12px;margin-bottom:24px}
+    .sidebar-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0 8px 8px}
+    .sidebar-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s}
+    .sidebar-link:hover{color:var(--fg);background:var(--card-hover)}
+    .sidebar-link.active{color:var(--fg);background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+    .sidebar-link .icon{width:18px;text-align:center;font-size:14px}
+    .sidebar-link .count{margin-left:auto;font-family:var(--font-mono);font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted)}
+    .sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .sidebar-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff}
+    .sidebar-user{font-size:13px;font-weight:500;color:var(--fg)}
+    .sidebar-user-role{font-size:11px;color:var(--muted)}
+    .main{flex:1;min-width:0;display:flex;flex-direction:column}
+    .topbar{height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--nav-bg);backdrop-filter:blur(12px);transition:background .3s,border-color .3s}
+    .topbar-left{display:flex;align-items:center;gap:16px}
+    .topbar-title{font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:-.01em}
+    .topbar-breadcrumb{font-size:13px;color:var(--muted)}
+    .topbar-right{display:flex;align-items:center;gap:8px}
+    .topbar-btn{font-size:13px;padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--fg);cursor:pointer;transition:all .15s;font-family:var(--font-sans);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+    .topbar-btn:hover{background:var(--card-hover)}
+    .topbar-btn.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+    .topbar-btn.primary:hover{opacity:.85}
+    .theme-toggle{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--fg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:16px}
+    .theme-toggle:hover{background:var(--card-hover)}
+    .content{flex:1;padding:24px;overflow-y:auto}
+
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+    .page-header h2{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-.01em}
+    .page-header-actions{display:flex;gap:8px}
+
+    .filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+    .filter-row .search-input{font-family:var(--font-sans);font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);width:240px;transition:all .15s;outline:none}
+    .filter-row .search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+    .filter-row .search-input::placeholder{color:var(--muted)}
+    .filter-select{font-family:var(--font-sans);font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);outline:none;cursor:pointer}
+    .filter-select:focus{border-color:var(--accent)}
+
+    .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:all .3s}
+    table{width:100%;border-collapse:collapse}
+    th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--bg)}
+    td{padding:14px 20px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:var(--card-hover)}
+    tr{transition:background .1s}
+    .post-title-cell{font-weight:500;color:var(--fg);max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .status-badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:100px}
+    .status-badge.published{background:var(--success-soft);color:var(--success)}
+    .status-badge.draft{background:var(--warning-soft);color:var(--warning)}
+    .status-badge.archived{background:var(--tag-bg);color:var(--muted)}
+    .tag-cell{display:flex;gap:4px;flex-wrap:wrap}
+    .tag-pill{font-size:11px;padding:2px 7px;border-radius:4px;background:var(--tag-bg);color:var(--tag-fg)}
+    .action-btn{font-size:12px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font-sans)}
+    .action-btn:hover{color:var(--fg);border-color:var(--fg)}
+    .action-btn.danger:hover{color:var(--error);border-color:var(--error)}
+    .actions-cell{display:flex;gap:6px}
+    .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted)}
+
+    .pagination{display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-size:13px;color:var(--muted)}
+    .pagination-btns{display:flex;gap:4px}
+    .pagination-btns button{font-size:12px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-family:var(--font-sans);transition:all .15s}
+    .pagination-btns button:hover{color:var(--fg);border-color:var(--fg)}
+    .pagination-btns button.active{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+    .toast-container{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+    .toast{font-size:13px;padding:10px 16px;border-radius:var(--radius);display:flex;align-items:center;gap:8px;animation:slideIn .3s ease,fadeOut .3s ease 2.7s forwards;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+    .toast.success{background:var(--success-soft);color:var(--success);border:1px solid var(--success)}
+    .toast.error{background:var(--error-soft);color:var(--error);border:1px solid var(--error)}
+    @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+    @keyframes fadeOut{to{opacity:0;transform:translateY(8px)}}
+
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .modal-overlay.show{display:flex}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:560px;max-width:90vw;padding:24px;animation:modalIn .2s ease}
+    @keyframes modalIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+    .modal h3{font-family:var(--font-display);font-size:17px;font-weight:600;margin-bottom:16px}
+    .form-group{margin-bottom:14px}
+    .form-group label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:4px}
+    .form-group input,.form-group select,.form-group textarea{width:100%;font-family:var(--font-sans);font-size:13px;padding:8px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);outline:none;transition:all .15s}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+    .form-group textarea{resize:vertical;min-height:120px}
+    .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+
+    @media(max-width:900px){.sidebar{display:none}.content{padding:16px}}
+    @media(max-width:640px){.filter-row .search-input{width:100%}table{font-size:12px}th,td{padding:8px 12px}.post-title-cell{max-width:200px}}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="index.html"><span class="dot"></span>vBlog<span class="badge">Admin</span></a>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">概览 Overview</div>
+      <a class="sidebar-link" href="admin.html"><span class="icon">◎</span> 仪表盘 Dashboard</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">内容 Content</div>
+      <a class="sidebar-link active" href="admin-posts.html"><span class="icon">≡</span> 文章 Posts<span class="count">42</span></a>
+      <a class="sidebar-link" href="admin-tags.html"><span class="icon">◉</span> 标签 Tags<span class="count">7</span></a>
+      <a class="sidebar-link" href="admin-comments.html"><span class="icon">❝</span> 评论 Comments<span class="count">128</span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">系统 System</div>
+      <a class="sidebar-link" href="admin-custom.html"><span class="icon">⬡</span> 组件 Custom</a>
+      <a class="sidebar-link" href="admin-settings.html"><span class="icon">⚙</span> 设置 Settings</a>
+      <a class="sidebar-link" href="admin-grpc.html"><span class="icon">⇄</span> gRPC 状态</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-avatar">A</div>
+      <div><div class="sidebar-user">Admin</div><div class="sidebar-user-role">超级管理员</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left"><span class="topbar-title">文章管理 Posts</span><span class="topbar-breadcrumb">/ Content / Posts</span></div>
+      <div class="topbar-right">
+        <a href="index.html" class="topbar-btn">← 首页 Home</a>
+        <button class="topbar-btn primary" onclick="openModal()">+ 新文章 New Post</button>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题"><span class="theme-icon">☀</span></button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="page-header">
+        <h2>全部文章 All Posts</h2>
+        <div class="page-header-actions">
+          <button class="topbar-btn" onclick="showToast('已导出 CSV', 'success')">导出 Export</button>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <input type="text" class="search-input" placeholder="搜索标题或摘要 Search..." />
+        <select class="filter-select" id="statusFilter">
+          <option value="">全部状态 All Status</option>
+          <option value="published">已发布 Published</option>
+          <option value="draft">草稿 Draft</option>
+          <option value="archived">已归档 Archived</option>
+        </select>
+        <select class="filter-select" id="tagFilter">
+          <option value="">全部标签 All Tags</option>
+          <option>系统设计</option>
+          <option>Go</option>
+          <option>React</option>
+          <option>工程实践</option>
+          <option>随笔</option>
+        </select>
+      </div>
+
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr><th>标题 Title</th><th>标签 Tags</th><th>状态 Status</th><th>阅读 Views</th><th>日期 Date</th><th>操作 Actions</th></tr>
+          </thead>
+          <tbody id="postsTable">
+            <tr data-status="published" data-tag="系统设计" data-id="1">
+              <td class="post-title-cell">vBlog Core：从零构建一个可自定义组件的极客博客系统</td>
+              <td><div class="tag-cell"><span class="tag-pill">系统设计</span></div></td>
+              <td><span class="status-badge published">已发布</span></td>
+              <td class="mono">2,341</td>
+              <td class="mono">2026-05-08</td>
+              <td class="actions-cell"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn" onclick="viewPost(this)">查看</button><button class="action-btn danger" onclick="deleteRow(this)">删除</button></td>
+            </tr>
+            <tr data-status="published" data-tag="Go" data-id="2">
+              <td class="post-title-cell">用 Go 实现 gRPC 双向流：让博客客户端实时感知内容变化</td>
+              <td><div class="tag-cell"><span class="tag-pill">Go</span></div></td>
+              <td><span class="status-badge published">已发布</span></td>
+              <td class="mono">1,872</td>
+              <td class="mono">2026-05-05</td>
+              <td class="actions-cell"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn" onclick="viewPost(this)">查看</button><button class="action-btn danger" onclick="deleteRow(this)">删除</button></td>
+            </tr>
+            <tr data-status="published" data-tag="React" data-id="3">
+              <td class="post-title-cell">React 组件热重载：让用户自定义博客 UI 成为可能</td>
+              <td><div class="tag-cell"><span class="tag-pill">React</span></div></td>
+              <td><span class="status-badge published">已发布</span></td>
+              <td class="mono">1,456</td>
+              <td class="mono">2026-05-01</td>
+              <td class="actions-cell"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn" onclick="viewPost(this)">查看</button><button class="action-btn danger" onclick="deleteRow(this)">删除</button></td>
+            </tr>
+            <tr data-status="published" data-tag="工程实践" data-id="4">
+              <td class="post-title-cell">PostgreSQL 索引策略：按需构建，不要过度设计</td>
+              <td><div class="tag-cell"><span class="tag-pill">工程实践</span></div></td>
+              <td><span class="status-badge published">已发布</span></td>
+              <td class="mono">987</td>
+              <td class="mono">2026-04-27</td>
+              <td class="actions-cell"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn" onclick="viewPost(this)">查看</button><button class="action-btn danger" onclick="deleteRow(this)">删除</button></td>
+            </tr>
+            <tr data-status="draft" data-tag="系统设计" data-id="5">
+              <td class="post-title-cell">Wails + Go：用 Web 技术栈构建原生桌面客户端</td>
+              <td><div class="tag-cell"><span class="tag-pill">系统设计</span></div></td>
+              <td><span class="status-badge draft">草稿</span></td>
+              <td class="mono">—</td>
+              <td class="mono">2026-04-25</td>
+              <td class="actions-cell"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn" onclick="viewPost(this)">查看</button><button class="action-btn danger" onclick="deleteRow(this)">删除</button></td>
+            </tr>
+            <tr data-status="draft" data-tag="React" data-id="6">
+              <td class="post-title-cell">Markdown 渲染器深度定制：从解析到高亮</td>
+              <td><div class="tag-cell"><span class="tag-pill">React</span><span class="tag-pill">工程实践</span></div></td>
+              <td><span class="status-badge draft">草稿</span></td>
+              <td class="mono">—</td>
+              <td class="mono">2026-04-22</td>
+              <td class="actions-cell"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn" onclick="viewPost(this)">查看</button><button class="action-btn danger" onclick="deleteRow(this)">删除</button></td>
+            </tr>
+            <tr data-status="published" data-tag="随笔" data-id="7">
+              <td class="post-title-cell">为什么极客需要一个自己的博客</td>
+              <td><div class="tag-cell"><span class="tag-pill">随笔</span></div></td>
+              <td><span class="status-badge published">已发布</span></td>
+              <td class="mono">2,104</td>
+              <td class="mono">2026-04-18</td>
+              <td class="actions-cell"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn" onclick="viewPost(this)">查看</button><button class="action-btn danger" onclick="deleteRow(this)">删除</button></td>
+            </tr>
+            <tr data-status="archived" data-tag="React">
+              <td class="post-title-cell">Element UI 在极简博客中的克制使用</td>
+              <td><div class="tag-cell"><span class="tag-pill">React</span></div></td>
+              <td><span class="status-badge archived">已归档</span></td>
+              <td class="mono">456</td>
+              <td class="mono">2026-04-10</td>
+              <td class="actions-cell"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn" onclick="viewPost(this)">查看</button><button class="action-btn danger" onclick="deleteRow(this)">删除</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <span>共 8 篇文章 Showing 1–8 of 8</span>
+        <div class="pagination-btns"><button class="active">1</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <h3>编辑文章 Edit Post</h3>
+      <div class="form-group"><label>标题 Title</label><input type="text" id="editTitle" /></div>
+      <div class="form-group"><label>标签 Tags</label><input type="text" id="editTags" placeholder="用逗号分隔" /></div>
+      <div class="form-group"><label>状态 Status</label><select id="editStatus"><option value="draft">草稿 Draft</option><option value="published">已发布 Published</option><option value="archived">已归档 Archived</option></select></div>
+      <div class="form-group"><label>摘要 Excerpt</label><textarea id="editExcerpt" placeholder="一句话描述..."></textarea></div>
+      <div class="modal-actions">
+        <button class="topbar-btn" onclick="closeEdit()">取消 Cancel</button>
+        <button class="topbar-btn primary" onclick="saveEdit()">保存 Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    function toggleTheme(){const h=document.documentElement,c=h.getAttribute('data-theme'),n=c==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('vblog-theme',n);updateThemeIcon(n)}
+    function updateThemeIcon(t){document.querySelector('.theme-icon').textContent=t==='dark'?'☾':'☀'}
+    (function(){const s=localStorage.getItem('vblog-theme'),p=window.matchMedia('(prefers-color-scheme:dark)').matches,t=s||(p?'dark':'light');document.documentElement.setAttribute('data-theme',t);updateThemeIcon(t)})();
+
+    function showToast(m,t){const c=document.getElementById('toastContainer'),el=document.createElement('div');el.className='toast '+t;el.innerHTML=(t==='success'?'✓':'✕')+' '+m;c.appendChild(el);setTimeout(()=>el.remove(),3e3)}
+
+    // Filters
+    const searchInput=document.querySelector('.search-input');
+    const statusFilter=document.getElementById('statusFilter');
+    const tagFilter=document.getElementById('tagFilter');
+    function applyFilters(){
+      const q=searchInput.value.toLowerCase();
+      const s=statusFilter.value;
+      const tg=tagFilter.value;
+      document.querySelectorAll('#postsTable tr').forEach(row=>{
+        const title=row.querySelector('.post-title-cell').textContent.toLowerCase();
+        const rs=row.dataset.status;
+        const rt=row.dataset.tag;
+        const matchQ=!q||title.includes(q);
+        const matchS=!s||rs===s;
+        const matchT=!tg||rt===tg;
+        row.style.display=(matchQ&&matchS&&matchT)?'':'none';
+      });
+    }
+    searchInput.addEventListener('input',applyFilters);
+    statusFilter.addEventListener('change',applyFilters);
+    tagFilter.addEventListener('change',applyFilters);
+
+    // Edit
+    let editRow=null;
+    function openEdit(btn){
+      editRow=btn.closest('tr');
+      document.getElementById('editTitle').value=editRow.querySelector('.post-title-cell').textContent;
+      const tags=[];editRow.querySelectorAll('.tag-pill').forEach(p=>tags.push(p.textContent));
+      document.getElementById('editTags').value=tags.join(', ');
+      const badge=editRow.querySelector('.status-badge');
+      document.getElementById('editStatus').value=badge.classList.contains('published')?'published':badge.classList.contains('draft')?'draft':'archived';
+      document.getElementById('editModal').classList.add('show');
+    }
+    function closeEdit(){document.getElementById('editModal').classList.remove('show');editRow=null}
+    function saveEdit(){
+      if(!editRow)return;
+      editRow.querySelector('.post-title-cell').textContent=document.getElementById('editTitle').value;
+      const st=document.getElementById('editStatus').value;
+      const badge=editRow.querySelector('.status-badge');
+      badge.className='status-badge '+st;
+      badge.textContent={published:'已发布',draft:'草稿',archived:'已归档'}[st];
+      editRow.dataset.status=st;
+      closeEdit();showToast('已保存 Saved','success');
+    }
+    document.getElementById('editModal').addEventListener('click',function(e){if(e.target===this)closeEdit()});
+
+    // View post
+    function viewPost(btn){
+      const row=btn.closest('tr');
+      const id=row.dataset.id;
+      if(id) window.open('post.html?id='+id,'_blank');
+      else showToast('该文章暂无详情页','error');
+    }
+
+    // Delete
+    function deleteRow(btn){
+      const row=btn.closest('tr');
+      const title=row.querySelector('.post-title-cell').textContent;
+      if(confirm('确认删除「'+title.slice(0,20)+'...」？')){
+        row.style.opacity='0';row.style.transform='translateX(-20px)';row.style.transition='all .3s';
+        setTimeout(()=>row.remove(),300);showToast('已删除 Deleted','success');
+      }
+    }
+  </script>
+</body>
+</html>

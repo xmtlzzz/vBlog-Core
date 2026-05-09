@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>评论管理 — vBlog Admin</title>
+  <style>
+    :root {
+      --bg:#fafafa;--surface:#fff;--fg:#171717;--muted:#737373;--border:#e5e5e5;
+      --accent:#2563eb;--accent-soft:#eff6ff;--nav-bg:rgba(250,250,250,.85);
+      --card-hover:#f5f5f5;--tag-bg:#f0f0f0;--tag-fg:#525252;
+      --success:#16a34a;--success-soft:#f0fdf4;--warning:#f59e0b;--warning-soft:#fffbeb;
+      --error:#dc2626;--error-soft:#fef2f2;--sidebar-bg:#f5f5f5;
+      --radius:8px;--radius-lg:12px;
+      --font-sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;
+      --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;
+      --font-mono:'JetBrains Mono','IBM Plex Mono',ui-monospace,Menlo,monospace;
+    }
+    [data-theme="dark"] {
+      --bg:#0a0a0a;--surface:#141414;--fg:#ededed;--muted:#a3a3a3;--border:#262626;
+      --accent:#3b82f6;--accent-soft:#172554;--nav-bg:rgba(10,10,10,.85);
+      --card-hover:#1a1a1a;--tag-bg:#1f1f1f;--tag-fg:#a3a3a3;
+      --success:#22c55e;--success-soft:#052e16;--warning:#eab308;--warning-soft:#422006;
+      --error:#ef4444;--error-soft:#450a0a;--sidebar-bg:#111;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--fg);font-family:var(--font-sans);font-size:14px;line-height:1.6;transition:background .3s,color .3s;-webkit-font-smoothing:antialiased;display:flex;min-height:100vh}
+    .sidebar{width:220px;min-height:100vh;background:var(--sidebar-bg);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;transition:background .3s,border-color .3s;flex-shrink:0}
+    .sidebar-brand{padding:0 20px 24px;display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:16px;font-weight:600;letter-spacing:-.02em;color:var(--fg);text-decoration:none;border-bottom:1px solid var(--border);margin-bottom:16px}
+    .sidebar-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+    .sidebar-brand .badge{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--accent-soft);color:var(--accent);margin-left:auto}
+    .sidebar-section{padding:0 12px;margin-bottom:24px}
+    .sidebar-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0 8px 8px}
+    .sidebar-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s}
+    .sidebar-link:hover{color:var(--fg);background:var(--card-hover)}
+    .sidebar-link.active{color:var(--fg);background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+    .sidebar-link .icon{width:18px;text-align:center;font-size:14px}
+    .sidebar-link .count{margin-left:auto;font-family:var(--font-mono);font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted)}
+    .sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .sidebar-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff}
+    .sidebar-user{font-size:13px;font-weight:500;color:var(--fg)}
+    .sidebar-user-role{font-size:11px;color:var(--muted)}
+    .main{flex:1;min-width:0;display:flex;flex-direction:column}
+    .topbar{height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--nav-bg);backdrop-filter:blur(12px);transition:background .3s,border-color .3s}
+    .topbar-left{display:flex;align-items:center;gap:16px}
+    .topbar-title{font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:-.01em}
+    .topbar-breadcrumb{font-size:13px;color:var(--muted)}
+    .topbar-right{display:flex;align-items:center;gap:8px}
+    .topbar-btn{font-size:13px;padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--fg);cursor:pointer;transition:all .15s;font-family:var(--font-sans);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+    .topbar-btn:hover{background:var(--card-hover)}
+    .topbar-btn.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+    .topbar-btn.primary:hover{opacity:.85}
+    .theme-toggle{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--fg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:16px}
+    .theme-toggle:hover{background:var(--card-hover)}
+    .content{flex:1;padding:24px;overflow-y:auto}
+
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+    .page-header h2{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-.01em}
+
+    .filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+    .filter-row .search-input{font-family:var(--font-sans);font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);width:240px;transition:all .15s;outline:none}
+    .filter-row .search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+    .filter-row .search-input::placeholder{color:var(--muted)}
+    .filter-select{font-family:var(--font-sans);font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);outline:none;cursor:pointer}
+
+    .comment-list{display:flex;flex-direction:column;gap:12px}
+    .comment-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;transition:all .15s}
+    .comment-card:hover{border-color:var(--accent)}
+    .comment-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .comment-author{display:flex;align-items:center;gap:10px}
+    .comment-avatar{width:32px;height:32px;border-radius:50%;background:var(--tag-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--fg)}
+    .comment-name{font-weight:500;font-size:14px}
+    .comment-email{font-size:12px;color:var(--muted);font-family:var(--font-mono)}
+    .comment-meta{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
+    .comment-post{font-size:12px;color:var(--accent);text-decoration:none}
+    .comment-post:hover{text-decoration:underline}
+    .comment-body{font-size:13px;line-height:1.6;color:var(--fg);margin-bottom:12px;padding-left:42px}
+    .comment-actions{display:flex;gap:6px;padding-left:42px}
+    .action-btn{font-size:12px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font-sans)}
+    .action-btn:hover{color:var(--fg);border-color:var(--fg)}
+    .action-btn.danger:hover{color:var(--error);border-color:var(--error)}
+    .action-btn.success:hover{color:var(--success);border-color:var(--success)}
+    .status-badge{display:inline-block;font-size:11px;font-weight:600;padding:3px 8px;border-radius:100px}
+    .status-badge.pending{background:var(--warning-soft);color:var(--warning)}
+    .status-badge.approved{background:var(--success-soft);color:var(--success)}
+    .status-badge.spam{background:var(--error-soft);color:var(--error)}
+
+    .pagination{display:flex;align-items:center;justify-content:space-between;margin-top:16px;font-size:13px;color:var(--muted)}
+    .pagination-btns{display:flex;gap:4px}
+    .pagination-btns button{font-size:12px;padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-family:var(--font-sans);transition:all .15s}
+    .pagination-btns button:hover{color:var(--fg);border-color:var(--fg)}
+    .pagination-btns button.active{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+    .toast-container{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+    .toast{font-size:13px;padding:10px 16px;border-radius:var(--radius);display:flex;align-items:center;gap:8px;animation:slideIn .3s ease,fadeOut .3s ease 2.7s forwards;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+    .toast.success{background:var(--success-soft);color:var(--success);border:1px solid var(--success)}
+    .toast.error{background:var(--error-soft);color:var(--error);border:1px solid var(--error)}
+    @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+    @keyframes fadeOut{to{opacity:0;transform:translateY(8px)}}
+
+    @media(max-width:900px){.sidebar{display:none}}
+    @media(max-width:640px){.content{padding:16px}.comment-body,.comment-actions{padding-left:0}.filter-row .search-input{width:100%}}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="index.html"><span class="dot"></span>vBlog<span class="badge">Admin</span></a>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">概览 Overview</div>
+      <a class="sidebar-link" href="admin.html"><span class="icon">◎</span> 仪表盘 Dashboard</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">内容 Content</div>
+      <a class="sidebar-link" href="admin-posts.html"><span class="icon">≡</span> 文章 Posts<span class="count">42</span></a>
+      <a class="sidebar-link" href="admin-tags.html"><span class="icon">◉</span> 标签 Tags<span class="count">7</span></a>
+      <a class="sidebar-link active" href="admin-comments.html"><span class="icon">❝</span> 评论 Comments<span class="count">128</span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">系统 System</div>
+      <a class="sidebar-link" href="admin-custom.html"><span class="icon">⬡</span> 组件 Custom</a>
+      <a class="sidebar-link" href="admin-settings.html"><span class="icon">⚙</span> 设置 Settings</a>
+      <a class="sidebar-link" href="admin-grpc.html"><span class="icon">⇄</span> gRPC 状态</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-avatar">A</div>
+      <div><div class="sidebar-user">Admin</div><div class="sidebar-user-role">超级管理员</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left"><span class="topbar-title">评论管理 Comments</span><span class="topbar-breadcrumb">/ Content / Comments</span></div>
+      <div class="topbar-right">
+        <a href="index.html" class="topbar-btn">← 首页 Home</a>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题"><span class="theme-icon">☀</span></button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="page-header">
+        <h2>全部评论 All Comments</h2>
+      </div>
+
+      <div class="filter-row">
+        <input type="text" class="search-input" placeholder="搜索评论内容或作者 Search..." />
+        <select class="filter-select" id="statusFilter">
+          <option value="">全部状态 All Status</option>
+          <option value="pending">待审核 Pending</option>
+          <option value="approved">已通过 Approved</option>
+          <option value="spam">垃圾 Spam</option>
+        </select>
+      </div>
+
+      <div class="comment-list" id="commentList">
+        <div class="comment-card" data-status="pending">
+          <div class="comment-header">
+            <div class="comment-author">
+              <div class="comment-avatar">L</div>
+              <div><div class="comment-name">Linus Zhang</div><div class="comment-email">linus@example.com</div></div>
+            </div>
+            <div class="comment-meta">
+              <span class="status-badge pending">待审核</span>
+              <a class="comment-post" href="#">vBlog Core：从零构建...</a>
+              <span>3 分钟前</span>
+            </div>
+          </div>
+          <div class="comment-body">写得太好了！gRPC 双向流那部分特别有启发，我之前一直不知道怎么处理客户端实时推送。请问有完整的示例代码吗？</div>
+          <div class="comment-actions">
+            <button class="action-btn success" onclick="approveComment(this)">通过 Approve</button>
+            <button class="action-btn" onclick="showToast('已回复 Reply sent','success')">回复 Reply</button>
+            <button class="action-btn danger" onclick="markSpam(this)">垃圾 Spam</button>
+            <button class="action-btn danger" onclick="deleteComment(this)">删除 Delete</button>
+          </div>
+        </div>
+
+        <div class="comment-card" data-status="approved">
+          <div class="comment-header">
+            <div class="comment-author">
+              <div class="comment-avatar">W</div>
+              <div><div class="comment-name">Wang Wei</div><div class="comment-email">wangwei@dev.io</div></div>
+            </div>
+            <div class="comment-meta">
+              <span class="status-badge approved">已通过</span>
+              <a class="comment-post" href="#">React 组件热重载...</a>
+              <span>2 小时前</span>
+            </div>
+          </div>
+          <div class="comment-body">Module Federation 方案确实优雅，但安全隔离那块能展开讲讲吗？特别是 CSS 作用域隔离，我们项目也遇到了类似问题。</div>
+          <div class="comment-actions">
+            <button class="action-btn" onclick="showToast('已回复 Reply sent','success')">回复 Reply</button>
+            <button class="action-btn danger" onclick="deleteComment(this)">删除 Delete</button>
+          </div>
+        </div>
+
+        <div class="comment-card" data-status="approved">
+          <div class="comment-header">
+            <div class="comment-author">
+              <div class="comment-avatar">C</div>
+              <div><div class="comment-name">Chen Yu</div><div class="comment-email">cyu@tech.cn</div></div>
+            </div>
+            <div class="comment-meta">
+              <span class="status-badge approved">已通过</span>
+              <a class="comment-post" href="#">PostgreSQL 索引策略...</a>
+              <span>1 天前</span>
+            </div>
+          </div>
+          <div class="comment-body">「按需构建，不要过度设计」这个原则太对了。我们团队之前就是先建了一堆索引，结果写入性能拉胯，最后还得删。教训深刻。</div>
+          <div class="comment-actions">
+            <button class="action-btn" onclick="showToast('已回复 Reply sent','success')">回复 Reply</button>
+            <button class="action-btn danger" onclick="deleteComment(this)">删除 Delete</button>
+          </div>
+        </div>
+
+        <div class="comment-card" data-status="pending">
+          <div class="comment-header">
+            <div class="comment-author">
+              <div class="comment-avatar">Z</div>
+              <div><div class="comment-name">Zhou Jie</div><div class="comment-email">zj@example.com</div></div>
+            </div>
+            <div class="comment-meta">
+              <span class="status-badge pending">待审核</span>
+              <a class="comment-post" href="#">Wails + Go：用 Web 技术栈...</a>
+              <span>2 天前</span>
+            </div>
+          </div>
+          <div class="comment-body">Wails 和 Electron 比起来，包体积和内存占用差多少？有没有 benchmark 数据？</div>
+          <div class="comment-actions">
+            <button class="action-btn success" onclick="approveComment(this)">通过 Approve</button>
+            <button class="action-btn" onclick="showToast('已回复 Reply sent','success')">回复 Reply</button>
+            <button class="action-btn danger" onclick="markSpam(this)">垃圾 Spam</button>
+            <button class="action-btn danger" onclick="deleteComment(this)">删除 Delete</button>
+          </div>
+        </div>
+
+        <div class="comment-card" data-status="spam">
+          <div class="comment-header">
+            <div class="comment-author">
+              <div class="comment-avatar">S</div>
+              <div><div class="comment-name">spam_bot_2026</div><div class="comment-email">buy@cheapstuff.xyz</div></div>
+            </div>
+            <div class="comment-meta">
+              <span class="status-badge spam">垃圾</span>
+              <a class="comment-post" href="#">为什么极客需要...</a>
+              <span>3 天前</span>
+            </div>
+          </div>
+          <div class="comment-body">Check out this amazing offer!!! Buy cheap followers at...</div>
+          <div class="comment-actions">
+            <button class="action-btn danger" onclick="deleteComment(this)">删除 Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination">
+        <span>共 5 条评论 Showing 1–5 of 128</span>
+        <div class="pagination-btns"><button class="active">1</button><button>2</button><button>3</button><button>…</button><button>26</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    function toggleTheme(){const h=document.documentElement,c=h.getAttribute('data-theme'),n=c==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('vblog-theme',n);updateThemeIcon(n)}
+    function updateThemeIcon(t){document.querySelector('.theme-icon').textContent=t==='dark'?'☾':'☀'}
+    (function(){const s=localStorage.getItem('vblog-theme'),p=window.matchMedia('(prefers-color-scheme:dark)').matches,t=s||(p?'dark':'light');document.documentElement.setAttribute('data-theme',t);updateThemeIcon(t)})();
+
+    function showToast(m,t){const c=document.getElementById('toastContainer'),el=document.createElement('div');el.className='toast '+t;el.innerHTML=(t==='success'?'✓':'✕')+' '+m;c.appendChild(el);setTimeout(()=>el.remove(),3e3)}
+
+    // Filter
+    const searchInput=document.querySelector('.search-input');
+    const statusFilter=document.getElementById('statusFilter');
+    function applyFilters(){
+      const q=searchInput.value.toLowerCase();
+      const s=statusFilter.value;
+      document.querySelectorAll('.comment-card').forEach(card=>{
+        const text=card.querySelector('.comment-body').textContent.toLowerCase();
+        const author=card.querySelector('.comment-name').textContent.toLowerCase();
+        const rs=card.dataset.status;
+        const matchQ=!q||text.includes(q)||author.includes(q);
+        const matchS=!s||rs===s;
+        card.style.display=(matchQ&&matchS)?'':'none';
+      });
+    }
+    searchInput.addEventListener('input',applyFilters);
+    statusFilter.addEventListener('change',applyFilters);
+
+    function approveComment(btn){
+      const card=btn.closest('.comment-card');
+      card.dataset.status='approved';
+      const badge=card.querySelector('.status-badge');
+      badge.className='status-badge approved';
+      badge.textContent='已通过';
+      // Remove approve and spam buttons
+      const actions=card.querySelector('.comment-actions');
+      actions.querySelector('.success').remove();
+      actions.querySelector('.danger').remove();
+      showToast('评论已通过 Approved','success');
+    }
+
+    function markSpam(btn){
+      const card=btn.closest('.comment-card');
+      card.dataset.status='spam';
+      const badge=card.querySelector('.status-badge');
+      badge.className='status-badge spam';
+      badge.textContent='垃圾';
+      card.querySelector('.comment-actions').innerHTML='<button class="action-btn danger" onclick="deleteComment(this)">删除 Delete</button>';
+      showToast('已标记为垃圾 Marked as spam','success');
+    }
+
+    function deleteComment(btn){
+      const card=btn.closest('.comment-card');
+      if(confirm('确认删除此评论？')){
+        card.style.opacity='0';card.style.transform='translateX(-20px)';card.style.transition='all .3s';
+        setTimeout(()=>card.remove(),300);
+        showToast('评论已删除 Deleted','success');
+      }
+    }
+  </script>
+</body>
+</html>

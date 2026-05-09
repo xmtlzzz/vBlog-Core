@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>vBlog Core — 极客博客</title>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --fg: #171717;
+      --muted: #737373;
+      --border: #e5e5e5;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --nav-bg: rgba(250, 250, 250, 0.85);
+      --card-hover: #f5f5f5;
+      --tag-bg: #f0f0f0;
+      --tag-fg: #525252;
+      --code-bg: #f5f5f5;
+      --success: #16a34a;
+      --warning: #f59e0b;
+      --error: #dc2626;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+      --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --fg: #ededed;
+      --muted: #a3a3a3;
+      --border: #262626;
+      --accent: #3b82f6;
+      --accent-soft: #172554;
+      --nav-bg: rgba(10, 10, 10, 0.85);
+      --card-hover: #1a1a1a;
+      --tag-bg: #1f1f1f;
+      --tag-fg: #a3a3a3;
+      --code-bg: #1a1a1a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+      transition: background 0.3s ease, color 0.3s ease;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    nav.top {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--nav-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+    nav.top .inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-brand {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--fg);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-brand .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-links a {
+      font-size: 14px;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--fg);
+      background: var(--card-hover);
+    }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .theme-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--fg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      font-size: 16px;
+    }
+    .theme-toggle:hover {
+      background: var(--card-hover);
+    }
+    .admin-btn {
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .admin-btn:hover {
+      color: var(--fg);
+      border-color: var(--fg);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 72px 24px 48px;
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: var(--fg);
+      margin-bottom: 12px;
+    }
+    .hero p {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.6;
+    }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px 40px;
+      display: flex;
+      gap: 32px;
+    }
+    .stat-item {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--fg);
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: var(--font-sans);
+    }
+    .filter-btn:hover {
+      border-color: var(--fg);
+      color: var(--fg);
+    }
+    .filter-btn.active {
+      background: var(--fg);
+      color: var(--bg);
+      border-color: var(--fg);
+    }
+
+    /* ── Post list ── */
+    .post-list {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+    .post-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: start;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: opacity 0.15s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .post-item:hover {
+      opacity: 0.7;
+    }
+    .post-item:last-child {
+      border-bottom: none;
+    }
+    .post-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .post-meta .tag {
+      background: var(--tag-bg);
+      color: var(--tag-fg);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .post-title {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.35;
+      color: var(--fg);
+      margin-bottom: 6px;
+    }
+    .post-excerpt {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .post-stats {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      padding-top: 4px;
+      white-space: nowrap;
+    }
+    .post-stats .read-time {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+    .post-stats .views {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Pinned post ── */
+    .post-item.pinned {
+      background: var(--accent-soft);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 8px;
+      border-bottom: none;
+    }
+    .pin-badge {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    /* ── Pagination ── */
+    .pagination {
+      max-width: 1080px;
+      margin: -48px auto 0;
+      padding: 0 24px 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .page-btn {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      min-width: 36px;
+      height: 36px;
+      padding: 0 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .page-btn:hover { border-color: var(--fg); color: var(--fg); }
+    .page-btn.active { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+    .page-btn.disabled { opacity: 0.35; pointer-events: none; }
+    .page-ellipsis {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── Footer ── */
+    footer {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px 24px 48px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    footer a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    footer a:hover {
+      color: var(--fg);
+    }
+    .footer-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .hero { padding: 48px 16px 32px; }
+      .stats-bar { padding: 0 16px 24px; gap: 20px; }
+      .filter-bar { padding: 0 16px 16px; }
+      .post-list { padding: 0 16px 48px; }
+      .post-item { grid-template-columns: 1fr; gap: 8px; }
+      .post-stats { flex-direction: row; gap: 12px; padding-top: 0; }
+      .pagination { padding: 0 16px 48px; }
+      footer { padding: 24px 16px 32px; flex-direction: column; gap: 12px; }
+      .nav-links a { padding: 6px 8px; font-size: 13px; }
+    }
+
+    /* ── Transitions ── */
+    .fade-in {
+      animation: fadeIn 0.4s ease both;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .post-item { opacity: 0; transform: translateY(8px); transition: opacity 0.35s ease, transform 0.35s ease; }
+    .post-item.visible { opacity: 1; transform: translateY(0); }
+
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="top">
+    <div class="inner">
+      <a class="nav-brand" href="index.html">
+        <span class="dot"></span>
+        vBlog
+      </a>
+      <div class="nav-links">
+        <a href="index.html" class="active">首页 Home</a>
+        <a href="archives.html">归档 Archives</a>
+        <a href="about.html">关于 About</a>
+        <a href="tags.html">标签 Tags</a>
+      </div>
+      <div class="nav-right">
+        <a href="admin.html" class="admin-btn">后台 Admin</a>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">
+          <span class="theme-icon">☀</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero fade-in">
+    <h1>写代码的人，<br/>也写点别的。</h1>
+    <p>一个关于系统设计、工程实践与极客生活的博客。用 Markdown 写作，为 vibe coder 而建。</p>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-bar fade-in">
+    <div class="stat-item">
+      <span class="stat-value">42</span>
+      <span class="stat-label">篇文章 Articles</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">12.8k</span>
+      <span class="stat-label">次阅读 Views</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">7</span>
+      <span class="stat-label">个标签 Tags</span>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-bar fade-in">
+    <button class="filter-btn active">全部 All</button>
+    <button class="filter-btn">系统设计</button>
+    <button class="filter-btn">Go</button>
+    <button class="filter-btn">React</button>
+    <button class="filter-btn">工程实践</button>
+    <button class="filter-btn">随笔</button>
+  </div>
+
+  <!-- Post List -->
+  <main class="post-list" id="postList"></main>
+
+  <!-- Pagination -->
+  <div class="pagination" id="pagination"></div>
+
+  <!-- Footer -->
+  <footer>
+    <span>&copy; 2026 vBlog Core · 用代码写作，用文字思考</span>
+    <div class="footer-links">
+      <a href="#">GitHub</a>
+      <a href="#">RSS</a>
+      <a href="#">gRPC API</a>
+    </div>
+  </footer>
+
+  <script>
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('vblog-theme', next);
+      updateThemeIcon(next);
+    }
+
+    function updateThemeIcon(theme) {
+      const icon = document.querySelector('.theme-icon');
+      icon.textContent = theme === 'dark' ? '☾' : '☀';
+    }
+
+    // Restore theme
+    (function() {
+      const saved = localStorage.getItem('vblog-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+      updateThemeIcon(theme);
+    })();
+
+    // Post data
+    const POSTS = [
+      { id: 1, title: 'vBlog Core：从零构建一个可自定义组件的极客博客系统', tag: '系统设计', date: '2026-05-08', readTime: '8 min', views: '2,341', excerpt: '为什么又造一个博客轮子？因为我想要一个真正轻量、支持组件自定义、前后端分离的博客。React + Go + PostgreSQL，这是我的技术选型和架构思路。', pinned: true },
+      { id: 2, title: '用 Go 实现 gRPC 双向流：让博客客户端实时感知内容变化', tag: 'Go', date: '2026-05-05', readTime: '12 min', views: '1,872', excerpt: '博客 Server 和客户端之间通过 gRPC 通信，客户端可以实时感知文章列表变化和关注通知。本文记录了双向流的实现细节和踩坑经验。' },
+      { id: 3, title: 'React 组件热重载：让用户自定义博客 UI 成为可能', tag: 'React', date: '2026-05-01', readTime: '10 min', views: '1,456', excerpt: 'vBlog 的核心卖点是组件可自定义。如何在运行时安全地加载用户提供的 React 组件？我用 Module Federation 和沙箱隔离做了一套方案。' },
+      { id: 4, title: 'PostgreSQL 索引策略：按需构建，不要过度设计', tag: '工程实践', date: '2026-04-27', readTime: '6 min', views: '987', excerpt: '每个模块单独一张表，索引按需构建。本文分享了在博客系统中如何根据实际查询模式来设计索引，避免「先建一堆索引再说」的陷阱。' },
+      { id: 5, title: 'Wails + Go：用 Web 技术栈构建原生桌面客户端', tag: '系统设计', date: '2026-04-22', readTime: '9 min', views: '1,123', excerpt: 'vBlog 的客户端用 Wails 框架构建，前端 UI 按需选择，同样遵循简洁轻量化需求。从环境搭建到打包发布的完整记录。' },
+      { id: 6, title: 'Markdown 渲染器深度定制：从解析到高亮', tag: 'React', date: '2026-04-19', readTime: '11 min', views: '834', excerpt: '从 CommonMark 规范到自定义语法扩展，再到代码高亮和数学公式渲染，完整记录 vBlog 的 Markdown 渲染管线。' },
+      { id: 7, title: '为什么极客需要一个自己的博客', tag: '随笔', date: '2026-04-18', readTime: '4 min', views: '2,104', excerpt: '在 Medium、掘金、知乎已经很完善的今天，为什么还要自己搭博客？因为写作是思考的延伸，而平台会消失。' },
+      { id: 8, title: 'Go 并发模式：用 errgroup 管理博客后台任务', tag: 'Go', date: '2026-04-15', readTime: '7 min', views: '678', excerpt: 'RSS 生成、搜索索引更新、图片压缩——这些后台任务用 errgroup 统一管理，优雅处理错误和取消。' },
+      { id: 9, title: '设计一个极简的评论系统', tag: '系统设计', date: '2026-04-12', readTime: '5 min', views: '923', excerpt: '不要社交登录，不要嵌套回复，不要表情包。一个输入框、一个提交按钮、一层楼中楼——这就是我想要的评论。' },
+      { id: 10, title: '从零搭建 PostgreSQL 全文搜索', tag: '工程实践', date: '2026-04-08', readTime: '8 min', views: '1,045', excerpt: '不引入 Elasticsearch，用 PostgreSQL 内置的 tsvector 和 GIN 索引搞定博客搜索。够用就好。' },
+      { id: 11, title: 'React Server Components 在博客中的实际应用', tag: 'React', date: '2026-04-03', readTime: '13 min', views: '1,367', excerpt: '哪些组件该在服务端渲染，哪些留在客户端？在博客这个场景下，RSC 带来了哪些实际好处和坑。' },
+      { id: 12, title: '写给自己的技术写作指南', tag: '随笔', date: '2026-03-28', readTime: '6 min', views: '1,892', excerpt: '技术博客不是文档，不是教程，是写给六个月后的自己的信。三个原则：诚实、具体、有观点。' },
+    ];
+
+    const PER_PAGE = 5;
+    let currentPage = 1;
+    let activeTag = 'all';
+
+    function getFiltered() {
+      if (activeTag === 'all') return POSTS.filter(p => !p.pinned);
+      return POSTS.filter(p => !p.pinned && p.tag === activeTag);
+    }
+
+    function renderPost(p, pinned) {
+      const cls = pinned ? 'post-item pinned' : 'post-item';
+      return `<a class="${cls}" href="post.html?id=${p.id}">
+        <div>
+          ${pinned ? '<div class="pin-badge">置顶 Pinned</div>' : ''}
+          <div class="post-meta">
+            <span class="tag">${p.tag}</span>
+            <span>${p.date}</span>
+          </div>
+          <div class="post-title">${p.title}</div>
+          <div class="post-excerpt">${p.excerpt}</div>
+        </div>
+        <div class="post-stats">
+          <span class="read-time">${p.readTime}</span>
+          <span class="views">${p.views} views</span>
+        </div>
+      </a>`;
+    }
+
+    function renderPage() {
+      const list = document.getElementById('postList');
+      const pinned = POSTS.find(p => p.pinned);
+      const filtered = getFiltered();
+      const totalPages = Math.ceil(filtered.length / PER_PAGE);
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+      const start = (currentPage - 1) * PER_PAGE;
+      const pageItems = filtered.slice(start, start + PER_PAGE);
+
+      let html = '';
+      if (pinned && activeTag === 'all') html += renderPost(pinned, true);
+      pageItems.forEach(p => { html += renderPost(p, false); });
+      list.innerHTML = html;
+
+      // Trigger fade-in
+      requestAnimationFrame(() => {
+        list.querySelectorAll('.post-item').forEach((el, i) => {
+          setTimeout(() => el.classList.add('visible'), i * 50);
+        });
+      });
+
+      renderPagination(totalPages);
+    }
+
+    function renderPagination(total) {
+      const el = document.getElementById('pagination');
+      if (total <= 1) { el.innerHTML = ''; return; }
+      let html = `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}" onclick="goPage(${currentPage - 1})">‹ 上一页</button>`;
+      for (let i = 1; i <= total; i++) {
+        if (total > 7 && i > 2 && i < total - 1 && Math.abs(i - currentPage) > 1) {
+          if (i === 3 || i === total - 2) html += '<span class="page-ellipsis">…</span>';
+          continue;
+        }
+        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+      }
+      html += `<button class="page-btn ${currentPage === total ? 'disabled' : ''}" onclick="goPage(${currentPage + 1})">下一页 ›</button>`;
+      el.innerHTML = html;
+    }
+
+    function goPage(n) {
+      currentPage = n;
+      renderPage();
+      window.scrollTo({ top: document.querySelector('.filter-bar').offsetTop - 70, behavior: 'smooth' });
+    }
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const tag = this.textContent.trim();
+        activeTag = tag === '全部 All' ? 'all' : tag;
+        currentPage = 1;
+        renderPage();
+      });
+    });
+
+    renderPage();
+
+  </script>
+</body>
+</html>

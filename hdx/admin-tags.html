@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>标签管理 — vBlog Admin</title>
+  <style>
+    :root {
+      --bg:#fafafa;--surface:#fff;--fg:#171717;--muted:#737373;--border:#e5e5e5;
+      --accent:#2563eb;--accent-soft:#eff6ff;--nav-bg:rgba(250,250,250,.85);
+      --card-hover:#f5f5f5;--tag-bg:#f0f0f0;--tag-fg:#525252;
+      --success:#16a34a;--success-soft:#f0fdf4;--warning:#f59e0b;--warning-soft:#fffbeb;
+      --error:#dc2626;--error-soft:#fef2f2;--sidebar-bg:#f5f5f5;
+      --radius:8px;--radius-lg:12px;
+      --font-sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;
+      --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;
+      --font-mono:'JetBrains Mono','IBM Plex Mono',ui-monospace,Menlo,monospace;
+    }
+    [data-theme="dark"] {
+      --bg:#0a0a0a;--surface:#141414;--fg:#ededed;--muted:#a3a3a3;--border:#262626;
+      --accent:#3b82f6;--accent-soft:#172554;--nav-bg:rgba(10,10,10,.85);
+      --card-hover:#1a1a1a;--tag-bg:#1f1f1f;--tag-fg:#a3a3a3;
+      --success:#22c55e;--success-soft:#052e16;--warning:#eab308;--warning-soft:#422006;
+      --error:#ef4444;--error-soft:#450a0a;--sidebar-bg:#111;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--fg);font-family:var(--font-sans);font-size:14px;line-height:1.6;transition:background .3s,color .3s;-webkit-font-smoothing:antialiased;display:flex;min-height:100vh}
+    .sidebar{width:220px;min-height:100vh;background:var(--sidebar-bg);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;transition:background .3s,border-color .3s;flex-shrink:0}
+    .sidebar-brand{padding:0 20px 24px;display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:16px;font-weight:600;letter-spacing:-.02em;color:var(--fg);text-decoration:none;border-bottom:1px solid var(--border);margin-bottom:16px}
+    .sidebar-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+    .sidebar-brand .badge{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--accent-soft);color:var(--accent);margin-left:auto}
+    .sidebar-section{padding:0 12px;margin-bottom:24px}
+    .sidebar-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0 8px 8px}
+    .sidebar-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:6px;font-size:13px;color:var(--muted);text-decoration:none;transition:all .15s}
+    .sidebar-link:hover{color:var(--fg);background:var(--card-hover)}
+    .sidebar-link.active{color:var(--fg);background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+    .sidebar-link .icon{width:18px;text-align:center;font-size:14px}
+    .sidebar-link .count{margin-left:auto;font-family:var(--font-mono);font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted)}
+    .sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .sidebar-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff}
+    .sidebar-user{font-size:13px;font-weight:500;color:var(--fg)}
+    .sidebar-user-role{font-size:11px;color:var(--muted)}
+    .main{flex:1;min-width:0;display:flex;flex-direction:column}
+    .topbar{height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--nav-bg);backdrop-filter:blur(12px);transition:background .3s,border-color .3s}
+    .topbar-left{display:flex;align-items:center;gap:16px}
+    .topbar-title{font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:-.01em}
+    .topbar-breadcrumb{font-size:13px;color:var(--muted)}
+    .topbar-right{display:flex;align-items:center;gap:8px}
+    .topbar-btn{font-size:13px;padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--fg);cursor:pointer;transition:all .15s;font-family:var(--font-sans);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+    .topbar-btn:hover{background:var(--card-hover)}
+    .topbar-btn.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+    .topbar-btn.primary:hover{opacity:.85}
+    .theme-toggle{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--fg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:16px}
+    .theme-toggle:hover{background:var(--card-hover)}
+    .content{flex:1;padding:24px;overflow-y:auto}
+
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+    .page-header h2{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-.01em}
+
+    .tags-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+    .tag-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;transition:all .15s;cursor:pointer}
+    .tag-card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+    .tag-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .tag-card-name{font-family:var(--font-display);font-size:17px;font-weight:600;letter-spacing:-.01em}
+    .tag-card-count{font-family:var(--font-mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);background:var(--tag-bg);padding:2px 8px;border-radius:4px}
+    .tag-card-desc{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:12px}
+    .tag-card-meta{display:flex;gap:16px;font-size:12px;color:var(--muted)}
+    .tag-card-meta span{display:flex;align-items:center;gap:4px}
+    .tag-card-actions{display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+    .action-btn{font-size:12px;padding:4px 10px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--font-sans)}
+    .action-btn:hover{color:var(--fg);border-color:var(--fg)}
+    .action-btn.danger:hover{color:var(--error);border-color:var(--error)}
+
+    .toast-container{position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+    .toast{font-size:13px;padding:10px 16px;border-radius:var(--radius);display:flex;align-items:center;gap:8px;animation:slideIn .3s ease,fadeOut .3s ease 2.7s forwards;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+    .toast.success{background:var(--success-soft);color:var(--success);border:1px solid var(--success)}
+    .toast.error{background:var(--error-soft);color:var(--error);border:1px solid var(--error)}
+    @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+    @keyframes fadeOut{to{opacity:0;transform:translateY(8px)}}
+
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .modal-overlay.show{display:flex}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:480px;max-width:90vw;padding:24px;animation:modalIn .2s ease}
+    @keyframes modalIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+    .modal h3{font-family:var(--font-display);font-size:17px;font-weight:600;margin-bottom:16px}
+    .form-group{margin-bottom:14px}
+    .form-group label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:4px}
+    .form-group input,.form-group textarea{width:100%;font-family:var(--font-sans);font-size:13px;padding:8px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--fg);outline:none;transition:all .15s}
+    .form-group input:focus,.form-group textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+    .form-group textarea{resize:vertical;min-height:60px}
+    .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+
+    @media(max-width:900px){.sidebar{display:none}.tags-grid{grid-template-columns:1fr}}
+    @media(max-width:640px){.content{padding:16px}}
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="index.html"><span class="dot"></span>vBlog<span class="badge">Admin</span></a>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">概览 Overview</div>
+      <a class="sidebar-link" href="admin.html"><span class="icon">◎</span> 仪表盘 Dashboard</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">内容 Content</div>
+      <a class="sidebar-link" href="admin-posts.html"><span class="icon">≡</span> 文章 Posts<span class="count">42</span></a>
+      <a class="sidebar-link active" href="admin-tags.html"><span class="icon">◉</span> 标签 Tags<span class="count">7</span></a>
+      <a class="sidebar-link" href="admin-comments.html"><span class="icon">❝</span> 评论 Comments<span class="count">128</span></a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">系统 System</div>
+      <a class="sidebar-link" href="admin-custom.html"><span class="icon">⬡</span> 组件 Custom</a>
+      <a class="sidebar-link" href="admin-settings.html"><span class="icon">⚙</span> 设置 Settings</a>
+      <a class="sidebar-link" href="admin-grpc.html"><span class="icon">⇄</span> gRPC 状态</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-avatar">A</div>
+      <div><div class="sidebar-user">Admin</div><div class="sidebar-user-role">超级管理员</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left"><span class="topbar-title">标签管理 Tags</span><span class="topbar-breadcrumb">/ Content / Tags</span></div>
+      <div class="topbar-right">
+        <a href="index.html" class="topbar-btn">← 首页 Home</a>
+        <button class="topbar-btn primary" onclick="openModal()">+ 新标签 New Tag</button>
+        <button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题"><span class="theme-icon">☀</span></button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="page-header">
+        <h2>全部标签 All Tags</h2>
+      </div>
+
+      <div class="tags-grid" id="tagsGrid">
+        <div class="tag-card" data-tag="系统设计">
+          <div class="tag-card-header"><span class="tag-card-name">系统设计</span><span class="tag-card-count">12 篇</span></div>
+          <div class="tag-card-desc">架构设计、分布式系统、微服务、技术选型相关文章</div>
+          <div class="tag-card-meta"><span>◎ 4,234 views</span><span>≡ 最近: 2026-05-08</span></div>
+          <div class="tag-card-actions"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn danger" onclick="deleteTag(this)">删除</button></div>
+        </div>
+        <div class="tag-card" data-tag="Go">
+          <div class="tag-card-header"><span class="tag-card-name">Go</span><span class="tag-card-count">9 篇</span></div>
+          <div class="tag-card-desc">Go 语言实践、gRPC、并发模式、性能优化</div>
+          <div class="tag-card-meta"><span>◎ 3,108 views</span><span>≡ 最近: 2026-05-05</span></div>
+          <div class="tag-card-actions"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn danger" onclick="deleteTag(this)">删除</button></div>
+        </div>
+        <div class="tag-card" data-tag="React">
+          <div class="tag-card-header"><span class="tag-card-name">React</span><span class="tag-card-count">10 篇</span></div>
+          <div class="tag-card-desc">React 组件设计、状态管理、性能调优、生态工具</div>
+          <div class="tag-card-meta"><span>◎ 2,876 views</span><span>≡ 最近: 2026-05-01</span></div>
+          <div class="tag-card-actions"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn danger" onclick="deleteTag(this)">删除</button></div>
+        </div>
+        <div class="tag-card" data-tag="工程实践">
+          <div class="tag-card-header"><span class="tag-card-name">工程实践</span><span class="tag-card-count">6 篇</span></div>
+          <div class="tag-card-desc">数据库、CI/CD、测试策略、代码质量、工程化</div>
+          <div class="tag-card-meta"><span>◎ 1,543 views</span><span>≡ 最近: 2026-04-27</span></div>
+          <div class="tag-card-actions"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn danger" onclick="deleteTag(this)">删除</button></div>
+        </div>
+        <div class="tag-card" data-tag="随笔">
+          <div class="tag-card-header"><span class="tag-card-name">随笔</span><span class="tag-card-count">5 篇</span></div>
+          <div class="tag-card-desc">技术思考、行业观察、开发者生活、读书笔记</div>
+          <div class="tag-card-meta"><span>◎ 1,086 views</span><span>≡ 最近: 2026-04-18</span></div>
+          <div class="tag-card-actions"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn danger" onclick="deleteTag(this)">删除</button></div>
+        </div>
+        <div class="tag-card" data-tag="PostgreSQL">
+          <div class="tag-card-header"><span class="tag-card-name">PostgreSQL</span><span class="tag-card-count">3 篇</span></div>
+          <div class="tag-card-desc">索引策略、查询优化、数据建模、运维经验</div>
+          <div class="tag-card-meta"><span>◎ 876 views</span><span>≡ 最近: 2026-04-22</span></div>
+          <div class="tag-card-actions"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn danger" onclick="deleteTag(this)">删除</button></div>
+        </div>
+        <div class="tag-card" data-tag="Wails">
+          <div class="tag-card-header"><span class="tag-card-name">Wails</span><span class="tag-card-count">2 篇</span></div>
+          <div class="tag-card-desc">Wails 框架、桌面客户端开发、Go + Web 技术栈</div>
+          <div class="tag-card-meta"><span>◎ 543 views</span><span>≡ 最近: 2026-04-10</span></div>
+          <div class="tag-card-actions"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn danger" onclick="deleteTag(this)">删除</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Tag Modal -->
+  <div class="modal-overlay" id="tagModal">
+    <div class="modal">
+      <h3 id="modalTitle">新标签 New Tag</h3>
+      <div class="form-group"><label>名称 Name</label><input type="text" id="tagName" placeholder="标签名称..." /></div>
+      <div class="form-group"><label>描述 Description</label><textarea id="tagDesc" placeholder="一句话描述这个标签..."></textarea></div>
+      <div class="modal-actions">
+        <button class="topbar-btn" onclick="closeModal()">取消 Cancel</button>
+        <button class="topbar-btn primary" onclick="saveTag()">保存 Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    function toggleTheme(){const h=document.documentElement,c=h.getAttribute('data-theme'),n=c==='dark'?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('vblog-theme',n);updateThemeIcon(n)}
+    function updateThemeIcon(t){document.querySelector('.theme-icon').textContent=t==='dark'?'☾':'☀'}
+    (function(){const s=localStorage.getItem('vblog-theme'),p=window.matchMedia('(prefers-color-scheme:dark)').matches,t=s||(p?'dark':'light');document.documentElement.setAttribute('data-theme',t);updateThemeIcon(t)})();
+
+    function showToast(m,t){const c=document.getElementById('toastContainer'),el=document.createElement('div');el.className='toast '+t;el.innerHTML=(t==='success'?'✓':'✕')+' '+m;c.appendChild(el);setTimeout(()=>el.remove(),3e3)}
+
+    let editCard=null;
+    function openModal(){editCard=null;document.getElementById('modalTitle').textContent='新标签 New Tag';document.getElementById('tagName').value='';document.getElementById('tagDesc').value='';document.getElementById('tagModal').classList.add('show')}
+    function openEdit(btn){
+      editCard=btn.closest('.tag-card');
+      document.getElementById('modalTitle').textContent='编辑标签 Edit Tag';
+      document.getElementById('tagName').value=editCard.querySelector('.tag-card-name').textContent;
+      document.getElementById('tagDesc').value=editCard.querySelector('.tag-card-desc').textContent;
+      document.getElementById('tagModal').classList.add('show');
+    }
+    function closeModal(){document.getElementById('tagModal').classList.remove('show')}
+    document.getElementById('tagModal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+
+    function saveTag(){
+      const name=document.getElementById('tagName').value.trim();
+      const desc=document.getElementById('tagDesc').value.trim();
+      if(!name){showToast('请输入标签名称','error');return}
+      if(editCard){
+        editCard.querySelector('.tag-card-name').textContent=name;
+        editCard.querySelector('.tag-card-desc').textContent=desc;
+        editCard.dataset.tag=name;
+        showToast('标签已更新 Tag updated','success');
+      } else {
+        const grid=document.getElementById('tagsGrid');
+        const card=document.createElement('div');
+        card.className='tag-card';
+        card.dataset.tag=name;
+        card.innerHTML='<div class="tag-card-header"><span class="tag-card-name">'+name+'</span><span class="tag-card-count">0 篇</span></div><div class="tag-card-desc">'+(desc||'暂无描述')+'</div><div class="tag-card-meta"><span>◎ 0 views</span><span>≡ 最近: —</span></div><div class="tag-card-actions"><button class="action-btn" onclick="openEdit(this)">编辑</button><button class="action-btn danger" onclick="deleteTag(this)">删除</button></div>';
+        grid.prepend(card);
+        showToast('标签已创建 Tag created','success');
+      }
+      closeModal();
+    }
+
+    function deleteTag(btn){
+      const card=btn.closest('.tag-card');
+      const name=card.querySelector('.tag-card-name').textContent;
+      if(confirm('确认删除标签「'+name+'」？')){
+        card.style.opacity='0';card.style.transform='scale(0.95)';card.style.transition='all .3s';
+        setTimeout(()=>card.remove(),300);
+        showToast('标签已删除 Tag deleted','success');
+      }
+    }
+  </script>
+</body>
+</html>

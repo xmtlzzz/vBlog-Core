@@ -7,9 +7,9 @@
       <div class="article-meta">
         <span
           v-for="tag in (post.tags || [])"
-          :key="tag"
+          :key="tag.id || tag.name || tag"
           class="tag"
-        >{{ tag }}</span>
+        >{{ tag.name || tag }}</span>
         <span>{{ formatDate(post.created_at) }}</span>
         <span>{{ post.read_time || 0 }} min</span>
         <span>{{ (post.views || 0).toLocaleString() }} views</span>
@@ -44,9 +44,9 @@
       <div class="footer-tags">
         <span
           v-for="tag in (post.tags || [])"
-          :key="tag"
+          :key="tag.id || tag.name || tag"
           class="tag"
-        >{{ tag }}</span>
+        >{{ tag.name || tag }}</span>
       </div>
     </footer>
 
@@ -146,7 +146,7 @@ function buildToc(html) {
 async function fetchAdjacentPosts() {
   try {
     const res = await api.get('/posts', { params: { page: 1, per_page: 100, status: 'published' } })
-    const allPosts = res.posts || []
+    const allPosts = res.data || []
     const currentId = Number(route.params.id)
     const idx = allPosts.findIndex(p => p.id === currentId)
     if (idx > 0) prevPost.value = allPosts[idx - 1]

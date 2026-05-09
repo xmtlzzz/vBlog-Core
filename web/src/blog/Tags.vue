@@ -55,13 +55,13 @@ async function fetchPosts() {
   }
   const res = await api.get('/posts', {
     params: { per_page: 100, tag: activeTag.value, status: 'published' }
-  }).catch(() => ({ posts: [] }))
-  filteredPosts.value = res.posts || []
+  }).catch(() => ({ data: [] }))
+  filteredPosts.value = res.data || []
 }
 
 onMounted(async () => {
   const res = await api.get('/tags').catch(() => [])
-  tags.value = Array.isArray(res) ? res : (res.tags || [])
+  tags.value = Array.isArray(res) ? res : (res.data || [])
 })
 </script>
 

@@ -8,9 +8,9 @@
       <div class="post-meta">
         <span
           v-for="tag in (post.tags || [])"
-          :key="tag"
+          :key="tag.id || tag.name || tag"
           class="tag"
-        >{{ tag }}</span>
+        >{{ tag.name || tag }}</span>
         <span class="meta-date">{{ formatDate(post.created_at) }}</span>
       </div>
       <div class="post-title">{{ post.title }}</div>

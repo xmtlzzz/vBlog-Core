@@ -27,9 +27,9 @@
             <div class="archive-tags">
               <span
                 v-for="tag in (post.tags || [])"
-                :key="tag"
+                :key="tag.id || tag.name || tag"
                 class="archive-tag"
-              >{{ tag }}</span>
+              >{{ tag.name || tag }}</span>
             </div>
           </div>
           <div class="archive-stats">
@@ -78,8 +78,8 @@ function formatDay(dateStr) {
 }
 
 onMounted(async () => {
-  const res = await api.get('/posts', { params: { per_page: 100, status: 'published' } }).catch(() => ({ posts: [] }))
-  allPosts.value = res.posts || []
+  const res = await api.get('/posts', { params: { per_page: 100, status: 'published' } }).catch(() => ({ data: [] }))
+  allPosts.value = res.data || []
 })
 </script>
 

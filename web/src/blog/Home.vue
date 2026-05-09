@@ -79,7 +79,7 @@ async function fetchPosts() {
   const res = await api.get('/posts', {
     params: { page: page.value, per_page: perPage, tag: activeTag.value, status: 'published' }
   })
-  posts.value = res.posts || []
+  posts.value = res.data || []
   total.value = res.total || 0
 }
 
@@ -105,7 +105,7 @@ onMounted(async () => {
     total_views: statsRes.total_views || 0,
     total_tags: statsRes.total_tags || 0
   }
-  tags.value = Array.isArray(tagsRes) ? tagsRes : (tagsRes.tags || [])
+  tags.value = Array.isArray(tagsRes) ? tagsRes : (tagsRes.data || [])
   await fetchPosts()
 })
 </script>

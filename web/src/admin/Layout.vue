@@ -128,7 +128,7 @@ const currentPage = computed(() => pageMap[route.path] || '仪表盘')
   font-size: 10px;
   font-weight: 600;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: var(--accent-soft);
   color: var(--accent);
   margin-left: auto;
@@ -158,7 +158,7 @@ const currentPage = computed(() => pageMap[route.path] || '仪表盘')
   color: var(--muted);
   text-decoration: none;
   transition: all 0.15s;
-  border-radius: 6px;
+  border-radius: var(--radius);
 }
 .sidebar-link:hover {
   color: var(--fg);
@@ -245,7 +245,7 @@ const currentPage = computed(() => pageMap[route.path] || '仪表盘')
   text-decoration: none;
   padding: 4px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius);
   transition: all 0.15s;
 }
 .view-blog-link:hover {

@@ -27,12 +27,12 @@
       <div class="table-header">
         <span class="table-title">文章管理 Post Management</span>
         <div class="table-actions">
-          <input class="search-input" v-model="search" placeholder="搜索 Search..." />
-          <select class="filter-select" v-model="statusFilter">
-            <option value="">全部状态 All Status</option>
-            <option value="published">已发布 Published</option>
-            <option value="draft">草稿 Draft</option>
-          </select>
+          <el-input v-model="search" placeholder="搜索 Search..." style="width: 180px" clearable />
+          <el-select v-model="statusFilter" placeholder="全部状态 All Status" style="width: 160px" clearable>
+            <el-option label="全部状态 All Status" value="" />
+            <el-option label="已发布 Published" value="published" />
+            <el-option label="草稿 Draft" value="draft" />
+          </el-select>
         </div>
       </div>
       <el-table :data="filteredPosts" stripe style="width: 100%">
@@ -160,10 +160,8 @@ onMounted(async () => {
   font-size: 12px;
   margin-top: 4px;
   font-family: var(--font-mono);
-  color: var(--muted);
+  color: var(--success);
 }
-.stat-change.up { color: var(--success); }
-.stat-change.down { color: var(--error); }
 .table-header {
   display: flex;
   align-items: center;
@@ -181,33 +179,11 @@ onMounted(async () => {
   gap: 8px;
   align-items: center;
 }
-.search-input {
-  font-size: 13px;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--fg);
-  outline: none;
-  width: 180px;
-}
-.search-input:focus {
-  border-color: var(--accent);
-}
-.filter-select {
-  font-size: 13px;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--fg);
-  outline: none;
-}
 .status-badge {
   font-size: 11px;
   font-weight: 600;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   display: inline-block;
 }
 .status-published { background: var(--success-soft); color: var(--success); }
@@ -216,7 +192,7 @@ onMounted(async () => {
 .tag-pill {
   font-size: 11px;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: var(--tag-bg);
   color: var(--tag-fg);
   margin-right: 4px;
@@ -224,7 +200,7 @@ onMounted(async () => {
 .action-btn {
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--fg);

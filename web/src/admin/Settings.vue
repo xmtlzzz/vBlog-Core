@@ -195,7 +195,7 @@ onMounted(fetchSettings)
 .settings-section {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 24px;
   margin-bottom: 20px;
 }

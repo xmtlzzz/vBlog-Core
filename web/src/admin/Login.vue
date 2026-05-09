@@ -87,7 +87,7 @@ async function handleRegister() {
   padding: 40px 32px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
 }
 .login-title {
   font-family: var(--font-display);

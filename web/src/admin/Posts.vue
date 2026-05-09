@@ -242,7 +242,7 @@ onMounted(() => {
   font-size: 11px;
   font-weight: 600;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   display: inline-block;
 }
 .status-published { background: var(--success-soft); color: var(--success); }
@@ -251,7 +251,7 @@ onMounted(() => {
 .tag-pill {
   font-size: 11px;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: var(--tag-bg);
   color: var(--tag-fg);
   margin-right: 4px;
@@ -259,7 +259,7 @@ onMounted(() => {
 .action-btn {
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--fg);

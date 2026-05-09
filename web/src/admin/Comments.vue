@@ -142,7 +142,7 @@ onMounted(fetchComments)
   gap: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   padding: 16px 20px;
 }
 .comment-avatar {

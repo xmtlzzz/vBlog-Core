@@ -58,8 +58,10 @@
         </el-table-column>
         <el-table-column label="操作 Actions" width="140" fixed="right">
           <template #default="{ row }">
-            <button class="action-btn" @click="viewPost(row)">查看 View</button>
-            <button class="action-btn" @click="$router.push('/admin/posts')">编辑</button>
+            <div class="action-btn-group">
+              <button class="action-btn" @click="viewPost(row)">查看 View</button>
+              <button class="action-btn" @click="$router.push('/admin/posts')">编辑</button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -197,6 +199,11 @@ onMounted(async () => {
   color: var(--tag-fg);
   margin-right: 4px;
 }
+.action-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .action-btn {
   font-size: 12px;
   padding: 4px 10px;
@@ -205,7 +212,7 @@ onMounted(async () => {
   background: var(--surface);
   color: var(--fg);
   cursor: pointer;
-  margin-right: 4px;
+  white-space: nowrap;
   transition: all 0.15s ease;
 }
 .action-btn:hover {

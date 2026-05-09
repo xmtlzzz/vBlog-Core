@@ -37,9 +37,11 @@
       </el-table-column>
       <el-table-column label="操作 Actions" width="160" fixed="right">
         <template #default="{ row }">
-          <button class="action-btn" @click="viewPost(row)">查看 View</button>
-          <el-button size="small" text type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button size="small" text type="danger" @click="deletePost(row.id)">删除</el-button>
+          <div class="action-btn-group">
+            <button class="action-btn" @click="viewPost(row)">查看 View</button>
+            <el-button size="small" text type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button size="small" text type="danger" @click="deletePost(row.id)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -258,6 +260,11 @@ onMounted(() => {
   color: var(--tag-fg);
   margin-right: 4px;
 }
+.action-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .action-btn {
   font-size: 12px;
   padding: 4px 10px;
@@ -266,7 +273,7 @@ onMounted(() => {
   background: var(--surface);
   color: var(--fg);
   cursor: pointer;
-  margin-right: 4px;
+  white-space: nowrap;
 }
 .action-btn:hover {
   border-color: var(--accent);

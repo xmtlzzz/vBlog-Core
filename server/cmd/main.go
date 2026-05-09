@@ -39,7 +39,7 @@ func main() {
 	jwtFilter := middleware.JWTFilter(cfg.JWT.Secret)
 
 	// All API routes in one WebService
-	ws := new(restful.WebService).Path("/")
+	ws := new(restful.WebService).Path("/").Produces(restful.MIME_JSON)
 	// Public routes
 	(&api.PostResource{Service: postSvc}).Register(ws)
 	(&api.TagResource{Service: tagSvc}).Register(ws)

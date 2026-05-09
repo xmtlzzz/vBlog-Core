@@ -1,6 +1,15 @@
 <template>
   <BlogNav />
-  <article class="article fade-in" v-if="post">
+  <div class="post-layout fade-in" v-if="post">
+    <nav class="toc" v-if="tocItems.length">
+      <div class="toc-title">目录 Contents</div>
+      <a v-for="item in tocItems" :key="item.id" :href="'#' + item.id"
+         class="toc-link" :class="{ active: activeToc === item.id }">
+        {{ item.text }}
+      </a>
+    </nav>
+
+    <article class="article">
     <router-link to="/" class="back-link">← 返回首页</router-link>
 
     <header class="article-header">
@@ -18,10 +27,6 @@
       <p class="article-deck" v-if="post.excerpt">{{ post.excerpt }}</p>
     </header>
 
-    <div class="article-hero fade-in">
-      <div class="article-hero-placeholder">📝</div>
-    </div>
-
     <div class="article-author">
       <div class="author-avatar">{{ post.author?.[0] || 'V' }}</div>
       <div>
@@ -29,14 +34,6 @@
         <div class="author-role">全栈工程师 / 极客博主</div>
       </div>
     </div>
-
-    <nav class="toc" v-if="tocItems.length">
-      <div class="toc-title">目录 Contents</div>
-      <a v-for="item in tocItems" :key="item.id" :href="'#' + item.id"
-         class="toc-link" :class="{ active: activeToc === item.id }">
-        {{ item.text }}
-      </a>
-    </nav>
 
     <div class="article-body" v-html="renderedContent"></div>
 
@@ -60,7 +57,8 @@
         <div class="post-nav-title">{{ nextPost.title }}</div>
       </router-link>
     </nav>
-  </article>
+    </article>
+  </div>
 
   <article class="article not-found" v-else-if="loaded">
     <h2>文章不存在</h2>
@@ -176,11 +174,18 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.article {
-  max-width: 720px;
+.post-layout {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 64px 24px 80px;
-  position: relative;
+}
+.article {
+  max-width: 720px;
+  min-width: 0;
+  flex: 1;
 }
 .back-link {
   display: inline-flex;
@@ -234,19 +239,6 @@ onMounted(async () => {
   color: var(--muted);
   line-height: 1.6;
 }
-.article-hero {
-  margin: 24px 0;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  aspect-ratio: 16/9;
-  background: linear-gradient(135deg, var(--accent-soft), var(--tag-bg));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.article-hero-placeholder {
-  font-size: 48px;
-}
 .article-author {
   display: flex;
   align-items: center;
@@ -278,30 +270,38 @@ onMounted(async () => {
 }
 .toc {
   display: none;
-  position: fixed;
+  width: 200px;
+  flex-shrink: 0;
+  position: sticky;
   top: 80px;
-  right: calc((100vw - 720px) / 2 - 220px);
-  width: 180px;
+  align-self: flex-start;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 .toc-title {
   font-size: 13px;
   font-weight: 600;
   color: var(--fg);
   margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
 }
 .toc-link {
   display: block;
   font-size: 13px;
   color: var(--muted);
   text-decoration: none;
-  padding: 4px 0;
-  transition: color 0.15s;
+  padding: 6px 0 6px 12px;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+  line-height: 1.4;
 }
 .toc-link:hover,
 .toc-link.active {
   color: var(--accent);
+  border-left-color: var(--accent);
 }
-@media (min-width: 1200px) {
+@media (min-width: 1100px) {
   .toc {
     display: block;
   }
@@ -447,7 +447,7 @@ onMounted(async () => {
 }
 
 @media (max-width: 640px) {
-  .article {
+  .post-layout {
     padding: 40px 16px 48px;
   }
   .post-nav {

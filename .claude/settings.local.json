@@ -26,7 +26,16 @@
       "Bash(kill %1)",
       "Bash(npx vue-tsc *)",
       "Bash(npx vite *)",
-      "Bash(docker compose *)"
+      "Bash(docker compose *)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s http://localhost:8080/api/tags)",
+      "Bash(curl -s \"http://localhost:8080/api/posts?page=1&per_page=5\")",
+      "Bash(curl -s http://localhost:8080/api/dashboard/stats)",
+      "Bash(curl -s -o /tmp/login_response.txt -w \"%{http_code}\" -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"wrong\"}')",
+      "Read(//tmp/**)",
+      "Bash(tasklist //FI \"PID eq 30536\")",
+      "Bash(wmic process *)",
+      "Bash(curl *)"
     ]
   }
 }

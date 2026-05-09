@@ -173,7 +173,8 @@ onMounted(fetchSettings)
 
 <style scoped>
 .settings-page {
-  max-width: 800px;
+  width: 100%;
+  max-width: 960px;
 }
 .page-header {
   display: flex;

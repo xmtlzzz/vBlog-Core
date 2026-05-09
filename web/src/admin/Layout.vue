@@ -38,6 +38,7 @@
             <div class="user-name">Admin</div>
             <div class="user-role">超级管理员</div>
           </div>
+          <button class="logout-btn" @click="handleLogout" title="退出登录">⏻</button>
         </div>
       </div>
     </aside>
@@ -66,12 +67,20 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
+import { useAuthStore } from '../stores/auth'
 
 const themeStore = useThemeStore()
+const authStore = useAuthStore()
 const route = useRoute()
+const router = useRouter()
 const sidebarOpen = ref(false)
+
+function handleLogout() {
+  authStore.logout()
+  router.push('/admin/login')
+}
 
 const pageMap = {
   '/admin': '仪表盘 Dashboard',
@@ -204,6 +213,21 @@ const currentPage = computed(() => pageMap[route.path] || '仪表盘')
 .user-role {
   font-size: 11px;
   color: var(--muted);
+}
+.logout-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.logout-btn:hover {
+  color: var(--error);
+  background: var(--error-soft);
 }
 .main-area {
   flex: 1;

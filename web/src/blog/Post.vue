@@ -57,6 +57,8 @@
         <div class="post-nav-title">{{ nextPost.title }}</div>
       </router-link>
     </nav>
+
+    <CommentSection :post-id="route.params.id" />
     </article>
   </div>
 
@@ -75,6 +77,7 @@ import { useRoute } from 'vue-router'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
+import CommentSection from '../shared/CommentSection.vue'
 
 const route = useRoute()
 const post = ref(null)

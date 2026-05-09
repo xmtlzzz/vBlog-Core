@@ -37,6 +37,14 @@ func (c *CommentResource) Register(ws *restful.WebService) {
 	ws.Route(ws.DELETE("/api/comments/{id}").To(c.delete).
 		Doc("delete a comment").
 		Param(ws.PathParameter("id", "comment ID")))
+
+	// Public endpoints (no auth)
+	ws.Route(ws.GET("/api/posts/{postId}/comments").To(c.listByPost).
+		Doc("list approved comments for a post").
+		Param(ws.PathParameter("postId", "post ID")))
+	ws.Route(ws.POST("/api/posts/{postId}/comments").To(c.createPublic).
+		Doc("submit a comment on a post").
+		Param(ws.PathParameter("postId", "post ID")))
 }
 
 func (c *CommentResource) list(req *restful.Request, resp *restful.Response) {
@@ -114,4 +122,28 @@ func (c *CommentResource) delete(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	resp.WriteHeader(http.StatusOK)
+}
+
+func (c *CommentResource) listByPost(req *restful.Request, resp *restful.Response) {
+	postId, _ := strconv.ParseUint(req.PathParameter("postId"), 10, 32)
+	var comments []model.Comment
+	c.Service.DB.Where("post_id = ? AND status = ?", postId, "approved").
+		Order("created_at DESC").Find(&comments)
+	resp.WriteEntity(map[string]interface{}{"data": comments})
+}
+
+func (c *CommentResource) createPublic(req *restful.Request, resp *restful.Response) {
+	postId, _ := strconv.ParseUint(req.PathParameter("postId"), 10, 32)
+	var comment model.Comment
+	if err := req.ReadEntity(&comment); err != nil {
+		resp.WriteError(http.StatusBadRequest, err)
+		return
+	}
+	comment.PostID = uint(postId)
+	comment.Status = "pending"
+	if err := c.Service.Create(&comment); err != nil {
+		resp.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	resp.WriteHeaderAndEntity(http.StatusCreated, map[string]string{"message": "评论已提交，等待审核"})
 }

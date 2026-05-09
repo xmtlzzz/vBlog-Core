@@ -46,11 +46,10 @@
       <header class="topbar">
         <div class="topbar-left">
           <button class="menu-toggle" @click="sidebarOpen = !sidebarOpen">☰</button>
-          <router-link to="/" class="view-blog-link">← 查看博客 View Blog</router-link>
-          <span class="breadcrumb-sep">/</span>
           <span class="breadcrumb-current">{{ currentPage }}</span>
         </div>
         <div class="topbar-right">
+          <router-link to="/" class="view-blog-link">← 查看博客 View Blog</router-link>
           <button class="theme-toggle" @click="themeStore.toggle()">
             {{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}
           </button>

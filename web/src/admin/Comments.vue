@@ -203,15 +203,15 @@ onMounted(fetchComments)
   font-weight: 500;
 }
 .status-badge.pending {
-  background: rgba(245, 158, 11, 0.1);
+  background: var(--warning-soft);
   color: var(--warning);
 }
 .status-badge.approved {
-  background: rgba(22, 163, 74, 0.1);
+  background: var(--success-soft);
   color: var(--success);
 }
 .status-badge.spam {
-  background: rgba(220, 38, 38, 0.1);
+  background: var(--error-soft);
   color: var(--error);
 }
 .pagination-wrap {

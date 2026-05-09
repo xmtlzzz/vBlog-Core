@@ -253,11 +253,11 @@ onMounted(fetchComponents)
   font-weight: 500;
 }
 .status-badge.active {
-  background: rgba(22, 163, 74, 0.1);
+  background: var(--success-soft);
   color: var(--success);
 }
 .status-badge.inactive {
-  background: rgba(115, 115, 115, 0.1);
+  background: var(--card-hover);
   color: var(--muted);
 }
 .empty-state {

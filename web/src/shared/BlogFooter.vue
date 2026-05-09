@@ -2,12 +2,24 @@
   <footer class="blog-footer">
     <span>© 2026 vBlog Core · 用代码写作，用文字思考</span>
     <div class="footer-links">
-      <a href="#">GitHub</a>
+      <a v-if="settings.author_github" :href="settings.author_github" target="_blank">GitHub</a>
       <a href="/api/rss" target="_blank">RSS</a>
-      <a href="#">gRPC API</a>
     </div>
   </footer>
 </template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import api from '../api/request'
+
+const settings = ref({})
+
+onMounted(async () => {
+  try {
+    settings.value = await api.get('/settings')
+  } catch {}
+})
+</script>
 
 <style scoped>
 .blog-footer {

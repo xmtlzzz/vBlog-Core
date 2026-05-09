@@ -36,7 +36,7 @@ type RSSItem struct {
 }
 
 func (r *RSSResource) Register(ws *restful.WebService) {
-	ws.Route(ws.GET("/api/rss").To(r.feed).Produces("application/xml"))
+	ws.Route(ws.GET("/api/rss").To(r.feed))
 }
 
 func (r *RSSResource) feed(req *restful.Request, resp *restful.Response) {

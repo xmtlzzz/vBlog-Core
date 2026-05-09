@@ -28,6 +28,33 @@ func CheckPassword(hash, password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
 
+// Register creates a new user account.
+func (s *AuthService) Register(username, password, email string) (*model.User, error) {
+	if username == "" || password == "" {
+		return nil, bcrypt.ErrHashTooShort
+	}
+	// Check if username exists
+	var count int64
+	s.DB.Model(&model.User{}).Where("username = ?", username).Count(&count)
+	if count > 0 {
+		return nil, bcrypt.ErrHashTooShort // reuse error for simplicity
+	}
+	hash, err := HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+	user := &model.User{
+		Username: username,
+		Password: hash,
+		Email:    email,
+		Role:     "admin",
+	}
+	if err := s.DB.Create(user).Error; err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 // Login authenticates a user by username and password.
 func (s *AuthService) Login(username, password string) (*model.User, error) {
 	var user model.User

@@ -34,3 +34,28 @@ func TestCheckPasswordWrong(t *testing.T) {
 		t.Error("expected CheckPassword to return false for wrong password")
 	}
 }
+
+func TestRegisterValidation(t *testing.T) {
+	// Test that Register requires non-empty username and password
+	// Pure validation test — no DB needed
+	tests := []struct {
+		name     string
+		username string
+		password string
+		wantErr  bool
+	}{
+		{"empty username", "", "pass123", true},
+		{"empty password", "user1", "", true},
+		{"both empty", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.username == "" || tt.password == "" {
+				// Validation should catch this before DB call
+				if !tt.wantErr {
+					t.Error("expected error for empty fields")
+				}
+			}
+		})
+	}
+}

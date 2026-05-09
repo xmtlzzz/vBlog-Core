@@ -6,10 +6,41 @@
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --nav-bg: rgba(250, 250, 250, 0.85);
+  --card-hover: #f5f5f5;
+  --tag-bg: #f0f0f0;
+  --tag-fg: #525252;
+  --code-bg: #f5f5f5;
+  --code-border: #e5e5e5;
+  --blockquote-border: #d4d4d4;
+  --sidebar-bg: #f5f5f5;
+  --success-soft: #f0fdf4;
+  --warning-soft: #fffbeb;
+  --error-soft: #fef2f2;
 }
 [data-theme="dark"] {
   --bg: #0a0a0a; --surface: #141414; --fg: #ededed; --muted: #a3a3a3;
   --border: #262626; --accent: #3b82f6; --accent-soft: #172554;
   --success: #22c55e; --warning: #eab308; --error: #ef4444;
+  --nav-bg: rgba(10, 10, 10, 0.85);
+  --card-hover: #1a1a1a;
+  --tag-bg: #1f1f1f;
+  --tag-fg: #a3a3a3;
+  --code-bg: #1a1a1a;
+  --code-border: #2a2a2a;
+  --blockquote-border: #3a3a3a;
+  --sidebar-bg: #111111;
+  --success-soft: #052e16;
+  --warning-soft: #422006;
+  --error-soft: #450a0a;
 }
-body { background: var(--bg); color: var(--fg); font-family: var(--font-sans); transition: background 0.3s, color 0.3s; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s; }
+
+.fade-in {
+  animation: fadeIn 0.4s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

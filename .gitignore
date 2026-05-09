@@ -1,0 +1,7 @@
+server/vblog
+server/tmp/
+server/static/
+web/node_modules/
+web/dist/
+*.exe
+.env

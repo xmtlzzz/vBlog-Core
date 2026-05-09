@@ -65,19 +65,62 @@ func (s *PostService) GetByID(id uint) (*model.Post, error) {
 	return &post, err
 }
 
+// resolveTags looks up existing tags by name and creates missing ones.
+func (s *PostService) resolveTags(tags []model.Tag) ([]model.Tag, error) {
+	resolved := make([]model.Tag, 0, len(tags))
+	for _, t := range tags {
+		if t.Name == "" {
+			continue
+		}
+		var existing model.Tag
+		err := s.DB.Where("name = ?", t.Name).First(&existing).Error
+		if err == gorm.ErrRecordNotFound {
+			if err := s.DB.Create(&t).Error; err != nil {
+				return nil, err
+			}
+			resolved = append(resolved, t)
+		} else if err != nil {
+			return nil, err
+		} else {
+			resolved = append(resolved, existing)
+		}
+	}
+	return resolved, nil
+}
+
 // Create creates a new post, auto-calculating read time and excerpt.
 func (s *PostService) Create(post *model.Post) error {
 	post.ReadTime = CalcReadTime(post.Content)
 	if post.Excerpt == "" {
 		post.Excerpt = BuildExcerpt(post.Content, 200)
 	}
+	if len(post.Tags) > 0 {
+		resolved, err := s.resolveTags(post.Tags)
+		if err != nil {
+			return err
+		}
+		post.Tags = resolved
+	}
 	return s.DB.Create(post).Error
 }
 
-// Update updates an existing post, recalculating read time.
+// Update updates an existing post, recalculating read time and syncing tags.
 func (s *PostService) Update(post *model.Post) error {
 	post.ReadTime = CalcReadTime(post.Content)
-	return s.DB.Save(post).Error
+	// Save tags separately to control join table sync.
+	tags := post.Tags
+	post.Tags = nil
+	if err := s.DB.Save(post).Error; err != nil {
+		return err
+	}
+	if len(tags) > 0 {
+		resolved, err := s.resolveTags(tags)
+		if err != nil {
+			return err
+		}
+		return s.DB.Model(post).Association("Tags").Replace(resolved)
+	}
+	return nil
 }
 
 // Delete soft-deletes a post by ID.

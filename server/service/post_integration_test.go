@@ -103,6 +103,74 @@ func TestPostService_Update(t *testing.T) {
 	db.Unscoped().Delete(post)
 }
 
+func TestPostService_CreateWithTags(t *testing.T) {
+	db := testutil.GetTestDB(t)
+	svc := NewPostService(db)
+
+	post := &model.Post{
+		Title:   "Tags Test Post",
+		Content: "Content with tags.",
+		Status:  "published",
+		Tags: []model.Tag{
+			{Name: "Go"},
+			{Name: "React"},
+		},
+	}
+
+	err := svc.Create(post)
+	if err != nil {
+		t.Fatalf("Create with tags failed: %v", err)
+	}
+	if post.ID == 0 {
+		t.Fatal("expected post ID to be set")
+	}
+	if len(post.Tags) != 2 {
+		t.Fatalf("expected 2 tags, got %d", len(post.Tags))
+	}
+
+	// Verify tags are persisted
+	found, err := svc.GetByID(post.ID)
+	if err != nil {
+		t.Fatalf("GetByID failed: %v", err)
+	}
+	if len(found.Tags) != 2 {
+		t.Fatalf("expected 2 preloaded tags, got %d", len(found.Tags))
+	}
+
+	// Cleanup
+	db.Model(post).Association("Tags").Clear()
+	db.Unscoped().Delete(post)
+	db.Where("name IN ?", []string{"Go", "React"}).Delete(&model.Tag{})
+}
+
+func TestPostService_UpdateWithTags(t *testing.T) {
+	db := testutil.GetTestDB(t)
+	svc := NewPostService(db)
+
+	post := &model.Post{Title: "Update Tags Test", Content: "Content", Status: "draft"}
+	svc.Create(post)
+
+	post.Title = "Updated"
+	post.Tags = []model.Tag{{Name: "NewTag"}}
+	err := svc.Update(post)
+	if err != nil {
+		t.Fatalf("Update with tags failed: %v", err)
+	}
+
+	found, _ := svc.GetByID(post.ID)
+	if found.Title != "Updated" {
+		t.Errorf("expected title 'Updated', got '%s'", found.Title)
+	}
+	if len(found.Tags) != 1 || found.Tags[0].Name != "NewTag" {
+		t.Errorf("expected tag 'NewTag', got %v", found.Tags)
+	}
+
+	// Cleanup
+	db.Model(post).Association("Tags").Clear()
+	db.Unscoped().Delete(post)
+	db.Where("name = ?", "NewTag").Delete(&model.Tag{})
+}
+
 func TestPostService_Delete(t *testing.T) {
 	db := testutil.GetTestDB(t)
 	svc := NewPostService(db)

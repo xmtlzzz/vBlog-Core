@@ -26,12 +26,13 @@ func CalcReadTime(content string) int {
 	return minutes
 }
 
-// BuildExcerpt truncates content to maxLen with "..." suffix.
+// BuildExcerpt truncates content to maxLen runes with "..." suffix.
 func BuildExcerpt(content string, maxLen int) string {
-	if len(content) <= maxLen {
+	runes := []rune(content)
+	if len(runes) <= maxLen {
 		return content
 	}
-	return content[:maxLen] + "..."
+	return string(runes[:maxLen]) + "..."
 }
 
 // List returns paginated posts with optional filters.
@@ -58,11 +59,16 @@ func (s *PostService) List(page, perPage int, tag, status, search string) ([]mod
 	return posts, total, err
 }
 
-// GetByID returns a single post by ID with tags preloaded.
+// GetByID returns a single post by ID with tags preloaded and increments view count.
 func (s *PostService) GetByID(id uint) (*model.Post, error) {
 	var post model.Post
 	err := s.DB.Preload("Tags").First(&post, id).Error
-	return &post, err
+	if err != nil {
+		return nil, err
+	}
+	s.DB.Model(&post).UpdateColumn("views", gorm.Expr("views + 1"))
+	post.Views++
+	return &post, nil
 }
 
 // resolveTags looks up existing tags by name and creates missing ones.

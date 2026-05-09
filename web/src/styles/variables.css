@@ -143,6 +143,11 @@ body {
   to { opacity: 0; transform: translateX(100%); }
 }
 
+/* ── Table header nowrap ── */
+.el-table th .cell {
+  white-space: nowrap;
+}
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

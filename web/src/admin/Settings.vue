@@ -87,10 +87,18 @@
     </div>
 
   </div>
+
+  <Transition name="fade">
+    <button v-show="showTop" class="back-to-top" @click="scrollToTop" title="回到顶部">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 15l-6-6-6 6"/>
+      </svg>
+    </button>
+  </Transition>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
 
@@ -143,7 +151,15 @@ async function resetSettings() {
   } catch {}
 }
 
-onMounted(fetchSettings)
+const showTop = ref(false)
+function onScroll() { showTop.value = window.scrollY > 400 }
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }) }
+
+onMounted(() => {
+  fetchSettings()
+  window.addEventListener('scroll', onScroll, { passive: true })
+})
+onUnmounted(() => window.removeEventListener('scroll', onScroll))
 </script>
 
 <style scoped>
@@ -211,6 +227,32 @@ onMounted(fetchSettings)
   color: var(--muted);
   margin-top: 2px;
 }
+
+.back-to-top {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: all 0.2s ease;
+  z-index: 50;
+}
+.back-to-top:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
 @media (max-width: 640px) {
   .form-grid {

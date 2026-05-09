@@ -69,10 +69,19 @@
   </article>
 
   <BlogFooter />
+
+  <!-- Back to top -->
+  <Transition name="fade">
+    <button v-show="showTop" class="back-to-top" @click="scrollToTop" title="回到顶部">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 15l-6-6-6 6"/>
+      </svg>
+    </button>
+  </Transition>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
@@ -87,6 +96,14 @@ const tocItems = ref([])
 const activeToc = ref('')
 const prevPost = ref(null)
 const nextPost = ref(null)
+const showTop = ref(false)
+
+function onScroll() {
+  showTop.value = window.scrollY > 400
+}
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 function markdownToHtml(md) {
   if (!md) return ''
@@ -157,6 +174,7 @@ const renderedContent = computed(() => {
 })
 
 onMounted(async () => {
+  window.addEventListener('scroll', onScroll, { passive: true })
   try {
     const res = await api.get(`/posts/${route.params.id}`)
     post.value = res
@@ -168,6 +186,10 @@ onMounted(async () => {
   } finally {
     loaded.value = true
   }
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
 })
 </script>
 
@@ -319,6 +341,7 @@ onMounted(async () => {
   margin-bottom: 16px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
+  scroll-margin-top: 72px;
 }
 .article-body :deep(h3) {
   font-family: var(--font-display);
@@ -328,6 +351,7 @@ onMounted(async () => {
   color: var(--fg);
   margin-top: 32px;
   margin-bottom: 12px;
+  scroll-margin-top: 72px;
 }
 .article-body :deep(p) {
   margin-bottom: 16px;
@@ -442,6 +466,40 @@ onMounted(async () => {
 .not-found p {
   color: var(--muted);
   margin-bottom: 24px;
+}
+
+/* Back to top button */
+.back-to-top {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: all 0.2s ease;
+  z-index: 50;
+}
+.back-to-top:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 640px) {

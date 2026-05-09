@@ -9,6 +9,32 @@ import (
 	"vblog-core/service"
 )
 
+// postResp wraps a Post with formatted dates for JSON.
+type postResp struct {
+	ID        uint         `json:"id"`
+	Title     string       `json:"title"`
+	Content   string       `json:"content"`
+	Excerpt   string       `json:"excerpt"`
+	Status    string       `json:"status"`
+	Pinned    bool         `json:"pinned"`
+	Views     int          `json:"views"`
+	ReadTime  int          `json:"read_time"`
+	AuthorID  uint         `json:"author_id"`
+	Tags      []model.Tag  `json:"tags"`
+	CreatedAt string       `json:"created_at"`
+	UpdatedAt string       `json:"updated_at"`
+}
+
+func newPostResp(p *model.Post) postResp {
+	return postResp{
+		ID: p.ID, Title: p.Title, Content: p.Content, Excerpt: p.Excerpt,
+		Status: p.Status, Pinned: p.Pinned, Views: p.Views, ReadTime: p.ReadTime,
+		AuthorID: p.AuthorID, Tags: p.Tags,
+		CreatedAt: model.FormatDate(p.CreatedAt),
+		UpdatedAt: model.FormatDateTime(p.UpdatedAt),
+	}
+}
+
 // PostResource handles blog post REST endpoints.
 type PostResource struct {
 	Service *service.PostService
@@ -59,8 +85,13 @@ func (p *PostResource) list(req *restful.Request, resp *restful.Response) {
 		return
 	}
 
+	list := make([]postResp, len(posts))
+	for i := range posts {
+		list[i] = newPostResp(&posts[i])
+	}
+
 	resp.WriteEntity(map[string]interface{}{
-		"data":  posts,
+		"data":  list,
 		"total": total,
 		"page":  page,
 	})
@@ -77,7 +108,7 @@ func (p *PostResource) get(req *restful.Request, resp *restful.Response) {
 		resp.WriteError(http.StatusNotFound, err)
 		return
 	}
-	resp.WriteEntity(post)
+	resp.WriteEntity(newPostResp(post))
 }
 
 func (p *PostResource) create(req *restful.Request, resp *restful.Response) {

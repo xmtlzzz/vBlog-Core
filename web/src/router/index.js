@@ -15,6 +15,8 @@ const routes = [
     children: [
       { path: '', component: () => import('../admin/Dashboard.vue') },
       { path: 'posts', component: () => import('../admin/Posts.vue') },
+      { path: 'posts/new', component: () => import('../admin/EditPost.vue'), meta: { breadcrumb: '新建文章' } },
+      { path: 'posts/:id/edit', component: () => import('../admin/EditPost.vue'), meta: { breadcrumb: '编辑文章' } },
       { path: 'tags', component: () => import('../admin/Tags.vue') },
       { path: 'comments', component: () => import('../admin/Comments.vue') },
       { path: 'custom', component: () => import('../admin/Custom.vue') },

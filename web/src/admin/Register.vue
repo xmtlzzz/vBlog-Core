@@ -51,8 +51,8 @@ async function handleRegister() {
     } else {
       ElMessage.error('注册失败：未收到令牌')
     }
-  } catch (err) {
-    ElMessage.error(err.response?.data?.error || '注册失败')
+  } catch {
+    // error already handled by interceptor
   } finally {
     loading.value = false
   }

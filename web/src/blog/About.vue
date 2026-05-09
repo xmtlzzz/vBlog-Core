@@ -1,5 +1,6 @@
 <template>
   <BlogNav />
+  <div class="page-enter">
   <div class="about-container">
     <div class="about-hero">
       <div class="about-avatar">{{ initial }}</div>
@@ -38,6 +39,7 @@
         </li>
       </ul>
     </section>
+  </div>
   </div>
   <BlogFooter />
 </template>

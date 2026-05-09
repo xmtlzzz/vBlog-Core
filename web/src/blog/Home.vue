@@ -1,5 +1,6 @@
 <template>
   <BlogNav />
+  <div class="page-enter">
   <!-- Hero -->
   <header class="hero fade-in">
     <h1>写代码的人，<br/>也写点别的。</h1>
@@ -49,6 +50,7 @@
     />
   </section>
 
+  </div>
   <BlogFooter />
 </template>
 

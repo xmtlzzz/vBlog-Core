@@ -1,5 +1,6 @@
 <template>
   <BlogNav />
+  <div class="page-enter">
   <header class="page-header">
     <h1>归档 Archives</h1>
     <p>按时间线浏览所有文章。</p>
@@ -44,6 +45,7 @@
     </div>
   </main>
 
+  </div>
   <BlogFooter />
 </template>
 

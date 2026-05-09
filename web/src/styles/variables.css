@@ -54,6 +54,15 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Page enter (blog page transition) ── */
+.page-enter {
+  animation: pageEnter 0.3s ease both;
+}
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ── Stagger children (use with fade-in) ── */
 .stagger > *:nth-child(1) { animation-delay: 0ms; }
 .stagger > *:nth-child(2) { animation-delay: 50ms; }

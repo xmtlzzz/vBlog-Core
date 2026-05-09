@@ -2,7 +2,10 @@ module vblog-core
 
 go 1.26.1
 
-require github.com/emicklei/go-restful/v3 v3.13.0
+require (
+	github.com/emicklei/go-restful/v3 v3.13.0
+	gorm.io/gorm v1.31.1
+)
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -15,5 +18,4 @@ require (
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	gorm.io/driver/postgres v1.6.0 // indirect
-	gorm.io/gorm v1.31.1 // indirect
 )

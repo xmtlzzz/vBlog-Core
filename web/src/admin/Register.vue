@@ -2,20 +2,23 @@
   <div class="login-page">
     <div class="login-card">
       <h1 class="login-title">vBlog Admin</h1>
-      <p class="login-subtitle">登录管理后台</p>
-      <el-form @submit.prevent="handleLogin">
+      <p class="login-subtitle">注册新账号</p>
+      <el-form @submit.prevent="handleRegister">
         <el-form-item>
-          <el-input v-model="form.username" placeholder="用户名" size="large" @keyup.enter="handleLogin" />
+          <el-input v-model="form.username" placeholder="用户名" size="large" />
         </el-form-item>
         <el-form-item>
-          <el-input v-model="form.password" type="password" placeholder="密码" size="large" show-password @keyup.enter="handleLogin" />
+          <el-input v-model="form.email" placeholder="邮箱（可选）" size="large" />
         </el-form-item>
-        <el-button type="primary" size="large" :loading="loading" style="width: 100%" @click="handleLogin">
-          登录
+        <el-form-item>
+          <el-input v-model="form.password" type="password" placeholder="密码" size="large" show-password @keyup.enter="handleRegister" />
+        </el-form-item>
+        <el-button type="primary" size="large" :loading="loading" style="width: 100%" @click="handleRegister">
+          注册
         </el-button>
       </el-form>
       <div class="login-footer">
-        <router-link to="/admin/register">没有账号？去注册</router-link>
+        <router-link to="/admin/login">已有账号？去登录</router-link>
       </div>
     </div>
   </div>
@@ -31,25 +34,25 @@ import api from '../api/request'
 const router = useRouter()
 const authStore = useAuthStore()
 const loading = ref(false)
-const form = reactive({ username: '', password: '' })
+const form = reactive({ username: '', password: '', email: '' })
 
-async function handleLogin() {
+async function handleRegister() {
   if (!form.username || !form.password) {
     ElMessage.warning('请输入用户名和密码')
     return
   }
   loading.value = true
   try {
-    const res = await api.post('/auth/login', { username: form.username, password: form.password })
+    const res = await api.post('/auth/register', { username: form.username, password: form.password, email: form.email })
     if (res.access_token) {
       authStore.setToken(res.access_token)
-      ElMessage.success('登录成功')
+      ElMessage.success('注册成功')
       await router.push('/admin')
     } else {
-      ElMessage.error('登录失败：未收到令牌')
+      ElMessage.error('注册失败：未收到令牌')
     }
   } catch (err) {
-    ElMessage.error(err.response?.data?.error || '登录失败')
+    ElMessage.error(err.response?.data?.error || '注册失败')
   } finally {
     loading.value = false
   }

@@ -7,6 +7,7 @@ const routes = [
   { path: '/tags', component: () => import('../blog/Tags.vue') },
   { path: '/about', component: () => import('../blog/About.vue') },
   { path: '/admin/login', component: () => import('../admin/Login.vue') },
+  { path: '/admin/register', component: () => import('../admin/Register.vue') },
   {
     path: '/admin',
     component: () => import('../admin/Layout.vue'),

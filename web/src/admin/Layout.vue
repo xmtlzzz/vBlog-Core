@@ -56,11 +56,7 @@
         </div>
       </header>
       <main class="content">
-        <router-view v-slot="{ Component }">
-          <transition name="page" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
+        <router-view />
       </main>
     </div>
 
@@ -287,17 +283,6 @@ const currentPage = computed(() => pageMap[route.path] || '仪表盘')
   flex: 1;
   padding: 24px;
   overflow-x: hidden;
-}
-/* Page transition — leave instant, enter animated */
-.page-enter-active { animation: pageIn 0.2s ease; }
-.page-leave-active { animation: pageOut 0.08s ease; }
-@keyframes pageIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes pageOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
 }
 .sidebar-overlay {
   display: none;

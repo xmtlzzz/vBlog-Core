@@ -52,10 +52,6 @@ const editingId = ref(null)
 const saving = ref(false)
 const form = reactive({ name: '', description: '' })
 
-function formatDate(d) {
-  if (!d) return '-'
-  return new Date(d).toLocaleDateString('zh-CN')
-}
 
 async function fetchTags() {
   const res = await api.get('/tags').catch(() => ({ data: [] }))

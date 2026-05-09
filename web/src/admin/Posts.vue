@@ -35,12 +35,12 @@
       <el-table-column label="日期 Date" width="120">
         <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
       </el-table-column>
-      <el-table-column label="操作 Actions" width="160" fixed="right">
+      <el-table-column label="操作 Actions" width="200" fixed="right">
         <template #default="{ row }">
           <div class="action-btn-group">
             <button class="action-btn" @click="viewPost(row)">查看 View</button>
-            <el-button size="small" text type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button size="small" text type="danger" @click="deletePost(row.id)">删除</el-button>
+            <button class="action-btn" @click="openEdit(row)">编辑</button>
+            <button class="action-btn action-danger" @click="deletePost(row.id)">删除</button>
           </div>
         </template>
       </el-table-column>
@@ -100,6 +100,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
+import { formatDate } from '../utils/format'
 
 const posts = ref([])
 const allTags = ref([])
@@ -116,11 +117,6 @@ const form = reactive({ title: '', content: '', excerpt: '', status: 'draft', ta
 
 function statusLabel(s) {
   return { published: '已发布', draft: '草稿', archived: '已归档' }[s] || s
-}
-
-function formatDate(d) {
-  if (!d) return '-'
-  return new Date(d).toLocaleDateString('zh-CN')
 }
 
 function viewPost(row) {
@@ -278,5 +274,14 @@ onMounted(() => {
 .action-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+.action-danger {
+  color: var(--error);
+  border-color: var(--error-soft);
+}
+.action-danger:hover {
+  color: var(--error);
+  border-color: var(--error);
+  background: var(--error-soft);
 }
 </style>

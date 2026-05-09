@@ -52,6 +52,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '../api/request'
+import { formatDay } from '../utils/format'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 
@@ -68,14 +69,6 @@ const yearGroups = computed(() => {
     .sort((a, b) => b - a)
     .map(year => ({ year: Number(year), posts: groups[year] }))
 })
-
-function formatDay(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${mm}-${dd}`
-}
 
 onMounted(async () => {
   const res = await api.get('/posts', { params: { per_page: 100, status: 'published' } }).catch(() => ({ data: [] }))

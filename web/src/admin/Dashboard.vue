@@ -73,6 +73,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
+import { formatDate } from '../utils/format'
 
 const stats = ref({ total_posts: 0, total_views: 0, total_comments: 0, total_tags: 0 })
 const posts = ref([])
@@ -91,10 +92,6 @@ function statusLabel(s) {
   return { published: '已发布', draft: '草稿', archived: '已归档' }[s] || s
 }
 
-function formatDate(d) {
-  if (!d) return '-'
-  return new Date(d).toLocaleDateString('zh-CN')
-}
 
 function viewPost(row) {
   window.open(`/post/${row.id}`, '_blank')

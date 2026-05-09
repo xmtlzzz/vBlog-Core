@@ -9,7 +9,7 @@
         <div class="comment-content">
           <div class="comment-header">
             <span class="comment-name">{{ c.author_name }}</span>
-            <span class="comment-time">{{ formatTime(c.created_at) }}</span>
+            <span class="comment-time">{{ formatRelativeTime(c.created_at) }}</span>
           </div>
           <p class="comment-body">{{ c.body }}</p>
         </div>
@@ -38,6 +38,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '../api/request'
+import { formatRelativeTime } from '../utils/format'
 
 const props = defineProps({ postId: [Number, String] })
 
@@ -46,16 +47,6 @@ const comments = ref([])
 const submitting = ref(false)
 const form = ref({ author_name: '', author_email: '', body: '' })
 
-function formatTime(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  const now = new Date()
-  const diff = now - d
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前'
-  if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前'
-  return d.toLocaleDateString('zh-CN')
-}
 
 async function fetchComments() {
   try {

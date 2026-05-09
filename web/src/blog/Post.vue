@@ -75,6 +75,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api/request'
+import { formatDate } from '../utils/format'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CommentSection from '../shared/CommentSection.vue'
@@ -86,12 +87,6 @@ const tocItems = ref([])
 const activeToc = ref('')
 const prevPost = ref(null)
 const nextPost = ref(null)
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
-}
 
 function markdownToHtml(md) {
   if (!md) return ''

@@ -24,15 +24,11 @@
 </template>
 
 <script setup>
+import { formatDate } from '../utils/format'
+
 defineProps({
   post: { type: Object, required: true }
 })
-
-function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
-}
 </script>
 
 <style scoped>

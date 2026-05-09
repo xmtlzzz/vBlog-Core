@@ -54,6 +54,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
+import { formatDate } from '../utils/format'
 
 const comments = ref([])
 const total = ref(0)
@@ -67,10 +68,6 @@ function statusLabel(s) {
   return { pending: '待审核', approved: '已通过', spam: '垃圾' }[s] || s
 }
 
-function formatDate(d) {
-  if (!d) return '-'
-  return new Date(d).toLocaleString('zh-CN')
-}
 
 function debounceFetch() {
   clearTimeout(debounceTimer)

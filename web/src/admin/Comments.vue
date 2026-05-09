@@ -14,8 +14,8 @@
       </el-select>
     </div>
 
-    <div class="comment-list">
-      <div v-for="c in comments" :key="c.id" class="comment-card">
+    <div class="comment-list fade-in stagger">
+      <div v-for="c in comments" :key="c.id" class="comment-card card-hover">
         <div class="comment-avatar">{{ (c.author_name || '?')[0].toUpperCase() }}</div>
         <div class="comment-body">
           <div class="comment-header">

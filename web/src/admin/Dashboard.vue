@@ -1,29 +1,29 @@
 <template>
   <div class="dashboard">
-    <div class="stats-grid">
-      <div class="stat-card">
+    <div class="stats-grid fade-in stagger">
+      <div class="stat-card card-hover">
         <div class="stat-label">◎ 文章总数 Total Posts</div>
         <div class="stat-card-value">{{ stats.total_posts }}</div>
-        <div class="stat-change up">已发布文章</div>
+        <div class="stat-change">已发布文章</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card card-hover">
         <div class="stat-label">≡ 总阅读量 Total Views</div>
         <div class="stat-card-value">{{ stats.total_views.toLocaleString() }}</div>
-        <div class="stat-change up">累计阅读量</div>
+        <div class="stat-change">累计阅读量</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card card-hover">
         <div class="stat-label">❝ 评论数 Comments</div>
         <div class="stat-card-value">{{ stats.total_comments }}</div>
         <div class="stat-change">全部评论</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card card-hover">
         <div class="stat-label">◉ 标签数 Tags</div>
         <div class="stat-card-value">{{ stats.total_tags }}</div>
         <div class="stat-change">标签数量</div>
       </div>
     </div>
 
-    <div class="section">
+    <div class="section slide-up">
       <div class="table-header">
         <span class="table-title">文章管理 Post Management</span>
         <div class="table-actions">
@@ -206,9 +206,13 @@ onMounted(async () => {
   color: var(--fg);
   cursor: pointer;
   margin-right: 4px;
+  transition: all 0.15s ease;
 }
 .action-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+.action-btn:active {
+  transform: scale(0.96);
 }
 </style>

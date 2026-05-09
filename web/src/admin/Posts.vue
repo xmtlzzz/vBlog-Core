@@ -17,6 +17,7 @@
       </el-select>
     </div>
 
+    <div class="slide-up">
     <el-table :data="posts" stripe>
       <el-table-column prop="title" label="标题 Title" min-width="200" show-overflow-tooltip />
       <el-table-column label="标签 Tags" width="180">
@@ -42,6 +43,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <div class="pagination-wrap" v-if="total > perPage">
       <span class="pagination-summary">共 {{ total }} 篇文章 Showing {{ (page - 1) * perPage + 1 }}-{{ Math.min(page * perPage, total) }} of {{ total }}</span>

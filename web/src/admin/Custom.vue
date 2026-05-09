@@ -8,8 +8,8 @@
     <!-- Layout components -->
     <div class="section" v-if="layoutComponents.length">
       <h2 class="section-title">Layout</h2>
-      <div class="comp-grid">
-        <div v-for="comp in layoutComponents" :key="comp.id" class="comp-card">
+      <div class="comp-grid fade-in stagger">
+        <div v-for="comp in layoutComponents" :key="comp.id" class="comp-card card-hover">
           <div class="comp-header">
             <span class="comp-name">{{ comp.name }}</span>
             <span :class="['status-badge', comp.status === 'active' ? 'active' : 'inactive']">
@@ -34,8 +34,8 @@
     <!-- Content components -->
     <div class="section" v-if="contentComponents.length">
       <h2 class="section-title">Content</h2>
-      <div class="comp-grid">
-        <div v-for="comp in contentComponents" :key="comp.id" class="comp-card">
+      <div class="comp-grid fade-in stagger">
+        <div v-for="comp in contentComponents" :key="comp.id" class="comp-card card-hover">
           <div class="comp-header">
             <span class="comp-name">{{ comp.name }}</span>
             <span :class="['status-badge', comp.status === 'active' ? 'active' : 'inactive']">
@@ -60,8 +60,8 @@
     <!-- Custom uploads -->
     <div class="section" v-if="customComponents.length">
       <h2 class="section-title">Custom Uploads</h2>
-      <div class="comp-grid">
-        <div v-for="comp in customComponents" :key="comp.id" class="comp-card">
+      <div class="comp-grid fade-in stagger">
+        <div v-for="comp in customComponents" :key="comp.id" class="comp-card card-hover">
           <div class="comp-header">
             <span class="comp-name">{{ comp.name }}</span>
             <span :class="['status-badge', comp.status === 'active' ? 'active' : 'inactive']">

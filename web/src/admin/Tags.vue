@@ -5,8 +5,8 @@
       <el-button type="primary" @click="openCreate">新标签 New Tag</el-button>
     </div>
 
-    <div class="tag-grid">
-      <div v-for="tag in tags" :key="tag.id" class="tag-card">
+    <div class="tag-grid fade-in stagger">
+      <div v-for="tag in tags" :key="tag.id" class="tag-card card-hover">
         <div class="tag-card-header">
           <span class="tag-name">{{ tag.name }}</span>
           <el-tag size="small" type="info">{{ tag.post_count || 0 }} 篇</el-tag>

@@ -9,7 +9,7 @@
     </div>
 
     <!-- General -->
-    <div class="settings-section">
+    <div class="settings-section slide-up">
       <h2 class="section-title">通用设置</h2>
       <el-form label-position="top">
         <div class="form-grid">
@@ -38,7 +38,7 @@
     </div>
 
     <!-- Author -->
-    <div class="settings-section">
+    <div class="settings-section slide-up" style="animation-delay: 100ms">
       <h2 class="section-title">作者信息</h2>
       <el-form label-position="top">
         <div class="form-grid">
@@ -59,7 +59,7 @@
     </div>
 
     <!-- Features -->
-    <div class="settings-section">
+    <div class="settings-section slide-up" style="animation-delay: 200ms">
       <h2 class="section-title">功能开关</h2>
       <div class="toggle-list">
         <div class="toggle-item">
@@ -87,7 +87,7 @@
     </div>
 
     <!-- Database (read-only) -->
-    <div class="settings-section">
+    <div class="settings-section slide-up" style="animation-delay: 300ms">
       <h2 class="section-title">数据库信息</h2>
       <el-form label-position="top">
         <div class="form-grid">

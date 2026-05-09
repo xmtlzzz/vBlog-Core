@@ -59,7 +59,7 @@ const initial = computed(() => {
 
 const techStack = [
   { name: 'React', icon: '⚛', role: '前端框架' },
-  { name: 'Go', icon: '🔵', role: '后端语言' },
+  { name: 'Go', icon: '🐹', role: '后端语言' },
   { name: 'PostgreSQL', icon: '🐘', role: '数据库' },
   { name: 'Wails', icon: '🖥', role: '桌面客户端' },
   { name: 'gRPC', icon: '📡', role: 'RPC 通信' },

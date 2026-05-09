@@ -7,8 +7,8 @@
       <div class="nav-links">
         <router-link to="/">首页 Home</router-link>
         <router-link to="/archives">归档 Archives</router-link>
-        <router-link to="/about">关于 About</router-link>
         <router-link to="/tags">标签 Tags</router-link>
+        <router-link to="/about">关于 About</router-link>
       </div>
       <div class="nav-right">
         <router-link to="/admin" class="admin-btn">后台 Admin</router-link>

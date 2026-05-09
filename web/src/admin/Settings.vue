@@ -86,31 +86,6 @@
       </div>
     </div>
 
-    <!-- Database (read-only) -->
-    <div class="settings-section slide-up" style="animation-delay: 300ms">
-      <h2 class="section-title">数据库信息</h2>
-      <el-form label-position="top">
-        <div class="form-grid">
-          <el-form-item label="主机">
-            <el-input :model-value="settings.db_host" disabled />
-          </el-form-item>
-          <el-form-item label="端口">
-            <el-input :model-value="settings.db_port" disabled />
-          </el-form-item>
-        </div>
-        <div class="form-grid">
-          <el-form-item label="数据库名">
-            <el-input :model-value="settings.db_name" disabled />
-          </el-form-item>
-          <el-form-item label="用户名">
-            <el-input :model-value="settings.db_user" disabled />
-          </el-form-item>
-        </div>
-        <el-form-item label="密码">
-          <el-input :model-value="settings.db_password" type="password" disabled show-password />
-        </el-form-item>
-      </el-form>
-    </div>
   </div>
 </template>
 

@@ -48,8 +48,8 @@ async function handleLogin() {
     } else {
       ElMessage.error('登录失败：未收到令牌')
     }
-  } catch (err) {
-    ElMessage.error(err.response?.data?.error || '登录失败')
+  } catch {
+    // error already handled by interceptor
   } finally {
     loading.value = false
   }

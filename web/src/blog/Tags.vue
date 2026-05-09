@@ -8,10 +8,6 @@
 
   <section class="tags-cloud">
     <button
-      :class="['tag-chip', { active: !activeTag }]"
-      @click="activeTag = ''; filteredPosts = []"
-    >全部</button>
-    <button
       v-for="tag in tags"
       :key="tag.id || tag.name"
       :class="['tag-chip', { active: activeTag === tag.name }]"

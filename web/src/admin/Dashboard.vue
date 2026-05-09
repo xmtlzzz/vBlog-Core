@@ -52,7 +52,7 @@
             <span :class="['status-badge', 'status-' + row.status]">{{ statusLabel(row.status) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="views" label="阅读 Views" width="80" />
+        <el-table-column prop="views" label="阅读 Views" width="100" />
         <el-table-column label="日期 Date" width="120">
           <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
         </el-table-column>

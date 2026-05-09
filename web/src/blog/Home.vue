@@ -15,19 +15,25 @@
     </div>
   </section>
 
-  <!-- Filter bar -->
-  <section class="filter-bar fade-in" style="animation-delay: 350ms">
-    <button
-      :class="['filter-btn', { active: !activeTag }]"
-      @click="setTag('')"
-    >全部 All</button>
-    <button
-      v-for="tag in tags"
-      :key="tag.id || tag.name"
-      :class="['filter-btn', { active: activeTag === tag.name }]"
-      @click="setTag(tag.name)"
-    >{{ tag.name }}</button>
-  </section>
+  <!-- Search overlay (Ctrl+F) -->
+  <Transition name="search-slide">
+    <section v-if="showSearch" class="search-overlay">
+      <div class="search-box">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input
+          ref="searchInputRef"
+          v-model="searchQuery"
+          class="search-input"
+          placeholder="搜索文章..."
+          @input="debounceSearch"
+          @keyup.escape="closeSearch"
+        />
+        <button v-if="searchQuery" class="search-clear" @click="closeSearch">✕</button>
+      </div>
+    </section>
+  </Transition>
 
   <!-- Post list -->
   <section class="post-list">
@@ -42,7 +48,7 @@
   <!-- Pagination -->
   <section v-if="total > perPage" class="pagination-wrap fade-in">
     <el-pagination
-      layout="prev, pager, next"
+      layout="prev, pager, next, jumper"
       :total="total"
       :page-size="perPage"
       :current-page="page"
@@ -55,19 +61,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import PostCard from '../shared/PostCard.vue'
 
 const stats = ref({ total_posts: 0, total_views: 0, total_tags: 0 })
-const tags = ref([])
 const posts = ref([])
-const activeTag = ref('')
+const searchQuery = ref('')
+const showSearch = ref(false)
+const searchInputRef = ref(null)
 const page = ref(1)
 const perPage = 5
 const total = ref(0)
+let searchTimer = null
 
 const statItems = computed(() => [
   { value: stats.value.total_posts, label: '篇文章 Articles' },
@@ -76,17 +84,37 @@ const statItems = computed(() => [
 ])
 
 async function fetchPosts() {
-  const res = await api.get('/posts', {
-    params: { page: page.value, per_page: perPage, tag: activeTag.value, status: 'published' }
-  })
+  const params = { page: page.value, per_page: perPage, status: 'published' }
+  if (searchQuery.value) params.search = searchQuery.value
+  const res = await api.get('/posts', { params })
   posts.value = res.data || []
   total.value = res.total || 0
 }
 
-function setTag(tag) {
-  activeTag.value = tag
-  page.value = 1
-  fetchPosts()
+function debounceSearch() {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => { page.value = 1; fetchPosts() }, 300)
+}
+
+function openSearch() {
+  showSearch.value = true
+  nextTick(() => searchInputRef.value?.focus())
+}
+
+function closeSearch() {
+  showSearch.value = false
+  if (searchQuery.value) {
+    searchQuery.value = ''
+    page.value = 1
+    fetchPosts()
+  }
+}
+
+function onKeydown(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+    e.preventDefault()
+    openSearch()
+  }
 }
 
 function handlePageChange(p) {
@@ -96,17 +124,18 @@ function handlePageChange(p) {
 }
 
 onMounted(async () => {
-  const [statsRes, tagsRes] = await Promise.all([
-    api.get('/dashboard/stats').catch(() => ({ total_posts: 0, total_views: 0, total_tags: 0 })),
-    api.get('/tags').catch(() => [])
-  ])
+  window.addEventListener('keydown', onKeydown)
+  const statsRes = await api.get('/dashboard/stats').catch(() => ({ total_posts: 0, total_views: 0, total_tags: 0 }))
   stats.value = {
     total_posts: statsRes.total_posts || 0,
     total_views: statsRes.total_views || 0,
     total_tags: statsRes.total_tags || 0
   }
-  tags.value = Array.isArray(tagsRes) ? tagsRes : (tagsRes.data || [])
   await fetchPosts()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
 })
 </script>
 
@@ -155,39 +184,70 @@ onMounted(async () => {
   font-size: 13px;
   color: var(--muted);
 }
-.filter-bar {
+/* Search overlay */
+.search-overlay {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 0 24px 24px;
+  padding: 0 24px 28px;
+}
+.search-box {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.filter-btn {
-  font-size: 13px;
-  padding: 6px 14px;
-  border-radius: 100px;
-  border: 1px solid var(--border);
+  gap: 10px;
+  max-width: 520px;
   background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.search-icon {
+  flex-shrink: 0;
   color: var(--muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--fg);
+  padding: 12px 0;
   font-family: var(--font-sans);
 }
-.filter-btn:hover {
-  border-color: var(--fg);
+.search-input::placeholder {
+  color: var(--muted);
+}
+.search-clear {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: all 0.15s;
+}
+.search-clear:hover {
   color: var(--fg);
-  transform: translateY(-1px);
+  background: var(--border);
 }
-.filter-btn:active {
-  transform: scale(0.96);
+.search-slide-enter-active,
+.search-slide-leave-active {
+  transition: all 0.2s ease;
 }
-.filter-btn.active {
-  background: var(--fg);
-  color: var(--bg);
-  border-color: var(--fg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+.search-slide-enter-from,
+.search-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 /* TransitionGroup for post list */
 .post-list-enter-active {
@@ -228,8 +288,11 @@ onMounted(async () => {
   .stat-value {
     font-size: 20px;
   }
-  .filter-bar {
-    padding: 0 16px 16px;
+  .search-overlay {
+    padding: 0 16px 20px;
+  }
+  .search-box {
+    max-width: 100%;
   }
   .post-list {
     padding: 0 16px 20px;

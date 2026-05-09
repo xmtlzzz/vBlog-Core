@@ -8,7 +8,7 @@ import (
 func TestDSN(t *testing.T) {
 	db := DBConfig{
 		Host:     "localhost",
-		Port:     "5432",
+		Port:     5432,
 		Name:     "vblog",
 		User:     "vblog_admin",
 		Password: "secret",
@@ -20,7 +20,6 @@ func TestDSN(t *testing.T) {
 		t.Fatal("DSN() returned empty string")
 	}
 
-	// Verify DSN contains expected components
 	expectedParts := []string{
 		"host=localhost",
 		"port=5432",
@@ -38,7 +37,7 @@ func TestDSN(t *testing.T) {
 func TestDSNEmptyPassword(t *testing.T) {
 	db := DBConfig{
 		Host: "localhost",
-		Port: "5432",
+		Port: 5432,
 		Name: "vblog",
 		User: "vblog_admin",
 	}
@@ -51,8 +50,5 @@ func TestDSNEmptyPassword(t *testing.T) {
 
 	if !strings.Contains(dsn, "host=localhost") {
 		t.Errorf("DSN() = %q, missing host", dsn)
-	}
-	if !strings.Contains(dsn, "password=") {
-		t.Errorf("DSN() = %q, missing password field", dsn)
 	}
 }

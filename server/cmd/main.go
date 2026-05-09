@@ -47,33 +47,43 @@ func main() {
 	(&api.SettingResource{Service: settingSvc}).Register(ws)
 	(&api.AuthResource{Service: authSvc, Secret: cfg.JWT.Secret}).Register(ws)
 	(&api.RSSResource{DB: db}).Register(ws)
+	// Public stats
+	ws.Route(ws.GET("/api/dashboard/stats").To((&api.DashboardResource{DB: db}).Stats))
 	// Admin routes (JWT protected)
-	ws.Route(ws.GET("/api/dashboard/stats").Filter(jwtFilter).To((&api.DashboardResource{DB: db}).Stats))
 	ws.Route(ws.GET("/api/components").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).List))
 	ws.Route(ws.POST("/api/components").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Create))
 	ws.Route(ws.PUT("/api/components/{id}").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Update))
 	ws.Route(ws.DELETE("/api/components/{id}").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Delete))
 	ws.Route(ws.PATCH("/api/components/{id}/toggle").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Toggle))
+	ws.Route(ws.POST("/api/upload").Filter(jwtFilter).To((&api.UploadResource{Dir: "static/uploads"}).Upload))
 	wsContainer.Add(ws)
 
-	// Serve frontend static files if ./static directory exists (Docker deployment)
+	// Build final handler: static files → go-restful API → SPA fallback
+	handler := http.Handler(wsContainer)
 	if _, err := os.Stat("static"); err == nil {
 		staticDir, _ := filepath.Abs("static")
 		fs := http.FileServer(http.Dir(staticDir))
-		wsContainer.ServeMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			// Try to serve the file directly
+		indexFile := filepath.Join(staticDir, "index.html")
+		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Let API routes go through go-restful
+			if len(r.URL.Path) >= 4 && r.URL.Path[:4] == "/api" {
+				wsContainer.ServeHTTP(w, r)
+				return
+			}
+			// Try to serve static file directly
 			path := filepath.Join(staticDir, r.URL.Path)
 			if _, err := os.Stat(path); err == nil {
 				fs.ServeHTTP(w, r)
 				return
 			}
-			// SPA fallback: serve index.html for all non-file routes
-			http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+			// SPA fallback
+			http.ServeFile(w, r, indexFile)
 		})
 		log.Printf("serving static files from %s", staticDir)
 	}
 
-	log.Printf("vBlog Core starting on :%s", cfg.Server.Port)
-	server := &http.Server{Addr: ":" + cfg.Server.Port, Handler: wsContainer}
+	listenAddr := cfg.Server.Addr + ":" + cfg.Server.Port
+	log.Printf("vBlog Core starting on %s", listenAddr)
+	server := &http.Server{Addr: listenAddr, Handler: handler}
 	log.Fatal(server.ListenAndServe())
 }

@@ -47,7 +47,11 @@
       <header class="topbar">
         <div class="topbar-left">
           <button class="menu-toggle" @click="sidebarOpen = !sidebarOpen">☰</button>
-          <span class="breadcrumb-current">{{ currentPage }}</span>
+          <template v-for="(crumb, i) in breadcrumbs" :key="crumb.path">
+            <router-link v-if="crumb.path" :to="crumb.path" class="breadcrumb-link">{{ crumb.label }}</router-link>
+            <span v-if="crumb.path" class="breadcrumb-sep">/</span>
+            <span v-if="i === breadcrumbs.length - 1" class="breadcrumb-current">{{ crumb.label }}</span>
+          </template>
         </div>
         <div class="topbar-right">
           <router-link to="/" class="view-blog-link">← 查看博客 View Blog</router-link>
@@ -70,7 +74,6 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
-
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
 const route = useRoute()
@@ -91,7 +94,25 @@ const pageMap = {
   '/admin/settings': '设置 Settings'
 }
 
-const currentPage = computed(() => pageMap[route.path] || '仪表盘')
+const breadcrumbs = computed(() => {
+  const crumbs = []
+  // Find parent page
+  const basePath = '/' + route.path.split('/').slice(1, 3).join('/')
+  const parentLabel = pageMap[basePath]
+  if (parentLabel && basePath !== '/admin') {
+    crumbs.push({ label: parentLabel, path: basePath })
+  }
+  // Current page (use meta.breadcrumb if available, otherwise pageMap)
+  const currentLabel = route.meta?.breadcrumb || pageMap[route.path]
+  if (currentLabel) {
+    crumbs.push({ label: currentLabel, path: '' })
+  }
+  // Fallback: dashboard
+  if (crumbs.length === 0) {
+    crumbs.push({ label: '仪表盘 Dashboard', path: '' })
+  }
+  return crumbs
+})
 </script>
 
 <style scoped>
@@ -276,9 +297,19 @@ const currentPage = computed(() => pageMap[route.path] || '仪表盘')
   color: var(--fg);
   border-color: var(--fg);
 }
+.breadcrumb-link {
+  font-size: 14px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.breadcrumb-link:hover {
+  color: var(--accent);
+}
 .breadcrumb-sep {
   color: var(--border);
   font-size: 14px;
+  margin: 0 4px;
 }
 .breadcrumb-current {
   font-size: 14px;

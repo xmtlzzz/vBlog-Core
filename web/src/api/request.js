@@ -11,8 +11,11 @@ api.interceptors.response.use(
   res => res.data,
   err => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('vblog-token')
-      window.location.href = '/admin/login'
+      if (localStorage.getItem('vblog-token')) {
+        localStorage.removeItem('vblog-token')
+        window.location.href = '/admin/login'
+      }
+      return Promise.reject(err)
     }
     ElMessage.error(err.response?.data?.error || '请求失败')
     return Promise.reject(err)

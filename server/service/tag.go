@@ -15,10 +15,26 @@ func NewTagService(db *gorm.DB) *TagService {
 	return &TagService{DB: db}
 }
 
-// List returns all tags with post_count calculated.
-func (s *TagService) List() ([]model.Tag, error) {
-	var tags []model.Tag
-	err := s.DB.Find(&tags).Error
+// TagWithCount includes a post count.
+type TagWithCount struct {
+	model.Tag
+	PostCount int `json:"post_count"`
+}
+
+// List returns all tags with post count.
+func (s *TagService) List() ([]TagWithCount, error) {
+	var tags []TagWithCount
+	err := s.DB.Raw(`
+		SELECT t.*, COALESCE(pc.cnt, 0) AS post_count
+		FROM tags t
+		LEFT JOIN (
+			SELECT pt.tag_id, COUNT(*) AS cnt
+			FROM post_tags pt
+			JOIN posts p ON p.id = pt.post_id AND p.status = 'published'
+			GROUP BY pt.tag_id
+		) pc ON pc.tag_id = t.id
+		ORDER BY t.name
+	`).Scan(&tags).Error
 	return tags, err
 }
 

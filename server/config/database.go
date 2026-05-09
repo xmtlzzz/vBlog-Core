@@ -10,7 +10,7 @@ import (
 // DSN returns the PostgreSQL connection string.
 func (d DBConfig) DSN() string {
 	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		d.Host, d.Port, d.User, d.Password, d.Name,
 	)
 }

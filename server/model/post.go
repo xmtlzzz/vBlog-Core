@@ -25,3 +25,19 @@ type Post struct {
 func (Post) TableName() string {
 	return "posts"
 }
+
+// FormatDate returns a date string in local timezone for JSON serialization.
+func FormatDate(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.Local().Format("2006-01-02")
+}
+
+// FormatDateTime returns a datetime string in local timezone.
+func FormatDateTime(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.Local().Format("2006-01-02 15:04")
+}

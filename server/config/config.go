@@ -1,11 +1,12 @@
 package config
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
 // Config holds all application configuration.
@@ -17,13 +18,14 @@ type Config struct {
 
 // ServerConfig holds HTTP server configuration.
 type ServerConfig struct {
+	Addr string
 	Port string
 }
 
 // DBConfig holds PostgreSQL database configuration.
 type DBConfig struct {
 	Host     string
-	Port     string
+	Port     int
 	Name     string
 	User     string
 	Password string
@@ -31,17 +33,17 @@ type DBConfig struct {
 
 // JWTConfig holds JWT authentication configuration.
 type JWTConfig struct {
-	Secret           string
-	ExpireHours      int
-	RefreshExpireHours int
+	Secret string
 }
 
+var projectRoot string
+
 func init() {
-	// Find project root by looking for go.mod
 	_, filename, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(filename)
 	for {
 		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			projectRoot = dir
 			break
 		}
 		parent := filepath.Dir(dir)
@@ -50,33 +52,46 @@ func init() {
 		}
 		dir = parent
 	}
-	// Try to load .env from project root (one level up from server/)
-	envPath := filepath.Join(filepath.Dir(dir), ".env")
-	godotenv.Load(envPath)
 }
 
-// Load reads configuration from environment variables with defaults.
+// Load reads configuration from config.toml via Viper.
 func Load() Config {
-	return Config{
+	v := viper.New()
+	v.SetConfigName("config")
+	v.SetConfigType("toml")
+	v.AddConfigPath(filepath.Join(projectRoot, "config"))
+
+	if err := v.ReadInConfig(); err != nil {
+		log.Fatalf("failed to read config: %v", err)
+	}
+
+	cfg := Config{
 		Server: ServerConfig{
-			Port: getEnv("SERVER_PORT", "8080"),
+			Addr: v.GetString("http.addr"),
+			Port: v.GetString("http.port"),
 		},
 		DB: DBConfig{
-			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnv("DB_PORT", "5432"),
-			Name:     getEnv("DB_NAME", "vblog"),
-			User:     getEnv("DB_USER", "vblog_admin"),
-			Password: getEnv("DB_PASSWORD", ""),
+			Host:     v.GetString("postgres.host"),
+			Port:     v.GetInt("postgres.port"),
+			Name:     v.GetString("postgres.name"),
+			User:     v.GetString("postgres.user"),
+			Password: v.GetString("postgres.password"),
 		},
 		JWT: JWTConfig{
-			Secret: getEnv("JWT_SECRET", "vblog-default-secret"),
+			Secret: v.GetString("jwt.secret"),
 		},
 	}
+
+	if cfg.Server.Addr == "" {
+		cfg.Server.Addr = "0.0.0.0"
+	}
+	if cfg.Server.Port == "" {
+		cfg.Server.Port = "8080"
+	}
+	if cfg.DB.Port == 0 {
+		cfg.DB.Port = 5432
+	}
+
+	return cfg
 }
 
-func getEnv(key, defaultValue string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return defaultValue
-}

@@ -2,7 +2,11 @@
   <div class="posts-page">
     <div class="page-header">
       <h1 class="page-title">全部文章 All Posts</h1>
-      <el-button type="primary" @click="openCreate">新文章 New Post</el-button>
+      <div class="header-actions">
+        <el-button @click="triggerUpload">Markdown 上传</el-button>
+        <el-button type="primary" @click="router.push('/admin/posts/new')">新文章 New Post</el-button>
+        <input ref="fileInput" type="file" accept=".md,.markdown" style="display:none" @change="handleUpload" />
+      </div>
     </div>
 
     <div class="filter-row">
@@ -31,7 +35,7 @@
           <span :class="['status-badge', 'status-' + row.status]">{{ statusLabel(row.status) }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="views" label="阅读 Views" width="80" />
+      <el-table-column prop="views" label="阅读 Views" width="100" />
       <el-table-column label="日期 Date" width="120">
         <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
       </el-table-column>
@@ -39,7 +43,7 @@
         <template #default="{ row }">
           <div class="action-btn-group">
             <button class="action-btn" @click="viewPost(row)">查看 View</button>
-            <button class="action-btn" @click="openEdit(row)">编辑</button>
+            <button class="action-btn" @click="router.push(`/admin/posts/${row.id}/edit`)">编辑</button>
             <button class="action-btn action-danger" @click="deletePost(row.id)">删除</button>
           </div>
         </template>
@@ -48,9 +52,14 @@
     </div>
 
     <div class="pagination-wrap" v-if="total > perPage">
-      <span class="pagination-summary">共 {{ total }} 篇文章 Showing {{ (page - 1) * perPage + 1 }}-{{ Math.min(page * perPage, total) }} of {{ total }}</span>
+      <span class="pagination-summary">共 {{ total }} 篇文章 · 每页
+        <el-select v-model="perPage" size="small" style="width: 80px; margin: 0 4px" @change="onPerPageChange">
+          <el-option :value="10" label="10" /><el-option :value="20" label="20" /><el-option :value="50" label="50" />
+        </el-select>
+        条
+      </span>
       <el-pagination
-        layout="prev, pager, next"
+        layout="prev, pager, next, jumper"
         :total="total"
         :page-size="perPage"
         :current-page="page"
@@ -58,62 +67,27 @@
       />
     </div>
 
-    <!-- Create/Edit Modal -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="editingId ? '编辑文章' : '新建文章'"
-      width="560px"
-      destroy-on-close
-    >
-      <el-form label-position="top">
-        <el-form-item label="标题">
-          <el-input v-model="form.title" placeholder="文章标题" />
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-select v-model="form.tagNames" multiple filterable allow-create placeholder="选择或输入标签" style="width: 100%">
-            <el-option v-for="t in allTags" :key="t.id" :label="t.name" :value="t.name" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="form.status" style="width: 100%">
-            <el-option label="草稿" value="draft" />
-            <el-option label="已发布" value="published" />
-            <el-option label="已归档" value="archived" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="摘要">
-          <el-input v-model="form.excerpt" type="textarea" :rows="2" placeholder="文章摘要" />
-        </el-form-item>
-        <el-form-item label="内容">
-          <el-input v-model="form.content" type="textarea" :rows="10" placeholder="Markdown 内容" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="savePost">保存</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
+
+const router = useRouter()
+const fileInput = ref(null)
 
 const posts = ref([])
 const allTags = ref([])
 const total = ref(0)
 const page = ref(1)
-const perPage = 10
-const dialogVisible = ref(false)
-const editingId = ref(null)
-const saving = ref(false)
+const perPage = ref(10)
 let debounceTimer = null
 
 const filters = reactive({ search: '', status: '', tag: '' })
-const form = reactive({ title: '', content: '', excerpt: '', status: 'draft', tagNames: [] })
 
 function statusLabel(s) {
   return { published: '已发布', draft: '草稿', archived: '已归档' }[s] || s
@@ -123,13 +97,18 @@ function viewPost(row) {
   window.open(`/post/${row.id}`, '_blank')
 }
 
+function onPerPageChange() {
+  page.value = 1
+  fetchPosts()
+}
+
 function debounceFetch() {
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => { page.value = 1; fetchPosts() }, 300)
 }
 
 async function fetchPosts() {
-  const params = { page: page.value, per_page: perPage }
+  const params = { page: page.value, per_page: perPage.value }
   if (filters.search) params.search = filters.search
   if (filters.status) params.status = filters.status
   if (filters.tag) params.tag = filters.tag
@@ -143,54 +122,6 @@ async function fetchTags() {
   allTags.value = Array.isArray(res) ? res : (res.data || [])
 }
 
-function openCreate() {
-  editingId.value = null
-  Object.assign(form, { title: '', content: '', excerpt: '', status: 'draft', tagNames: [] })
-  dialogVisible.value = true
-}
-
-function openEdit(post) {
-  editingId.value = post.id
-  Object.assign(form, {
-    title: post.title || '',
-    content: post.content || '',
-    excerpt: post.excerpt || '',
-    status: post.status || 'draft',
-    tagNames: (post.tags || []).map(t => t.name)
-  })
-  dialogVisible.value = true
-}
-
-async function savePost() {
-  if (!form.title.trim()) {
-    ElMessage.warning('请输入标题')
-    return
-  }
-  saving.value = true
-  try {
-    const payload = {
-      title: form.title,
-      content: form.content,
-      excerpt: form.excerpt,
-      status: form.status,
-      tags: form.tagNames.map(name => ({ name }))
-    }
-    if (editingId.value) {
-      await api.put(`/posts/${editingId.value}`, payload)
-      ElMessage.success('文章已更新')
-    } else {
-      await api.post('/posts', payload)
-      ElMessage.success('文章已创建')
-    }
-    dialogVisible.value = false
-    fetchPosts()
-  } catch {
-    // handled by interceptor
-  } finally {
-    saving.value = false
-  }
-}
-
 async function deletePost(id) {
   try {
     await ElMessageBox.confirm('确定删除这篇文章？', '确认删除', { type: 'warning' })
@@ -198,6 +129,25 @@ async function deletePost(id) {
     ElMessage.success('已删除')
     fetchPosts()
   } catch {}
+}
+
+function triggerUpload() {
+  fileInput.value.click()
+}
+
+function handleUpload(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    sessionStorage.setItem('md-upload-content', reader.result)
+    // Extract title from first heading if present
+    const match = reader.result.match(/^#\s+(.+)$/m)
+    if (match) sessionStorage.setItem('md-upload-title', match[1])
+    router.push('/admin/posts/new')
+  }
+  reader.readAsText(file)
+  e.target.value = ''
 }
 
 onMounted(() => {
@@ -215,6 +165,10 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
+}
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 .page-title {
   font-family: var(--font-display);

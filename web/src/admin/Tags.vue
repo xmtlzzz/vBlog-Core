@@ -24,13 +24,13 @@
       <div v-if="tags.length === 0" class="empty-state">暂无标签</div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑标签' : '新建标签'" width="420px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑标签' : '新建标签'" width="420px">
       <el-form label-position="top">
         <el-form-item label="标签名">
-          <el-input v-model="form.name" placeholder="标签名称" />
+          <el-input v-model="tagName" placeholder="标签名称" />
         </el-form-item>
         <el-form-item label="描述">
-          <el-input v-model="form.description" type="textarea" :rows="3" placeholder="标签描述（可选）" />
+          <el-input v-model="tagDesc" type="textarea" :rows="3" placeholder="标签描述（可选）" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -42,16 +42,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
+import { formatDate } from '../utils/format'
 
 const tags = ref([])
 const dialogVisible = ref(false)
 const editingId = ref(null)
 const saving = ref(false)
-const form = reactive({ name: '', description: '' })
-
+const tagName = ref('')
+const tagDesc = ref('')
 
 async function fetchTags() {
   const res = await api.get('/tags').catch(() => ({ data: [] }))
@@ -60,28 +61,30 @@ async function fetchTags() {
 
 function openCreate() {
   editingId.value = null
-  Object.assign(form, { name: '', description: '' })
+  tagName.value = ''
+  tagDesc.value = ''
   dialogVisible.value = true
 }
 
 function openEdit(tag) {
   editingId.value = tag.id
-  Object.assign(form, { name: tag.name, description: tag.description || '' })
+  tagName.value = tag.name
+  tagDesc.value = tag.description || ''
   dialogVisible.value = true
 }
 
 async function saveTag() {
-  if (!form.name.trim()) {
+  if (!tagName.value.trim()) {
     ElMessage.warning('请输入标签名')
     return
   }
   saving.value = true
   try {
     if (editingId.value) {
-      await api.put(`/tags/${editingId.value}`, { name: form.name, description: form.description })
+      await api.put(`/tags/${editingId.value}`, { name: tagName.value, description: tagDesc.value })
       ElMessage.success('标签已更新')
     } else {
-      await api.post('/tags', { name: form.name, description: form.description })
+      await api.post('/tags', { name: tagName.value, description: tagDesc.value })
       ElMessage.success('标签已创建')
     }
     dialogVisible.value = false

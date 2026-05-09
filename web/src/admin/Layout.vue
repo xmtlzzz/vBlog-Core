@@ -46,12 +46,11 @@
       <header class="topbar">
         <div class="topbar-left">
           <button class="menu-toggle" @click="sidebarOpen = !sidebarOpen">☰</button>
-          <router-link to="/" class="back-link">← 首页</router-link>
+          <router-link to="/" class="view-blog-link">← 查看博客 View Blog</router-link>
           <span class="breadcrumb-sep">/</span>
           <span class="breadcrumb-current">{{ currentPage }}</span>
         </div>
         <div class="topbar-right">
-          <router-link to="/admin/posts" class="new-post-btn" @click="sidebarOpen = false">新文章 New Post</router-link>
           <button class="theme-toggle" @click="themeStore.toggle()">
             {{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}
           </button>
@@ -241,14 +240,18 @@ const currentPage = computed(() => pageMap[route.path] || '仪表盘')
   color: var(--fg);
   padding: 4px;
 }
-.back-link {
-  font-size: 14px;
+.view-blog-link {
+  font-size: 13px;
   color: var(--muted);
   text-decoration: none;
-  transition: color 0.15s;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: all 0.15s;
 }
-.back-link:hover {
-  color: var(--accent);
+.view-blog-link:hover {
+  color: var(--fg);
+  border-color: var(--fg);
 }
 .breadcrumb-sep {
   color: var(--border);
@@ -276,19 +279,7 @@ const currentPage = computed(() => pageMap[route.path] || '仪表盘')
 .theme-toggle:hover {
   border-color: var(--fg);
 }
-.new-post-btn {
-  font-size: 13px;
-  font-weight: 500;
-  padding: 6px 14px;
-  border-radius: 6px;
-  background: var(--accent);
-  color: #fff;
-  text-decoration: none;
-  transition: all 0.15s;
-}
-.new-post-btn:hover {
-  opacity: 0.9;
-}
+/* new-post-btn removed — not in topbar */
 .content {
   flex: 1;
   padding: 24px;

@@ -7,45 +7,39 @@
   </header>
 
   <!-- Stats bar -->
-  <section class="stats-bar">
-    <div class="stat-item">
-      <span class="stat-value">{{ stats.total_posts }}</span>
-      <span class="stat-label">篇文章 Articles</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-value">{{ stats.total_views.toLocaleString() }}</span>
-      <span class="stat-label">次阅读 Views</span>
-    </div>
-    <div class="stat-item">
-      <span class="stat-value">{{ stats.total_tags }}</span>
-      <span class="stat-label">个标签 Tags</span>
+  <section class="stats-bar fade-in" style="animation-delay: 150ms">
+    <div class="stat-item" v-for="(s, i) in statItems" :key="i" :style="{ animationDelay: (200 + i * 80) + 'ms' }">
+      <span class="stat-value">{{ s.value }}</span>
+      <span class="stat-label">{{ s.label }}</span>
     </div>
   </section>
 
   <!-- Filter bar -->
-  <section class="filter-bar">
+  <section class="filter-bar fade-in" style="animation-delay: 350ms">
     <button
       :class="['filter-btn', { active: !activeTag }]"
-      @click="activeTag = ''; fetchPosts()"
+      @click="setTag('')"
     >全部 All</button>
     <button
       v-for="tag in tags"
       :key="tag.id || tag.name"
       :class="['filter-btn', { active: activeTag === tag.name }]"
-      @click="activeTag = tag.name; fetchPosts()"
+      @click="setTag(tag.name)"
     >{{ tag.name }}</button>
   </section>
 
   <!-- Post list -->
   <section class="post-list">
-    <PostCard v-for="post in posts" :key="post.id" :post="post" />
-    <div v-if="posts.length === 0" class="empty-state">
+    <TransitionGroup name="post-list" tag="div">
+      <PostCard v-for="(post, i) in posts" :key="post.id" :post="post" :style="{ animationDelay: (i * 60) + 'ms' }" class="fade-in" />
+    </TransitionGroup>
+    <div v-if="posts.length === 0" class="empty-state fade-in">
       <p>暂无文章</p>
     </div>
   </section>
 
   <!-- Pagination -->
-  <section v-if="total > perPage" class="pagination-wrap">
+  <section v-if="total > perPage" class="pagination-wrap fade-in">
     <el-pagination
       layout="prev, pager, next"
       :total="total"
@@ -59,7 +53,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
@@ -73,12 +67,24 @@ const page = ref(1)
 const perPage = 5
 const total = ref(0)
 
+const statItems = computed(() => [
+  { value: stats.value.total_posts, label: '篇文章 Articles' },
+  { value: stats.value.total_views.toLocaleString(), label: '次阅读 Views' },
+  { value: stats.value.total_tags, label: '个标签 Tags' }
+])
+
 async function fetchPosts() {
   const res = await api.get('/posts', {
     params: { page: page.value, per_page: perPage, tag: activeTag.value, status: 'published' }
   })
   posts.value = res.posts || []
   total.value = res.total || 0
+}
+
+function setTag(tag) {
+  activeTag.value = tag
+  page.value = 1
+  fetchPosts()
 }
 
 function handlePageChange(p) {
@@ -134,6 +140,7 @@ onMounted(async () => {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  animation: fadeIn 0.4s ease both;
 }
 .stat-value {
   font-family: var(--font-display);
@@ -163,17 +170,32 @@ onMounted(async () => {
   background: var(--surface);
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   font-family: var(--font-sans);
 }
 .filter-btn:hover {
   border-color: var(--fg);
   color: var(--fg);
+  transform: translateY(-1px);
+}
+.filter-btn:active {
+  transform: scale(0.96);
 }
 .filter-btn.active {
   background: var(--fg);
   color: var(--bg);
   border-color: var(--fg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+/* TransitionGroup for post list */
+.post-list-enter-active {
+  animation: fadeIn 0.3s ease both;
+}
+.post-list-leave-active {
+  animation: fadeOut 0.2s ease both;
+}
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateY(-8px); }
 }
 .post-list {
   max-width: 1080px;

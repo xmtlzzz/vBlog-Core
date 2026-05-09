@@ -288,16 +288,16 @@ const currentPage = computed(() => pageMap[route.path] || '仪表盘')
   padding: 24px;
   overflow-x: hidden;
 }
-/* Page transition */
-.page-enter-active { animation: pageIn 0.25s ease; }
-.page-leave-active { animation: pageOut 0.15s ease; }
+/* Page transition — leave instant, enter animated */
+.page-enter-active { animation: pageIn 0.2s ease; }
+.page-leave-active { animation: pageOut 0.08s ease; }
 @keyframes pageIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes pageOut {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-8px); }
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 .sidebar-overlay {
   display: none;

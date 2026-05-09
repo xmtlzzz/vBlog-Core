@@ -16,26 +16,26 @@ type ComponentResource struct {
 
 // Register adds component routes to the given WebService.
 func (c *ComponentResource) Register(ws *restful.WebService) {
-	ws.Route(ws.GET("/api/components").To(c.list).
+	ws.Route(ws.GET("/api/components").To(c.List).
 		Doc("list components"))
 
-	ws.Route(ws.POST("/api/components").To(c.create).
+	ws.Route(ws.POST("/api/components").To(c.Create).
 		Doc("create a component"))
 
-	ws.Route(ws.PUT("/api/components/{id}").To(c.update).
+	ws.Route(ws.PUT("/api/components/{id}").To(c.Update).
 		Doc("update a component").
 		Param(ws.PathParameter("id", "component ID")))
 
-	ws.Route(ws.DELETE("/api/components/{id}").To(c.delete).
+	ws.Route(ws.DELETE("/api/components/{id}").To(c.Delete).
 		Doc("delete a component").
 		Param(ws.PathParameter("id", "component ID")))
 
-	ws.Route(ws.PATCH("/api/components/{id}/toggle").To(c.toggle).
+	ws.Route(ws.PATCH("/api/components/{id}/toggle").To(c.Toggle).
 		Doc("toggle component active/inactive").
 		Param(ws.PathParameter("id", "component ID")))
 }
 
-func (c *ComponentResource) list(req *restful.Request, resp *restful.Response) {
+func (c *ComponentResource) List(req *restful.Request, resp *restful.Response) {
 	components, err := c.Service.List()
 	if err != nil {
 		resp.WriteError(http.StatusInternalServerError, err)
@@ -46,7 +46,7 @@ func (c *ComponentResource) list(req *restful.Request, resp *restful.Response) {
 	})
 }
 
-func (c *ComponentResource) create(req *restful.Request, resp *restful.Response) {
+func (c *ComponentResource) Create(req *restful.Request, resp *restful.Response) {
 	comp := model.Component{}
 	if err := req.ReadEntity(&comp); err != nil {
 		resp.WriteError(http.StatusBadRequest, err)
@@ -59,7 +59,7 @@ func (c *ComponentResource) create(req *restful.Request, resp *restful.Response)
 	resp.WriteHeaderAndEntity(http.StatusCreated, comp)
 }
 
-func (c *ComponentResource) update(req *restful.Request, resp *restful.Response) {
+func (c *ComponentResource) Update(req *restful.Request, resp *restful.Response) {
 	id, err := strconv.Atoi(req.PathParameter("id"))
 	if err != nil {
 		resp.WriteError(http.StatusBadRequest, err)
@@ -78,7 +78,7 @@ func (c *ComponentResource) update(req *restful.Request, resp *restful.Response)
 	resp.WriteEntity(comp)
 }
 
-func (c *ComponentResource) delete(req *restful.Request, resp *restful.Response) {
+func (c *ComponentResource) Delete(req *restful.Request, resp *restful.Response) {
 	id, err := strconv.Atoi(req.PathParameter("id"))
 	if err != nil {
 		resp.WriteError(http.StatusBadRequest, err)
@@ -91,7 +91,7 @@ func (c *ComponentResource) delete(req *restful.Request, resp *restful.Response)
 	resp.WriteHeader(http.StatusOK)
 }
 
-func (c *ComponentResource) toggle(req *restful.Request, resp *restful.Response) {
+func (c *ComponentResource) Toggle(req *restful.Request, resp *restful.Response) {
 	id, err := strconv.Atoi(req.PathParameter("id"))
 	if err != nil {
 		resp.WriteError(http.StatusBadRequest, err)

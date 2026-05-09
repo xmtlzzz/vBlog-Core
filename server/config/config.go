@@ -1,6 +1,12 @@
 package config
 
-import "os"
+import (
+	"os"
+	"path/filepath"
+	"runtime"
+
+	"github.com/joho/godotenv"
+)
 
 // Config holds all application configuration.
 type Config struct {
@@ -28,6 +34,25 @@ type JWTConfig struct {
 	Secret           string
 	ExpireHours      int
 	RefreshExpireHours int
+}
+
+func init() {
+	// Find project root by looking for go.mod
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			break
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	// Try to load .env from project root (one level up from server/)
+	envPath := filepath.Join(filepath.Dir(dir), ".env")
+	godotenv.Load(envPath)
 }
 
 // Load reads configuration from environment variables with defaults.

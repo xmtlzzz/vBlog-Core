@@ -1,6 +1,8 @@
 <template>
-  <div id="app">
-    <h1>vBlog Core</h1>
-    <p>Blog system is running.</p>
-  </div>
+  <router-view />
 </template>
+<script setup>
+import { useThemeStore } from './stores/theme'
+const theme = useThemeStore()
+theme.init()
+</script>

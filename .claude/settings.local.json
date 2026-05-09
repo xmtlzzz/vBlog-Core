@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(go version *)",
+      "Bash(npm --version)",
+      "Bash(go mod *)",
+      "Bash(go get *)",
+      "Bash(go list *)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(go build *)",
+      "Bash(timeout 10 npm run dev)",
+      "Bash(go test *)",
+      "Bash(DB_HOST=192.168.81.101 go test ./config/ -v -run TestDSN)",
+      "Bash(DB_HOST=192.168.81.101 DB_USER=vblog DB_PASSWORD=\"\" DB_NAME=postgres go test ./config/ -v -run TestConnect)",
+      "Bash(go run *)",
+      "Bash(DB_NAME=postgres go run /tmp/testdb.go)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(go vet *)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(kill %1)",
+      "Bash(npx vue-tsc *)",
+      "Bash(npx vite *)",
+      "Bash(docker compose *)"
+    ]
+  }
+}

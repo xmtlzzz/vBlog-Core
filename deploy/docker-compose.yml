@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: vblog
+      POSTGRES_USER: vblog
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Qwer1234}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  vblog:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: vblog
+      DB_USER: vblog
+      DB_PASSWORD: ${DB_PASSWORD:-Qwer1234}
+      JWT_SECRET: ${JWT_SECRET:-vblog-jwt-secret-2026}
+
+volumes:
+  pgdata:

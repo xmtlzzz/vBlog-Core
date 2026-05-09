@@ -5,17 +5,17 @@
         <span class="dot"></span>vBlog
       </router-link>
       <div class="nav-links">
-        <router-link to="/">首页</router-link>
-        <router-link to="/archives">归档</router-link>
-        <router-link to="/tags">标签</router-link>
-        <router-link to="/about">关于</router-link>
+        <router-link to="/">首页 Home</router-link>
+        <router-link to="/archives">归档 Archives</router-link>
+        <router-link to="/about">关于 About</router-link>
+        <router-link to="/tags">标签 Tags</router-link>
       </div>
       <div class="nav-right">
-        <router-link to="/admin" class="admin-btn">后台</router-link>
-        <el-button circle size="small" class="theme-toggle" @click="themeStore.toggle()" aria-label="切换主题">
+        <router-link to="/admin" class="admin-btn">后台 Admin</router-link>
+        <button class="theme-toggle" @click="themeStore.toggle()" aria-label="切换主题">
           <span v-if="themeStore.theme === 'dark'">☀</span>
           <span v-else>☾</span>
-        </el-button>
+        </button>
       </div>
     </div>
   </nav>
@@ -82,11 +82,11 @@ const themeStore = useThemeStore()
 .nav-links a:hover,
 .nav-links :deep(.router-link-active) {
   color: var(--fg);
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--card-hover);
 }
 [data-theme="dark"] .nav-links a:hover,
 [data-theme="dark"] .nav-links :deep(.router-link-active) {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--card-hover);
 }
 .nav-right {
   display: flex;
@@ -120,10 +120,7 @@ const themeStore = useThemeStore()
   font-size: 16px;
 }
 .theme-toggle:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-[data-theme="dark"] .theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--card-hover);
 }
 
 @media (max-width: 640px) {

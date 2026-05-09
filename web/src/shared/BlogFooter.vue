@@ -4,6 +4,7 @@
     <div class="footer-links">
       <a href="#">GitHub</a>
       <a href="#">RSS</a>
+      <a href="#">gRPC API</a>
     </div>
   </footer>
 </template>

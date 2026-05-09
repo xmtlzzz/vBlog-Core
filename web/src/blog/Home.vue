@@ -1,61 +1,60 @@
 <template>
   <BlogNav />
-  <div class="home">
-    <!-- Hero -->
-    <section class="hero">
-      <h1>写代码的人，也写点别的。</h1>
-      <p>用文字记录技术思考，用代码构建写作工具。一个极客的博客实验。</p>
-    </section>
+  <!-- Hero -->
+  <header class="hero fade-in">
+    <h1>写代码的人，<br/>也写点别的。</h1>
+    <p>一个关于系统设计、工程实践与极客生活的博客。用 Markdown 写作，为 vibe coder 而建。</p>
+  </header>
 
-    <!-- Stats bar -->
-    <section class="stats-bar">
-      <div class="stat-item">
-        <span class="stat-value">{{ stats.total_posts }}</span>
-        <span class="stat-label">篇文章</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-value">{{ stats.total_views.toLocaleString() }}</span>
-        <span class="stat-label">次阅读</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-value">{{ stats.total_tags }}</span>
-        <span class="stat-label">个标签</span>
-      </div>
-    </section>
+  <!-- Stats bar -->
+  <section class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-value">{{ stats.total_posts }}</span>
+      <span class="stat-label">篇文章 Articles</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">{{ stats.total_views.toLocaleString() }}</span>
+      <span class="stat-label">次阅读 Views</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value">{{ stats.total_tags }}</span>
+      <span class="stat-label">个标签 Tags</span>
+    </div>
+  </section>
 
-    <!-- Filter bar -->
-    <section class="filter-bar">
-      <button
-        :class="['filter-btn', { active: !activeTag }]"
-        @click="activeTag = ''; fetchPosts()"
-      >全部</button>
-      <button
-        v-for="tag in tags"
-        :key="tag.id || tag.name"
-        :class="['filter-btn', { active: activeTag === tag.name }]"
-        @click="activeTag = tag.name; fetchPosts()"
-      >{{ tag.name }}</button>
-    </section>
+  <!-- Filter bar -->
+  <section class="filter-bar">
+    <button
+      :class="['filter-btn', { active: !activeTag }]"
+      @click="activeTag = ''; fetchPosts()"
+    >全部 All</button>
+    <button
+      v-for="tag in tags"
+      :key="tag.id || tag.name"
+      :class="['filter-btn', { active: activeTag === tag.name }]"
+      @click="activeTag = tag.name; fetchPosts()"
+    >{{ tag.name }}</button>
+  </section>
 
-    <!-- Post list -->
-    <section class="post-list">
-      <PostCard v-for="post in posts" :key="post.id" :post="post" />
-      <div v-if="posts.length === 0" class="empty-state">
-        <p>暂无文章</p>
-      </div>
-    </section>
+  <!-- Post list -->
+  <section class="post-list">
+    <PostCard v-for="post in posts" :key="post.id" :post="post" />
+    <div v-if="posts.length === 0" class="empty-state">
+      <p>暂无文章</p>
+    </div>
+  </section>
 
-    <!-- Pagination -->
-    <section v-if="total > perPage" class="pagination-wrap">
-      <el-pagination
-        layout="prev, pager, next"
-        :total="total"
-        :page-size="perPage"
-        :current-page="page"
-        @current-change="handlePageChange"
-      />
-    </section>
-  </div>
+  <!-- Pagination -->
+  <section v-if="total > perPage" class="pagination-wrap">
+    <el-pagination
+      layout="prev, pager, next"
+      :total="total"
+      :page-size="perPage"
+      :current-page="page"
+      @current-change="handlePageChange"
+    />
+  </section>
+
   <BlogFooter />
 </template>
 
@@ -104,9 +103,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.home {
-  min-height: calc(100vh - 56px);
-}
 .hero {
   max-width: 1080px;
   margin: 0 auto;

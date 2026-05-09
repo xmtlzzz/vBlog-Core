@@ -1,27 +1,24 @@
 <template>
   <router-link
     :to="`/post/${post.id}`"
-    :class="['post-card', { pinned: post.is_pinned }]"
+    :class="['post-card fade-in', { pinned: post.is_pinned }]"
   >
     <div class="post-card-body">
       <div v-if="post.is_pinned" class="pin-badge">置顶 Pinned</div>
       <div class="post-meta">
-        <el-tag
+        <span
           v-for="tag in (post.tags || [])"
           :key="tag"
-          size="small"
-          type="info"
-          effect="plain"
-          class="meta-tag"
-        >{{ tag }}</el-tag>
+          class="tag"
+        >{{ tag }}</span>
         <span class="meta-date">{{ formatDate(post.created_at) }}</span>
       </div>
       <div class="post-title">{{ post.title }}</div>
       <div class="post-excerpt">{{ post.excerpt }}</div>
-      <div class="post-stats">
-        <span class="read-time">{{ post.read_time || 0 }} min</span>
-        <span class="views">{{ (post.views || 0).toLocaleString() }} views</span>
-      </div>
+    </div>
+    <div class="post-stats">
+      <span class="read-time">{{ post.read_time || 0 }} min</span>
+      <span class="views">{{ (post.views || 0).toLocaleString() }} views</span>
     </div>
   </router-link>
 </template>
@@ -40,11 +37,14 @@ function formatDate(dateStr) {
 
 <style scoped>
 .post-card {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  padding: 24px 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
+  padding: 20px 0;
   border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: var(--fg);
   transition: opacity 0.15s;
 }
 .post-card:hover {
@@ -56,7 +56,7 @@ function formatDate(dateStr) {
 .post-card.pinned {
   background: var(--accent-soft);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 20px;
   margin-bottom: 8px;
   border-bottom: none;
 }
@@ -77,8 +77,14 @@ function formatDate(dateStr) {
   color: var(--muted);
   flex-wrap: wrap;
 }
-.meta-tag {
+.tag {
+  display: inline-block;
+  background: var(--tag-bg);
+  color: var(--tag-fg);
+  padding: 2px 8px;
+  border-radius: 4px;
   font-size: 12px;
+  font-weight: 500;
 }
 .meta-date {
   font-size: 13px;
@@ -101,18 +107,16 @@ function formatDate(dateStr) {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-bottom: 8px;
 }
 .post-stats {
   display: flex;
-  gap: 16px;
-}
-.post-stats .read-time,
-.post-stats .views {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-family: var(--font-mono);
   font-size: 12px;
   color: var(--muted);
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {

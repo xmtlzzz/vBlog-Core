@@ -1,18 +1,15 @@
 <template>
   <BlogNav />
-  <article class="article" v-if="post">
+  <article class="article fade-in" v-if="post">
     <router-link to="/" class="back-link">← 返回首页</router-link>
 
     <header class="article-header">
       <div class="article-meta">
-        <el-tag
+        <span
           v-for="tag in (post.tags || [])"
           :key="tag"
-          size="small"
-          type="info"
-          effect="plain"
-          class="meta-tag"
-        >{{ tag }}</el-tag>
+          class="tag"
+        >{{ tag }}</span>
         <span>{{ formatDate(post.created_at) }}</span>
         <span>{{ post.read_time || 0 }} min</span>
         <span>{{ (post.views || 0).toLocaleString() }} views</span>
@@ -21,19 +18,48 @@
       <p class="article-deck" v-if="post.excerpt">{{ post.excerpt }}</p>
     </header>
 
+    <div class="article-hero fade-in">
+      <div class="article-hero-placeholder">📝</div>
+    </div>
+
+    <div class="article-author">
+      <div class="author-avatar">{{ post.author?.[0] || 'V' }}</div>
+      <div>
+        <div class="author-name">{{ post.author || 'vBlog Admin' }}</div>
+        <div class="author-role">全栈工程师 / 极客博主</div>
+      </div>
+    </div>
+
+    <nav class="toc" v-if="tocItems.length">
+      <div class="toc-title">目录 Contents</div>
+      <a v-for="item in tocItems" :key="item.id" :href="'#' + item.id"
+         class="toc-link" :class="{ active: activeToc === item.id }">
+        {{ item.text }}
+      </a>
+    </nav>
+
     <div class="article-body" v-html="renderedContent"></div>
 
     <footer class="article-footer">
       <div class="footer-tags">
-        <el-tag
+        <span
           v-for="tag in (post.tags || [])"
           :key="tag"
-          size="small"
-          type="info"
-          effect="plain"
-        >{{ tag }}</el-tag>
+          class="tag"
+        >{{ tag }}</span>
       </div>
     </footer>
+
+    <nav class="post-nav" v-if="prevPost || nextPost">
+      <router-link v-if="prevPost" :to="'/post/' + prevPost.id" class="post-nav-item prev">
+        <div class="post-nav-label">← 上一篇 Previous</div>
+        <div class="post-nav-title">{{ prevPost.title }}</div>
+      </router-link>
+      <router-link v-if="nextPost" :to="'/post/' + nextPost.id" class="post-nav-item next">
+        <div class="post-nav-label">下一篇 Next →</div>
+        <div class="post-nav-title">{{ nextPost.title }}</div>
+      </router-link>
+    </nav>
   </article>
 
   <article class="article not-found" v-else-if="loaded">
@@ -46,7 +72,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
@@ -55,6 +81,10 @@ import BlogFooter from '../shared/BlogFooter.vue'
 const route = useRoute()
 const post = ref(null)
 const loaded = ref(false)
+const tocItems = ref([])
+const activeToc = ref('')
+const prevPost = ref(null)
+const nextPost = ref(null)
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -71,7 +101,10 @@ function markdownToHtml(md) {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     // Headings
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^## (.+)$/gm, (match, text) => {
+      const id = text.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+      return `<h2 id="${id}">${text}</h2>`
+    })
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
     // Bold and italic
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -100,6 +133,29 @@ function markdownToHtml(md) {
   return html
 }
 
+function buildToc(html) {
+  const items = []
+  const regex = /<h2 id="([^"]+)">([^<]+)<\/h2>/g
+  let match
+  while ((match = regex.exec(html)) !== null) {
+    items.push({ id: match[1], text: match[2] })
+  }
+  return items
+}
+
+async function fetchAdjacentPosts() {
+  try {
+    const res = await api.get('/posts', { params: { page: 1, per_page: 100, status: 'published' } })
+    const allPosts = res.posts || []
+    const currentId = Number(route.params.id)
+    const idx = allPosts.findIndex(p => p.id === currentId)
+    if (idx > 0) prevPost.value = allPosts[idx - 1]
+    if (idx >= 0 && idx < allPosts.length - 1) nextPost.value = allPosts[idx + 1]
+  } catch {
+    // silently fail
+  }
+}
+
 const renderedContent = computed(() => {
   return post.value ? markdownToHtml(post.value.content) : ''
 })
@@ -108,6 +164,9 @@ onMounted(async () => {
   try {
     const res = await api.get(`/posts/${route.params.id}`)
     post.value = res
+    await nextTick()
+    tocItems.value = buildToc(renderedContent.value)
+    fetchAdjacentPosts()
   } catch {
     post.value = null
   } finally {
@@ -121,6 +180,7 @@ onMounted(async () => {
   max-width: 720px;
   margin: 0 auto;
   padding: 64px 24px 80px;
+  position: relative;
 }
 .back-link {
   display: inline-flex;
@@ -140,7 +200,7 @@ onMounted(async () => {
   border-color: var(--fg);
 }
 .article-header {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 .article-meta {
   display: flex;
@@ -151,8 +211,14 @@ onMounted(async () => {
   color: var(--muted);
   flex-wrap: wrap;
 }
-.meta-tag {
+.tag {
+  display: inline-block;
+  background: var(--tag-bg);
+  color: var(--tag-fg);
+  padding: 2px 8px;
+  border-radius: 4px;
   font-size: 12px;
+  font-weight: 500;
 }
 .article-title {
   font-family: var(--font-display);
@@ -167,6 +233,78 @@ onMounted(async () => {
   font-size: 17px;
   color: var(--muted);
   line-height: 1.6;
+}
+.article-hero {
+  margin: 24px 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  background: linear-gradient(135deg, var(--accent-soft), var(--tag-bg));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.article-hero-placeholder {
+  font-size: 48px;
+}
+.article-author {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+  margin-bottom: 32px;
+}
+.author-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+}
+.author-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+.author-role {
+  font-size: 12px;
+  color: var(--muted);
+}
+.toc {
+  display: none;
+  position: fixed;
+  top: 80px;
+  right: calc((100vw - 720px) / 2 - 220px);
+  width: 180px;
+}
+.toc-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 12px;
+}
+.toc-link {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+.toc-link:hover,
+.toc-link.active {
+  color: var(--accent);
+}
+@media (min-width: 1200px) {
+  .toc {
+    display: block;
+  }
 }
 .article-body {
   font-size: 16px;
@@ -214,21 +352,21 @@ onMounted(async () => {
 }
 .article-body :deep(code) {
   font-family: var(--font-mono);
-  font-size: 0.875em;
+  font-size: 13px;
   background: var(--tag-bg, #f0f0f0);
-  border: 1px solid var(--border);
+  border: 1px solid var(--code-border, var(--border));
   padding: 2px 6px;
   border-radius: 4px;
 }
 .article-body :deep(pre) {
   background: var(--tag-bg, #f0f0f0);
-  border: 1px solid var(--border);
+  border: 1px solid var(--code-border, var(--border));
   border-radius: var(--radius);
   padding: 16px 20px;
   margin-bottom: 20px;
   overflow-x: auto;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.6;
 }
 .article-body :deep(pre code) {
@@ -238,9 +376,9 @@ onMounted(async () => {
 }
 .article-body :deep(blockquote) {
   border-left: 3px solid var(--accent);
-  padding: 8px 16px;
-  margin-bottom: 16px;
-  color: var(--muted);
+  padding: 12px 20px;
+  margin: 24px 0;
+  color: var(--fg);
   background: var(--accent-soft);
   border-radius: 0 var(--radius) var(--radius) 0;
 }
@@ -263,6 +401,37 @@ onMounted(async () => {
   gap: 8px;
   flex-wrap: wrap;
 }
+.post-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.post-nav-item {
+  text-decoration: none;
+  color: var(--fg);
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: all 0.15s;
+}
+.post-nav-item:hover {
+  border-color: var(--fg);
+}
+.post-nav-item.next {
+  text-align: right;
+}
+.post-nav-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.post-nav-title {
+  font-size: 14px;
+  font-weight: 500;
+}
 .not-found {
   text-align: center;
   padding-top: 120px;
@@ -280,6 +449,9 @@ onMounted(async () => {
 @media (max-width: 640px) {
   .article {
     padding: 40px 16px 48px;
+  }
+  .post-nav {
+    grid-template-columns: 1fr;
   }
 }
 </style>

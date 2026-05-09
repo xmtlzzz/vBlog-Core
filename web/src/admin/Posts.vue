@@ -1,41 +1,42 @@
 <template>
   <div class="posts-page">
     <div class="page-header">
-      <h1 class="page-title">文章管理</h1>
+      <h1 class="page-title">全部文章 All Posts</h1>
       <el-button type="primary" @click="openCreate">新文章 New Post</el-button>
     </div>
 
     <div class="filter-row">
-      <el-input v-model="filters.search" placeholder="搜索文章..." clearable style="width: 240px" @input="debounceFetch" />
-      <el-select v-model="filters.status" placeholder="状态" clearable style="width: 120px" @change="fetchPosts">
-        <el-option label="已发布" value="published" />
-        <el-option label="草稿" value="draft" />
-        <el-option label="已归档" value="archived" />
+      <el-input v-model="filters.search" placeholder="搜索标题或摘要 Search..." clearable style="width: 240px" @input="debounceFetch" />
+      <el-select v-model="filters.status" placeholder="全部状态 All Status" clearable style="width: 160px" @change="fetchPosts">
+        <el-option label="已发布 Published" value="published" />
+        <el-option label="草稿 Draft" value="draft" />
+        <el-option label="已归档 Archived" value="archived" />
       </el-select>
-      <el-select v-model="filters.tag" placeholder="标签" clearable style="width: 140px" @change="fetchPosts">
+      <el-select v-model="filters.tag" placeholder="全部标签 All Tags" clearable style="width: 160px" @change="fetchPosts">
         <el-option v-for="t in allTags" :key="t.id" :label="t.name" :value="t.name" />
       </el-select>
     </div>
 
     <el-table :data="posts" stripe>
-      <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
-      <el-table-column label="标签" width="180">
+      <el-table-column prop="title" label="标题 Title" min-width="200" show-overflow-tooltip />
+      <el-table-column label="标签 Tags" width="180">
         <template #default="{ row }">
-          <el-tag v-for="tag in (row.tags || [])" :key="tag.id || tag.name" size="small" style="margin-right: 4px">{{ tag.name }}</el-tag>
+          <span v-for="tag in (row.tags || [])" :key="tag.id || tag.name" class="tag-pill">{{ tag.name }}</span>
           <span v-if="!row.tags?.length" style="color: var(--muted); font-size: 13px">-</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" width="100">
+      <el-table-column label="状态 Status" width="100">
         <template #default="{ row }">
-          <span :class="['status-badge', row.status]">{{ statusLabel(row.status) }}</span>
+          <span :class="['status-badge', 'status-' + row.status]">{{ statusLabel(row.status) }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="views" label="阅读" width="80" />
-      <el-table-column label="日期" width="120">
+      <el-table-column prop="views" label="阅读 Views" width="80" />
+      <el-table-column label="日期 Date" width="120">
         <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="120" fixed="right">
+      <el-table-column label="操作 Actions" width="160" fixed="right">
         <template #default="{ row }">
+          <button class="action-btn" @click="viewPost(row)">查看 View</button>
           <el-button size="small" text type="primary" @click="openEdit(row)">编辑</el-button>
           <el-button size="small" text type="danger" @click="deletePost(row.id)">删除</el-button>
         </template>
@@ -43,6 +44,7 @@
     </el-table>
 
     <div class="pagination-wrap" v-if="total > perPage">
+      <span class="pagination-summary">共 {{ total }} 篇文章 Showing {{ (page - 1) * perPage + 1 }}-{{ Math.min(page * perPage, total) }} of {{ total }}</span>
       <el-pagination
         layout="prev, pager, next"
         :total="total"
@@ -56,7 +58,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="editingId ? '编辑文章' : '新建文章'"
-      width="680px"
+      width="560px"
       destroy-on-close
     >
       <el-form label-position="top">
@@ -115,6 +117,10 @@ function statusLabel(s) {
 function formatDate(d) {
   if (!d) return '-'
   return new Date(d).toLocaleDateString('zh-CN')
+}
+
+function viewPost(row) {
+  window.open(`/post/${row.id}`, '_blank')
 }
 
 function debounceFetch() {
@@ -224,26 +230,44 @@ onMounted(() => {
 }
 .pagination-wrap {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
   margin-top: 20px;
 }
-.status-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 100px;
-  font-size: 12px;
-  font-weight: 500;
-}
-.status-badge.published {
-  background: rgba(22, 163, 74, 0.1);
-  color: var(--success);
-}
-.status-badge.draft {
-  background: rgba(245, 158, 11, 0.1);
-  color: var(--warning);
-}
-.status-badge.archived {
-  background: rgba(115, 115, 115, 0.1);
+.pagination-summary {
+  font-size: 13px;
   color: var(--muted);
+}
+.status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+.status-published { background: var(--success-soft); color: var(--success); }
+.status-draft { background: var(--warning-soft); color: var(--warning); }
+.status-archived { background: var(--error-soft); color: var(--muted); }
+.tag-pill {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--tag-bg);
+  color: var(--tag-fg);
+  margin-right: 4px;
+}
+.action-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+  margin-right: 4px;
+}
+.action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 </style>

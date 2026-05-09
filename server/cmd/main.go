@@ -46,6 +46,7 @@ func main() {
 	(&api.CommentResource{Service: commentSvc}).Register(ws)
 	(&api.SettingResource{Service: settingSvc}).Register(ws)
 	(&api.AuthResource{Service: authSvc, Secret: cfg.JWT.Secret}).Register(ws)
+	(&api.RSSResource{DB: db}).Register(ws)
 	// Admin routes (JWT protected)
 	ws.Route(ws.GET("/api/dashboard/stats").Filter(jwtFilter).To((&api.DashboardResource{DB: db}).Stats))
 	ws.Route(ws.GET("/api/components").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).List))

@@ -3,7 +3,7 @@
     <span>© 2026 vBlog Core · 用代码写作，用文字思考</span>
     <div class="footer-links">
       <a href="#">GitHub</a>
-      <a href="#">RSS</a>
+      <a href="/api/rss" target="_blank">RSS</a>
       <a href="#">gRPC API</a>
     </div>
   </footer>

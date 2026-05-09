@@ -59,7 +59,17 @@ func main() {
 	// Serve frontend static files if ./static directory exists (Docker deployment)
 	if _, err := os.Stat("static"); err == nil {
 		staticDir, _ := filepath.Abs("static")
-		wsContainer.ServeMux.Handle("/", http.FileServer(http.Dir(staticDir)))
+		fs := http.FileServer(http.Dir(staticDir))
+		wsContainer.ServeMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			// Try to serve the file directly
+			path := filepath.Join(staticDir, r.URL.Path)
+			if _, err := os.Stat(path); err == nil {
+				fs.ServeHTTP(w, r)
+				return
+			}
+			// SPA fallback: serve index.html for all non-file routes
+			http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+		})
 		log.Printf("serving static files from %s", staticDir)
 	}
 

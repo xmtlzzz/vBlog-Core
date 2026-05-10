@@ -138,5 +138,13 @@ func (s *PostService) Update(post *model.Post) error {
 
 // Delete soft-deletes a post by ID.
 func (s *PostService) Delete(id uint) error {
-	return s.DB.Delete(&model.Post{}, id).Error
+	var post model.Post
+	if err := s.DB.First(&post, id).Error; err != nil {
+		return err
+	}
+	if err := s.DB.Delete(&model.Post{}, id).Error; err != nil {
+		return err
+	}
+	s.LogSvc.Write("delete_post", &id, post.Title, "")
+	return nil
 }

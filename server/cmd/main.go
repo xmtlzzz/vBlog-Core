@@ -39,6 +39,11 @@ func main() {
 	changeLogSvc := service.NewChangeLogService(db)
 	pageViewSvc := service.NewPageViewService(db)
 
+	// Backfill change_log with existing content (one-time, skips if already done)
+	if err := changeLogSvc.Backfill(); err != nil {
+		log.Printf("change_log backfill failed: %v", err)
+	}
+
 	wsContainer := restful.NewContainer()
 	wsContainer.EnableContentEncoding(true)
 

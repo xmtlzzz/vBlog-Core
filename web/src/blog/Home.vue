@@ -57,6 +57,7 @@
   </section>
 
   </div>
+  <CustomWidgets />
   <BlogFooter />
 </template>
 
@@ -65,6 +66,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
+import CustomWidgets from '../shared/CustomWidgets.vue'
 import PostCard from '../shared/PostCard.vue'
 
 const stats = ref({ total_posts: 0, total_views: 0, total_tags: 0 })

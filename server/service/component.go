@@ -22,9 +22,15 @@ func (s *ComponentService) List() ([]model.Component, error) {
 	return components, err
 }
 
-// Create creates a new component with auto-set origin "uploaded".
+// ListActive returns only active non-built-in components.
+func (s *ComponentService) ListActive() ([]model.Component, error) {
+	var components []model.Component
+	err := s.DB.Where("status = ? AND origin != ?", "active", "built-in").Find(&components).Error
+	return components, err
+}
+
+// Create creates a new component.
 func (s *ComponentService) Create(c *model.Component) error {
-	c.Origin = "uploaded"
 	return s.DB.Create(c).Error
 }
 

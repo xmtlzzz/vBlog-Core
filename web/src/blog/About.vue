@@ -41,6 +41,7 @@
     </section>
   </div>
   </div>
+  <CustomWidgets />
   <BlogFooter />
 </template>
 
@@ -49,6 +50,7 @@ import { ref, computed, onMounted } from 'vue'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
+import CustomWidgets from '../shared/CustomWidgets.vue'
 
 const settings = ref({})
 

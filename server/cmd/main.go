@@ -49,6 +49,8 @@ func main() {
 	(&api.RSSResource{DB: db}).Register(ws)
 	// Public stats
 	ws.Route(ws.GET("/api/dashboard/stats").To((&api.DashboardResource{DB: db}).Stats))
+	// Public active components
+	ws.Route(ws.GET("/api/components/active").To((&api.ComponentResource{Service: componentSvc}).ListActive))
 	// Admin routes (JWT protected)
 	ws.Route(ws.GET("/api/components").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).List))
 	ws.Route(ws.POST("/api/components").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Create))

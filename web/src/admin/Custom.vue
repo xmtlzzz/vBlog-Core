@@ -74,6 +74,7 @@
             <span>{{ comp.origin || 'custom' }}</span>
           </div>
           <div class="comp-actions">
+            <el-button size="small" type="primary" text @click="previewComponent(comp)">预览</el-button>
             <el-button size="small" :type="comp.status === 'active' ? 'warning' : 'success'" text @click="toggleComponent(comp)">
               {{ comp.status === 'active' ? '停用' : '启用' }}
             </el-button>
@@ -84,6 +85,13 @@
     </div>
 
     <div v-if="!components.length" class="empty-state">暂无组件</div>
+
+    <!-- Preview Modal -->
+    <el-dialog v-model="previewVisible" :title="`预览：${previewComp?.name || ''}`" width="680px" @closed="previewComp = null">
+      <div class="preview-container">
+        <iframe v-if="previewComp" :srcdoc="buildSrcdoc(previewComp.code)" class="preview-iframe" sandbox="allow-scripts"></iframe>
+      </div>
+    </el-dialog>
 
     <!-- Upload Modal -->
     <el-dialog v-model="dialogVisible" title="上传组件" width="560px" destroy-on-close>
@@ -98,6 +106,11 @@
           <el-input v-model="form.version" placeholder="1.0.0" />
         </el-form-item>
         <el-form-item label="代码">
+          <div class="code-toolbar">
+            <el-upload :show-file-list="false" accept=".js,.jsx,.ts,.tsx" :before-upload="onImportFile">
+              <el-button size="small" text type="primary">导入文件</el-button>
+            </el-upload>
+          </div>
           <el-input v-model="form.code" type="textarea" :rows="8" placeholder="组件代码" />
         </el-form-item>
       </el-form>
@@ -113,11 +126,19 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
+import { buildSrcdoc as _buildSrcdoc } from '../utils/component'
 
 const components = ref([])
 const dialogVisible = ref(false)
 const saving = ref(false)
 const form = reactive({ name: '', description: '', version: '', code: '' })
+const previewVisible = ref(false)
+const previewComp = ref(null)
+
+function buildSrcdoc(code) {
+  if (!code) return '<body style="padding:24px;color:#737373;font-family:system-ui">该组件没有代码内容</body>'
+  return _buildSrcdoc(code, { padding: '24px' })
+}
 
 const layoutComponents = computed(() => components.value.filter(c => c.category === 'layout'))
 const contentComponents = computed(() => components.value.filter(c => c.category === 'content'))
@@ -131,6 +152,19 @@ async function fetchComponents() {
 function openUpload() {
   Object.assign(form, { name: '', description: '', version: '', code: '' })
   dialogVisible.value = true
+}
+
+function onImportFile(file) {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    form.code = e.target.result
+    if (!form.name) {
+      form.name = file.name.replace(/\.(js|jsx|ts|tsx)$/, '')
+    }
+    ElMessage.success(`已导入 ${file.name}`)
+  }
+  reader.readAsText(file)
+  return false
 }
 
 async function uploadComponent() {
@@ -171,6 +205,11 @@ async function deleteComponent(id) {
     ElMessage.success('已删除')
     fetchComponents()
   } catch {}
+}
+
+function previewComponent(comp) {
+  previewComp.value = comp
+  previewVisible.value = true
 }
 
 onMounted(fetchComponents)
@@ -264,5 +303,23 @@ onMounted(fetchComponents)
   text-align: center;
   padding: 48px;
   color: var(--muted);
+}
+.code-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+.preview-container {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 120px;
+  padding: 16px;
+}
+.preview-iframe {
+  width: 100%;
+  min-height: 100px;
+  border: none;
+  background: transparent;
 }
 </style>

@@ -51,9 +51,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import api from '../api/request'
@@ -68,8 +68,33 @@ const postId = computed(() => route.params.id)
 const editorTheme = computed(() => themeStore.theme === 'dark' ? 'dark' : 'light')
 
 const saving = ref(false)
+const saved = ref(false)
 const allTags = ref([])
 const form = reactive({ title: '', content: '', excerpt: '', status: 'draft', tagNames: [] })
+
+const isDirty = computed(() => form.title.trim() || form.content.trim() || form.excerpt.trim())
+
+onBeforeRouteLeave(async () => {
+  if (saved.value || !isDirty.value) return true
+  try {
+    await ElMessageBox.confirm('当前内容未保存，确定离开？', '未保存的更改', {
+      confirmButtonText: '离开',
+      cancelButtonText: '留下',
+      type: 'warning'
+    })
+    return true
+  } catch {
+    return false
+  }
+})
+
+function onBeforeUnload(e) {
+  if (!isDirty.value) return
+  e.preventDefault()
+  e.returnValue = ''
+}
+window.addEventListener('beforeunload', onBeforeUnload)
+onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload))
 
 async function fetchTags() {
   const res = await api.get('/tags').catch(() => [])
@@ -108,10 +133,12 @@ async function handleSave(status) {
     }
     if (isEdit.value) {
       await api.put(`/posts/${postId.value}`, payload)
+      saved.value = true
       ElMessage.success('文章已更新')
     } else {
       await api.post('/posts', payload)
       ElMessage.success('文章已创建')
+      saved.value = true
       router.push('/admin/posts')
     }
   } catch {

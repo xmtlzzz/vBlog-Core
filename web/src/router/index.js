@@ -4,6 +4,7 @@ const routes = [
   { path: '/', component: () => import('../blog/Home.vue') },
   { path: '/post/:id', component: () => import('../blog/Post.vue') },
   { path: '/archives', component: () => import('../blog/Archives.vue') },
+  { path: '/modules', component: () => import('../blog/Modules.vue') },
   { path: '/tags', component: () => import('../blog/Tags.vue') },
   { path: '/about', component: () => import('../blog/About.vue') },
   { path: '/admin/login', component: () => import('../admin/Login.vue') },

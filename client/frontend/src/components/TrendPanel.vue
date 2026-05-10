@@ -1,11 +1,11 @@
 <template>
   <div class="trend-panel">
     <div class="trend-header">
-      <h3>Trends</h3>
+      <h3>趋势</h3>
       <div class="trend-tabs">
-        <button v-for="g in ['day','week','month']" :key="g"
-          :class="{ active: granularity === g }"
-          @click="$emit('change', g)">{{ g }}</button>
+        <button v-for="g in granularities" :key="g.key"
+          :class="{ active: granularity === g.key }"
+          @click="$emit('change', g.key)">{{ g.label }}</button>
       </div>
     </div>
     <div class="trend-chart" v-if="points?.length">
@@ -14,13 +14,19 @@
         <span class="trend-label">{{ p.label?.slice(5) || '' }}</span>
       </div>
     </div>
-    <div v-else class="trend-empty">No trend data</div>
+    <div v-else class="trend-empty">暂无趋势数据</div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 const props = defineProps({ points: Array, granularity: String })
+
+const granularities = [
+  { key: 'day', label: '日' },
+  { key: 'week', label: '周' },
+  { key: 'month', label: '月' },
+]
 
 const maxPv = computed(() => Math.max(...(props.points?.map(p => p.pv) || [1])))
 const barHeight = (pv) => Math.round((pv / maxPv.value) * 100)

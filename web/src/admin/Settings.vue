@@ -58,8 +58,26 @@
       </el-form>
     </div>
 
-    <!-- Features -->
+    <!-- gRPC -->
     <div class="settings-section slide-up" style="animation-delay: 200ms">
+      <h2 class="section-title">gRPC 监控</h2>
+      <el-form label-position="top">
+        <el-form-item label="API Key">
+          <div class="api-key-row">
+            <el-input v-model="settings.grpc_api_key" :type="showKey ? 'text' : 'password'" placeholder="桌面客户端连接密钥" />
+            <el-button @click="showKey = !showKey">{{ showKey ? '隐藏' : '显示' }}</el-button>
+            <el-button @click="generateKey">生成</el-button>
+          </div>
+          <div class="field-hint">桌面监控客户端连接时需要此密钥，留空则不启用认证</div>
+        </el-form-item>
+        <el-form-item label="gRPC 端口">
+          <el-input v-model="settings.grpc_port" placeholder="50051" />
+        </el-form-item>
+      </el-form>
+    </div>
+
+    <!-- Features -->
+    <div class="settings-section slide-up" style="animation-delay: 300ms">
       <h2 class="section-title">功能开关</h2>
       <div class="toggle-list">
         <div class="toggle-item">
@@ -104,6 +122,16 @@ import api from '../api/request'
 
 const settings = ref({})
 const saving = ref(false)
+const showKey = ref(false)
+
+function generateKey() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let key = 'vblog_'
+  for (let i = 0; i < 32; i++) {
+    key += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  settings.value.grpc_api_key = key
+}
 
 const perPageNum = computed({
   get: () => parseInt(settings.value.posts_per_page) || 5,
@@ -226,6 +254,18 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   font-size: 12px;
   color: var(--muted);
   margin-top: 2px;
+}
+.api-key-row {
+  display: flex;
+  gap: 8px;
+}
+.api-key-row .el-input {
+  flex: 1;
+}
+.field-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
 }
 
 .back-to-top {

@@ -3,7 +3,7 @@
     <div class="change-body">
       <div class="change-title">{{ change.title }}</div>
       <div class="change-meta">
-        <span class="change-type">{{ change.type }}</span>
+        <span class="change-type">{{ typeLabel(change.type) }}</span>
         <span class="change-time">{{ change.timestamp }}</span>
       </div>
     </div>
@@ -12,6 +12,17 @@
 
 <script setup>
 defineProps({ change: Object })
+
+const typeMap = {
+  new_post: '新文章',
+  new_comment: '新评论',
+  view_milestone: '阅读里程碑',
+  pv_milestone: '访问里程碑',
+  tag_added: '新标签',
+}
+function typeLabel(type) {
+  return typeMap[type] || type
+}
 </script>
 
 <style scoped>

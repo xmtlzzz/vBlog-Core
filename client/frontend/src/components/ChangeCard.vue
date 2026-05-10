@@ -4,7 +4,7 @@
       <div class="change-title">{{ change.title }}</div>
       <div class="change-meta">
         <span class="change-type">{{ typeLabel(change.type) }}</span>
-        <span class="change-time">{{ change.timestamp }}</span>
+        <span class="change-time">{{ formatTime(change.timestamp) }}</span>
       </div>
     </div>
   </div>
@@ -22,6 +22,13 @@ const typeMap = {
 }
 function typeLabel(type) {
   return typeMap[type] || type
+}
+function formatTime(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  if (isNaN(d.getTime())) return ts
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 </script>
 

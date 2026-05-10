@@ -64,6 +64,17 @@ func (p *PostResource) Register(ws *restful.WebService) {
 	ws.Route(ws.DELETE("/api/posts/{id}").To(p.delete).
 		Doc("delete a post").
 		Param(ws.PathParameter("id", "post ID")))
+
+	ws.Route(ws.GET("/api/posts/trash").To(p.trash).
+		Doc("list deleted posts"))
+
+	ws.Route(ws.POST("/api/posts/{id}/restore").To(p.restore).
+		Doc("restore a deleted post").
+		Param(ws.PathParameter("id", "post ID")))
+
+	ws.Route(ws.DELETE("/api/posts/{id}/permanent").To(p.permanentDelete).
+		Doc("permanently delete a post").
+		Param(ws.PathParameter("id", "post ID")))
 }
 
 func (p *PostResource) list(req *restful.Request, resp *restful.Response) {
@@ -150,6 +161,45 @@ func (p *PostResource) delete(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	if err := p.Service.Delete(uint(id)); err != nil {
+		resp.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	resp.WriteHeader(http.StatusOK)
+}
+
+func (p *PostResource) trash(req *restful.Request, resp *restful.Response) {
+	posts, err := p.Service.ListTrash()
+	if err != nil {
+		resp.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	list := make([]postResp, len(posts))
+	for i := range posts {
+		list[i] = newPostResp(&posts[i])
+	}
+	resp.WriteEntity(map[string]interface{}{"data": list})
+}
+
+func (p *PostResource) restore(req *restful.Request, resp *restful.Response) {
+	id, err := strconv.Atoi(req.PathParameter("id"))
+	if err != nil {
+		resp.WriteError(http.StatusBadRequest, err)
+		return
+	}
+	if err := p.Service.Restore(uint(id)); err != nil {
+		resp.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	resp.WriteHeader(http.StatusOK)
+}
+
+func (p *PostResource) permanentDelete(req *restful.Request, resp *restful.Response) {
+	id, err := strconv.Atoi(req.PathParameter("id"))
+	if err != nil {
+		resp.WriteError(http.StatusBadRequest, err)
+		return
+	}
+	if err := p.Service.PermanentDelete(uint(id)); err != nil {
 		resp.WriteError(http.StatusInternalServerError, err)
 		return
 	}

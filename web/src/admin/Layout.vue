@@ -20,6 +20,9 @@
           <router-link to="/admin/comments" class="sidebar-link" @click="sidebarOpen = false">
             <span class="nav-icon">❝</span> 评论 Comments
           </router-link>
+          <router-link to="/admin/trash" class="sidebar-link" @click="sidebarOpen = false">
+            <span class="nav-icon">🗑</span> 回收站 Trash
+          </router-link>
         </div>
         <div class="nav-section">
           <div class="nav-section-title">系统 System</div>
@@ -90,6 +93,7 @@ const pageMap = {
   '/admin/posts': '文章 Posts',
   '/admin/tags': '标签 Tags',
   '/admin/comments': '评论 Comments',
+  '/admin/trash': '回收站 Trash',
   '/admin/custom': '组件 Custom',
   '/admin/settings': '设置 Settings'
 }

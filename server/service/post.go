@@ -148,3 +148,22 @@ func (s *PostService) Delete(id uint) error {
 	s.LogSvc.Write("delete_post", &id, post.Title, "")
 	return nil
 }
+
+// ListTrash returns all soft-deleted posts.
+func (s *PostService) ListTrash() ([]model.Post, error) {
+	var posts []model.Post
+	err := s.DB.Unscoped().Where("deleted_at IS NOT NULL").
+		Order("deleted_at DESC").Find(&posts).Error
+	return posts, err
+}
+
+// Restore restores a soft-deleted post.
+func (s *PostService) Restore(id uint) error {
+	return s.DB.Unscoped().Model(&model.Post{}).
+		Where("id = ?", id).Update("deleted_at", nil).Error
+}
+
+// PermanentDelete hard-deletes a post by ID.
+func (s *PostService) PermanentDelete(id uint) error {
+	return s.DB.Unscoped().Delete(&model.Post{}, id).Error
+}

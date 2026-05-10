@@ -1,21 +1,21 @@
 <template>
   <div class="stats-bar" v-if="stats">
     <div class="stat">
-      <span class="stat-val">{{ stats.pvToday || 0 }}</span>
+      <span class="stat-val">{{ stats.pv_today || 0 }}</span>
       <span class="stat-label">今日 PV</span>
       <span class="stat-delta" v-if="pvDelta !== null">{{ pvDelta > 0 ? '+' : '' }}{{ pvDelta }}%</span>
     </div>
     <div class="stat">
-      <span class="stat-val">{{ stats.uvToday || 0 }}</span>
+      <span class="stat-val">{{ stats.uv_today || 0 }}</span>
       <span class="stat-label">今日 UV</span>
       <span class="stat-delta" v-if="uvDelta !== null">{{ uvDelta > 0 ? '+' : '' }}{{ uvDelta }}%</span>
     </div>
     <div class="stat">
-      <span class="stat-val">{{ stats.totalViews || 0 }}</span>
+      <span class="stat-val">{{ stats.total_views || 0 }}</span>
       <span class="stat-label">总阅读量</span>
     </div>
     <div class="stat">
-      <span class="stat-val">{{ stats.totalPosts || 0 }}</span>
+      <span class="stat-val">{{ stats.total_posts || 0 }}</span>
       <span class="stat-label">文章数</span>
     </div>
   </div>
@@ -26,12 +26,12 @@ import { computed } from 'vue'
 const props = defineProps({ stats: Object })
 
 const pvDelta = computed(() => {
-  if (!props.stats?.pvYesterday) return null
-  return Math.round(((props.stats.pvToday - props.stats.pvYesterday) / props.stats.pvYesterday) * 100)
+  if (!props.stats?.pv_yesterday) return null
+  return Math.round(((props.stats.pv_today - props.stats.pv_yesterday) / props.stats.pv_yesterday) * 100)
 })
 const uvDelta = computed(() => {
-  if (!props.stats?.uvYesterday) return null
-  return Math.round(((props.stats.uvToday - props.stats.uvYesterday) / props.stats.uvYesterday) * 100)
+  if (!props.stats?.uv_yesterday) return null
+  return Math.round(((props.stats.uv_today - props.stats.uv_yesterday) / props.stats.uv_yesterday) * 100)
 })
 </script>
 

@@ -163,7 +163,16 @@ func (s *PostService) Restore(id uint) error {
 		Where("id = ?", id).Update("deleted_at", nil).Error
 }
 
-// PermanentDelete hard-deletes a post by ID.
+// PermanentDelete hard-deletes a post and its associations.
 func (s *PostService) PermanentDelete(id uint) error {
+	// Remove join table associations first (foreign key)
+	if err := s.DB.Exec("DELETE FROM post_tags WHERE post_id = ?", id).Error; err != nil {
+		return err
+	}
+	// Delete related comments
+	s.DB.Unscoped().Where("post_id = ?", id).Delete(&model.Comment{})
+	// Delete related change_log entries
+	s.DB.Where("target_id = ?", id).Delete(&model.ChangeLog{})
+	// Hard delete the post
 	return s.DB.Unscoped().Delete(&model.Post{}, id).Error
 }

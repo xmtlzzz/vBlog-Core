@@ -21,6 +21,7 @@ const routes = [
       { path: 'tags', component: () => import('../admin/Tags.vue') },
       { path: 'comments', component: () => import('../admin/Comments.vue') },
       { path: 'custom', component: () => import('../admin/Custom.vue') },
+      { path: 'trash', component: () => import('../admin/Trash.vue') },
       { path: 'settings', component: () => import('../admin/Settings.vue') },
     ]
   }

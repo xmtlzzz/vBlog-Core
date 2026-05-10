@@ -35,7 +35,10 @@
       "Read(//tmp/**)",
       "Bash(tasklist //FI \"PID eq 30536\")",
       "Bash(wmic process *)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(gh auth *)",
+      "Bash(git remote *)",
+      "Bash(git push *)"
     ]
   }
 }

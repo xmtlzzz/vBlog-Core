@@ -124,9 +124,9 @@ async function fetchTags() {
 
 async function deletePost(id) {
   try {
-    await ElMessageBox.confirm('确定删除这篇文章？', '确认删除', { type: 'warning' })
+    await ElMessageBox.confirm('文章将移入回收站，可在回收站中恢复或彻底删除。', '移入回收站', { type: 'warning', confirmButtonText: '移入回收站', cancelButtonText: '取消' })
     await api.delete(`/posts/${id}`)
-    ElMessage.success('已删除')
+    ElMessage.success('已移入回收站')
     fetchPosts()
   } catch {}
 }

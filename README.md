@@ -1,6 +1,6 @@
 # vBlog Core
 
-一个面向极客和 Vibe Coder 的可自定义轻量博客系统。使用 Markdown 写作，支持组件自定义、标签分类、评论系统、RSS 订阅等功能。
+一个面向极客和 Vibe Coder 的可自定义轻量博客系统。使用 Markdown 写作，支持组件自定义、标签分类、评论系统、RSS 订阅、gRPC 实时监控等功能。
 
 ## 功能特性
 
@@ -19,22 +19,31 @@
 
 - **仪表盘**：文章总数、总阅读量、评论数、标签数统计
 - **文章管理**：创建、编辑、删除文章；Markdown 编辑器（md-editor-v3）支持图片上传；Markdown 文件导入
+- **回收站**：文章软删除后进入回收站，支持恢复和彻底删除
 - **标签管理**：标签 CRUD，显示文章计数
 - **评论管理**：查看、删除评论
-- **组件自定义**：iframe 沙盒自定义组件，支持启用/禁用切换
-- **系统设置**：站点信息、作者信息、功能开关
+- **组件自定义**：iframe 沙盒自定义组件，支持启用/禁用切换，组件可读取博客数据
+- **系统设置**：站点信息、作者信息、功能开关、gRPC API Key 管理
 - **图片上传**：编辑器内粘贴/拖拽图片自动上传
+
+### gRPC 实时监控
+
+- **数据统计**：PV/UV 访问量、文章阅读量、评论数、标签数
+- **趋势对比**：支持日/周/月维度的趋势数据
+- **实时推送**：gRPC 双向流，新文章/评论/里程碑事件实时推送到客户端
+- **桌面客户端**：Wails v2 桌面应用，通知/变动中心风格 UI
 
 ## 技术栈
 
 | 层级 | 技术 |
 |------|------|
 | 前端 | Vue 3 + Element Plus + Pinia + Vue Router 4 + md-editor-v3 |
-| 后端 | Go + go-restful/v3 + GORM |
+| 后端 | Go + go-restful/v3 + GORM + gRPC |
 | 数据库 | PostgreSQL |
-| 认证 | JWT（golang-jwt/v5） |
+| 认证 | JWT（golang-jwt/v5）+ API Key（gRPC） |
 | 配置 | Viper + TOML |
 | 前端构建 | Vite |
+| 桌面客户端 | Wails v2 + Vue 3 |
 
 ## 项目结构
 
@@ -42,10 +51,10 @@
 vBlog Core/
 ├── server/                  # Go 后端
 │   ├── cmd/
-│   │   ├── main.go          # 服务入口
+│   │   ├── main.go          # 服务入口（HTTP + gRPC）
 │   │   └── seed/            # 测试数据种子脚本
 │   ├── api/                 # REST API 处理器
-│   │   ├── post.go          # 文章 API
+│   │   ├── post.go          # 文章 API（含回收站）
 │   │   ├── tag.go           # 标签 API
 │   │   ├── comment.go       # 评论 API
 │   │   ├── setting.go       # 设置 API
@@ -54,24 +63,34 @@ vBlog Core/
 │   │   ├── dashboard.go     # 仪表盘统计 API
 │   │   ├── rss.go           # RSS Feed
 │   │   └── upload.go        # 图片上传 API
+│   ├── grpc/                # gRPC 服务
+│   │   ├── server.go        # gRPC 服务器（GetLatestStats, GetTrends, WatchChanges）
+│   │   ├── auth.go          # API Key 认证拦截器
+│   │   └── analytics_test.go
+│   ├── proto/               # Protobuf 定义与生成代码
 │   ├── service/             # 业务逻辑层
 │   ├── model/               # 数据模型（GORM）
-│   ├── middleware/           # JWT 中间件
+│   ├── middleware/           # JWT 中间件 + PV 记录中间件
 │   └── config/              # 配置（Viper + TOML）
-│       ├── config.go        # 配置加载
-│       ├── config.toml      # 配置文件
-│       └── database.go      # 数据库连接
-├── web/                     # Vue 3 前端
+├── client/                  # Wails 桌面客户端
+│   ├── app.go               # 应用逻辑（gRPC 连接、数据获取）
+│   ├── main.go              # Wails 入口
+│   └── frontend/            # Vue 3 前端
+│       └── src/
+│           ├── App.vue      # 主界面
+│           └── components/  # StatsBar, ChangeCard, TrendPanel, Settings
+├── web/                     # Vue 3 前端（博客 + 后台）
 │   └── src/
 │       ├── blog/            # 博客前台页面
-│       ├── admin/           # 后台管理页面
-│       ├── shared/          # 共享组件（导航、页脚、评论）
+│       ├── admin/           # 后台管理页面（含回收站）
+│       ├── shared/          # 共享组件（导航、页脚、CustomWidgets）
 │       ├── stores/          # Pinia 状态管理
 │       ├── api/             # Axios 请求封装
 │       ├── styles/          # 全局样式与设计变量
-│       └── utils/           # 工具函数
+│       └── utils/           # 工具函数（含组件检测脚本）
+├── test-components/         # 测试组件脚本
 ├── hdx/                     # HTML 原型（UI 参考）
-├── docs/                    # 文档
+├── docs/                    # 文档（PRD、设计规格、实现计划）
 └── deploy/                  # 部署配置
 ```
 
@@ -189,11 +208,50 @@ go test ./... -v
 |------|------|------|
 | POST | `/api/posts` | 创建文章 |
 | PUT | `/api/posts/{id}` | 更新文章 |
-| DELETE | `/api/posts/{id}` | 删除文章 |
+| DELETE | `/api/posts/{id}` | 删除文章（移入回收站） |
+| GET | `/api/posts/trash` | 回收站列表 |
+| POST | `/api/posts/{id}/restore` | 恢复文章 |
+| DELETE | `/api/posts/{id}/permanent` | 彻底删除 |
 | POST/PUT/DELETE | `/api/tags` | 标签 CRUD |
 | PUT | `/api/settings` | 保存设置 |
 | POST | `/api/upload` | 上传图片 |
 | CRUD | `/api/components` | 组件管理 |
+
+### gRPC 接口（端口 50051）
+
+| RPC | 说明 |
+|-----|------|
+| `Ping` | 心跳检测 |
+| `GetLatestStats` | 获取最新统计数据（PV/UV、文章数、阅读量等） |
+| `GetTrends` | 获取趋势数据（支持 day/week/month 粒度） |
+| `WatchChanges` | 服务端流式推送变动事件（需 API Key 认证） |
+
+## 桌面客户端
+
+Wails v2 桌面监控客户端，连接博客 gRPC 服务实时查看数据。
+
+### 功能
+
+- **统计概览**：今日 PV/UV、总阅读量、文章数，支持日环比
+- **变动通知**：新文章、新评论、阅读里程碑等实时推送
+- **趋势图表**：日/周/月维度的 PV/UV 趋势
+- **连接管理**：服务器地址 + API Key 配置，本地持久化
+
+### 构建与运行
+
+```bash
+cd client
+wails build        # 构建生产版本
+wails dev          # 开发模式（热重载）
+```
+
+构建产物：`client/build/bin/vBlog-Monitor.exe`
+
+### 使用流程
+
+1. 后台设置 → gRPC 监控 → 生成 API Key
+2. 启动客户端 → 设置 → 输入服务器地址和 API Key → 连接
+3. 客户端自动每 10 秒刷新数据，变动事件实时推送
 
 ## 设计系统
 

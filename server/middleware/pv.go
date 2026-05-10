@@ -13,7 +13,7 @@ import (
 func PVMiddleware(pvSvc *service.PageViewService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if pvSvc != nil && !strings.HasPrefix(r.URL.Path, "/api/") {
+			if pvSvc != nil {
 				ip := r.RemoteAddr
 				if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
 					ip = strings.Split(forwarded, ",")[0]

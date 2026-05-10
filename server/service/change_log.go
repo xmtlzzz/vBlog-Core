@@ -44,3 +44,39 @@ func (s *ChangeLogService) GetLatestID() (int64, error) {
 	}
 	return int64(log.ID), nil
 }
+
+// Backfill populates change_log with existing posts and comments.
+// Safe to call multiple times — skips if change_log already has entries.
+func (s *ChangeLogService) Backfill() error {
+	var count int64
+	s.DB.Model(&model.ChangeLog{}).Count(&count)
+	if count > 0 {
+		return nil
+	}
+
+	// Backfill published posts
+	var posts []model.Post
+	s.DB.Where("status = ?", "published").Order("created_at ASC").Find(&posts)
+	for _, p := range posts {
+		s.DB.Create(&model.ChangeLog{
+			ChangeType: "new_post",
+			TargetID:   &p.ID,
+			Title:      p.Title,
+			CreatedAt:  p.CreatedAt,
+		})
+	}
+
+	// Backfill comments
+	var comments []model.Comment
+	s.DB.Order("created_at ASC").Find(&comments)
+	for _, c := range comments {
+		s.DB.Create(&model.ChangeLog{
+			ChangeType: "new_comment",
+			TargetID:   &c.ID,
+			Title:      c.Body,
+			CreatedAt:  c.CreatedAt,
+		})
+	}
+
+	return nil
+}

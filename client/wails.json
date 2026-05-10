@@ -1,0 +1,9 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "vBlog Monitor",
+  "outputfilename": "vBlog-Monitor",
+  "frontend:dir": "frontend",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "author": { "name": "vBlog" }
+}

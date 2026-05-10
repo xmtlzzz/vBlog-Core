@@ -7,12 +7,13 @@ import (
 
 // CommentService handles comment CRUD operations.
 type CommentService struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	LogSvc *ChangeLogService
 }
 
 // NewCommentService creates a new CommentService.
 func NewCommentService(db *gorm.DB) *CommentService {
-	return &CommentService{DB: db}
+	return &CommentService{DB: db, LogSvc: NewChangeLogService(db)}
 }
 
 // List returns paginated comments with optional status filter and search.
@@ -37,7 +38,11 @@ func (s *CommentService) List(page, perPage int, status, search string) ([]model
 // Create creates a new comment with auto-set status "pending".
 func (s *CommentService) Create(c *model.Comment) error {
 	c.Status = "pending"
-	return s.DB.Create(c).Error
+	if err := s.DB.Create(c).Error; err != nil {
+		return err
+	}
+	s.LogSvc.Write("new_comment", &c.ID, c.Body, "")
+	return nil
 }
 
 // Approve sets a comment's status to "approved".

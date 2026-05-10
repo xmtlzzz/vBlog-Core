@@ -9,12 +9,13 @@ import (
 
 // PostService handles blog post CRUD operations.
 type PostService struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	LogSvc *ChangeLogService
 }
 
 // NewPostService creates a new PostService.
 func NewPostService(db *gorm.DB) *PostService {
-	return &PostService{DB: db}
+	return &PostService{DB: db, LogSvc: NewChangeLogService(db)}
 }
 
 // CalcReadTime calculates reading time in minutes (~500 chars per minute).
@@ -107,7 +108,13 @@ func (s *PostService) Create(post *model.Post) error {
 		}
 		post.Tags = resolved
 	}
-	return s.DB.Create(post).Error
+	if err := s.DB.Create(post).Error; err != nil {
+		return err
+	}
+	if post.Status == "published" {
+		s.LogSvc.Write("new_post", &post.ID, post.Title, "")
+	}
+	return nil
 }
 
 // Update updates an existing post, recalculating read time and syncing tags.

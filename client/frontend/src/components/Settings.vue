@@ -1,18 +1,18 @@
 <template>
   <div class="settings-overlay" @click.self="$emit('close')">
     <div class="settings-panel">
-      <h2>Connection</h2>
+      <h2>连接设置</h2>
       <label>
-        Server Address
+        服务器地址
         <input v-model="addr" placeholder="localhost:50051" />
       </label>
       <label>
         API Key
-        <input v-model="apiKey" type="password" placeholder="Enter API key" />
+        <input v-model="apiKey" type="password" placeholder="输入 API Key" />
       </label>
       <div class="settings-actions">
-        <button @click="$emit('close')">Cancel</button>
-        <button class="primary" @click="connect">Connect</button>
+        <button @click="$emit('close')">取消</button>
+        <button class="primary" @click="connect">连接</button>
       </div>
     </div>
   </div>

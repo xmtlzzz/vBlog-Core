@@ -1,13 +1,14 @@
 <template>
   <div class="app">
     <header class="app-header">
-      <h1>vBlog Monitor</h1>
-      <button @click="showSettings = true">Settings</button>
+      <h1>vBlog 监控</h1>
+      <button @click="showSettings = true">设置</button>
     </header>
     <StatsBar :stats="stats" />
     <div class="change-feed">
+      <div class="feed-title">最近变动</div>
       <ChangeCard v-for="c in changes" :key="c.id" :change="c" />
-      <div v-if="!changes.length" class="empty">No changes yet</div>
+      <div v-if="!changes.length" class="empty">暂无变动</div>
     </div>
     <TrendPanel :points="trends" :granularity="granularity" @change="loadTrends" />
     <Settings v-if="showSettings" @close="showSettings = false" @connect="handleConnect" />
@@ -28,12 +29,18 @@ const granularity = ref('day')
 const showSettings = ref(false)
 let refreshInterval = null
 
+function getApp() {
+  return window.go?.main?.App
+}
+
 async function handleConnect({ addr, apiKey }) {
+  const app = getApp()
+  if (!app) { alert('App not ready'); return }
   try {
-    await window.go.main.App.Connect(addr, apiKey)
+    await app.Connect(addr, apiKey)
     showSettings.value = false
     await refresh()
-    await window.go.main.App.WatchChanges(apiKey, 0)
+    await app.WatchChanges(apiKey, 0)
     refreshInterval = setInterval(refresh, 30000)
   } catch (e) {
     alert('Connection failed: ' + e)
@@ -41,20 +48,24 @@ async function handleConnect({ addr, apiKey }) {
 }
 
 async function refresh() {
+  const app = getApp()
+  if (!app) return
   try {
-    stats.value = await window.go.main.App.GetLatestStats()
+    stats.value = await app.GetLatestStats()
     await loadTrends(granularity.value)
   } catch {}
 }
 
 async function loadTrends(g) {
+  const app = getApp()
+  if (!app) return
   granularity.value = g
-  const resp = await window.go.main.App.GetTrends(g, 14)
+  const resp = await app.GetTrends(g, 14)
   trends.value = resp?.points || []
 }
 
 onMounted(() => {
-  if (window.runtime) {
+  if (window.runtime?.EventsOn) {
     window.runtime.EventsOn('change', (event) => {
       changes.value.unshift(event)
       if (changes.value.length > 50) changes.value.pop()
@@ -74,6 +85,7 @@ body { font-family: system-ui, sans-serif; background: #fafafa; color: #171717; 
 .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .app-header h1 { font-size: 18px; }
 .app-header button { padding: 6px 12px; border: 1px solid #e5e5e5; border-radius: 6px; background: white; cursor: pointer; }
+.feed-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
 .change-feed { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
 .empty { text-align: center; color: #737373; padding: 24px; }
 </style>

@@ -2,21 +2,21 @@
   <div class="stats-bar" v-if="stats">
     <div class="stat">
       <span class="stat-val">{{ stats.pvToday || 0 }}</span>
-      <span class="stat-label">PV Today</span>
+      <span class="stat-label">今日 PV</span>
       <span class="stat-delta" v-if="pvDelta !== null">{{ pvDelta > 0 ? '+' : '' }}{{ pvDelta }}%</span>
     </div>
     <div class="stat">
       <span class="stat-val">{{ stats.uvToday || 0 }}</span>
-      <span class="stat-label">UV Today</span>
+      <span class="stat-label">今日 UV</span>
       <span class="stat-delta" v-if="uvDelta !== null">{{ uvDelta > 0 ? '+' : '' }}{{ uvDelta }}%</span>
     </div>
     <div class="stat">
       <span class="stat-val">{{ stats.totalViews || 0 }}</span>
-      <span class="stat-label">Total Views</span>
+      <span class="stat-label">总阅读量</span>
     </div>
     <div class="stat">
       <span class="stat-val">{{ stats.totalPosts || 0 }}</span>
-      <span class="stat-label">Posts</span>
+      <span class="stat-label">文章数</span>
     </div>
   </div>
 </template>

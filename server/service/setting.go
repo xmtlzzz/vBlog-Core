@@ -24,6 +24,8 @@ func DefaultSettings() map[string]string {
 		"posts_per_page":   "10",
 		"theme":            "default",
 		"footer_text":      "Powered by vBlog Core",
+		"grpc_api_key":     "",
+		"grpc_port":        "50051",
 	}
 }
 

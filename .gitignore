@@ -3,6 +3,6 @@ server/tmp/
 server/static/
 web/node_modules/
 web/dist/
+hdx/
 *.exe
 .env
-hdx/

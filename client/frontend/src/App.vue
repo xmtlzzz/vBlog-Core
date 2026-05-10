@@ -7,7 +7,7 @@
     <StatsBar :stats="stats" />
     <div class="change-feed">
       <div class="feed-title">最近变动</div>
-      <ChangeCard v-for="c in changes" :key="c.id" :change="c" />
+      <ChangeCard v-for="c in changes.slice(0, 3)" :key="c.id" :change="c" />
       <div v-if="!changes.length" class="empty">暂无变动</div>
     </div>
     <TrendPanel :points="trends" :granularity="granularity" @change="loadTrends" />

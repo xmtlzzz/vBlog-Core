@@ -15,6 +15,7 @@ defineProps({ change: Object })
 
 const typeMap = {
   new_post: '新文章',
+  delete_post: '删除文章',
   new_comment: '新评论',
   view_milestone: '阅读里程碑',
   pv_milestone: '访问里程碑',

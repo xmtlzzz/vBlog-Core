@@ -35,15 +35,19 @@ function getApp() {
 
 async function handleConnect({ addr, apiKey }) {
   const app = getApp()
-  if (!app) { alert('App not ready'); return }
+  if (!app) { alert('应用未就绪'); return }
   try {
     await app.Connect(addr, apiKey)
     showSettings.value = false
     await refresh()
-    await app.WatchChanges(apiKey, 0)
-    refreshInterval = setInterval(refresh, 30000)
+    try {
+      await app.WatchChanges(apiKey, 0)
+    } catch (e) {
+      console.error('WatchChanges error:', e)
+    }
+    refreshInterval = setInterval(refresh, 10000)
   } catch (e) {
-    alert('Connection failed: ' + e)
+    alert('连接失败: ' + e)
   }
 }
 
@@ -51,9 +55,12 @@ async function refresh() {
   const app = getApp()
   if (!app) return
   try {
-    stats.value = await app.GetLatestStats()
+    const s = await app.GetLatestStats()
+    if (s) stats.value = s
     await loadTrends(granularity.value)
-  } catch {}
+  } catch (e) {
+    console.error('refresh error:', e)
+  }
 }
 
 async function loadTrends(g) {

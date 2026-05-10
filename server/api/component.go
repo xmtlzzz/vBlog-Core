@@ -19,6 +19,9 @@ func (c *ComponentResource) Register(ws *restful.WebService) {
 	ws.Route(ws.GET("/api/components").To(c.List).
 		Doc("list components"))
 
+	ws.Route(ws.GET("/api/components/active").To(c.ListActive).
+		Doc("list active custom components (public)"))
+
 	ws.Route(ws.POST("/api/components").To(c.Create).
 		Doc("create a component"))
 
@@ -44,6 +47,15 @@ func (c *ComponentResource) List(req *restful.Request, resp *restful.Response) {
 	resp.WriteEntity(map[string]interface{}{
 		"data": components,
 	})
+}
+
+func (c *ComponentResource) ListActive(req *restful.Request, resp *restful.Response) {
+	components, err := c.Service.ListActive()
+	if err != nil {
+		resp.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	resp.WriteEntity(components)
 }
 
 func (c *ComponentResource) Create(req *restful.Request, resp *restful.Response) {

@@ -68,6 +68,7 @@
     <router-link to="/" class="back-link">← 返回首页</router-link>
   </article>
 
+  <CustomWidgets />
   <BlogFooter />
 
   <!-- Back to top -->
@@ -87,6 +88,7 @@ import api from '../api/request'
 import { formatDate } from '../utils/format'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
+import CustomWidgets from '../shared/CustomWidgets.vue'
 import CommentSection from '../shared/CommentSection.vue'
 
 const route = useRoute()

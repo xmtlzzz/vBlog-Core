@@ -18,7 +18,7 @@
         </div>
         <div class="tag-actions">
           <el-button size="small" text type="primary" @click="openEdit(tag)">编辑</el-button>
-          <el-button size="small" text type="danger" @click="deleteTag(tag.id)">删除</el-button>
+          <el-button size="small" text type="danger" @click="deleteTag(tag)">删除</el-button>
         </div>
       </div>
       <div v-if="tags.length === 0" class="empty-state">暂无标签</div>
@@ -96,10 +96,22 @@ async function saveTag() {
   }
 }
 
-async function deleteTag(id) {
+async function deleteTag(tag) {
   try {
-    await ElMessageBox.confirm('确定删除此标签？', '确认删除', { type: 'warning' })
-    await api.delete(`/tags/${id}`)
+    if (tag.post_count > 0) {
+      await ElMessageBox.confirm(
+        `该标签下存在 ${tag.post_count} 篇文章，删除标签不会删除文章，但会解除关联。`,
+        '标签关联了文章',
+        { confirmButtonText: '我知道了', cancelButtonText: '取消', type: 'warning' }
+      )
+    }
+    await ElMessageBox.confirm('确定删除此标签？此操作不可恢复。', '二次确认', {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'error',
+      confirmButtonClass: 'el-button--danger'
+    })
+    await api.delete(`/tags/${tag.id}`)
     ElMessage.success('已删除')
     fetchTags()
   } catch {}

@@ -30,6 +30,7 @@
   </section>
 
   </div>
+  <CustomWidgets />
   <BlogFooter />
 </template>
 
@@ -38,6 +39,7 @@ import { ref, onMounted } from 'vue'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
+import CustomWidgets from '../shared/CustomWidgets.vue'
 import PostCard from '../shared/PostCard.vue'
 
 const tags = ref([])

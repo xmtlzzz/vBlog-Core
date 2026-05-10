@@ -19,7 +19,13 @@
       <h2>技术栈</h2>
       <div class="tech-grid">
         <div v-for="tech in techStack" :key="tech.name" class="tech-card">
-          <div class="tech-card-icon">{{ tech.icon }}</div>
+          <div class="tech-card-icon">
+            <svg v-if="tech.icon === 'vue'" width="20" height="20" viewBox="0 0 128 128">
+              <path d="M78.8,10L64,35.4L49.2,10H0l64,110l64-110H78.8z" fill="#41b883"/>
+              <path d="M78.8,10L64,35.4L49.2,10H25.6L64,76l38.4-66H78.8z" fill="#34495e"/>
+            </svg>
+            <template v-else>{{ tech.icon }}</template>
+          </div>
           <div class="tech-card-name">{{ tech.name }}</div>
           <div class="tech-card-role">{{ tech.role }}</div>
         </div>
@@ -60,7 +66,7 @@ const initial = computed(() => {
 })
 
 const techStack = [
-  { name: 'React', icon: '⚛', role: '前端框架' },
+  { name: 'Vue', icon: 'vue', role: '前端框架' },
   { name: 'Go', icon: '🐹', role: '后端语言' },
   { name: 'PostgreSQL', icon: '🐘', role: '数据库' },
   { name: 'Wails', icon: '🖥', role: '桌面客户端' },

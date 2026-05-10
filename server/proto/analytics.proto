@@ -1,0 +1,56 @@
+syntax = "proto3";
+package vblog;
+option go_package = "vblog-core/proto";
+
+service BlogAnalytics {
+  rpc GetTrends(GetTrendsRequest) returns (GetTrendsResponse);
+  rpc GetLatestStats(Empty) returns (LatestStats);
+  rpc WatchChanges(WatchRequest) returns (stream ChangeEvent);
+  rpc Ping(Empty) returns (Empty);
+}
+
+message GetTrendsRequest {
+  string granularity = 1;
+  int32 count = 2;
+}
+
+message TrendPoint {
+  string label = 1;
+  int64 pv = 2;
+  int64 uv = 3;
+  int64 view_total = 4;
+  int64 comment_count = 5;
+  int64 post_count = 6;
+}
+
+message GetTrendsResponse {
+  repeated TrendPoint points = 1;
+}
+
+message LatestStats {
+  int64 pv_today = 1;
+  int64 uv_today = 2;
+  int64 total_posts = 3;
+  int64 total_views = 4;
+  int64 total_comments = 5;
+  int64 total_tags = 6;
+  int64 pv_yesterday = 7;
+  int64 uv_yesterday = 8;
+  int64 views_today_delta = 9;
+  int64 comments_today_delta = 10;
+}
+
+message WatchRequest {
+  string api_key = 1;
+  int64 since_id = 2;
+}
+
+message ChangeEvent {
+  int64 id = 1;
+  string type = 2;
+  string title = 3;
+  string detail = 4;
+  string timestamp = 5;
+}
+
+message Empty {}

@@ -28,7 +28,7 @@ func TestPVMiddleware_RecordsView(t *testing.T) {
 	}
 }
 
-func TestPVMiddleware_SkipsAPIRoutes(t *testing.T) {
+func TestPVMiddleware_RecordsAPIRoutes(t *testing.T) {
 	called := false
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
@@ -36,14 +36,14 @@ func TestPVMiddleware_SkipsAPIRoutes(t *testing.T) {
 	})
 
 	handler := PVMiddleware(nil)(inner)
-	req := httptest.NewRequest("GET", "/api/posts", nil)
+	req := httptest.NewRequest("GET", "/api/posts/1", nil)
 	req.RemoteAddr = "127.0.0.1:12345"
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
 
 	if !called {
-		t.Error("expected inner handler to be called even for API routes")
+		t.Error("expected inner handler to be called")
 	}
 	if w.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d", w.Code)

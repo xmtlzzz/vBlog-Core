@@ -18,8 +18,9 @@ type Config struct {
 
 // ServerConfig holds HTTP server configuration.
 type ServerConfig struct {
-	Addr string
-	Port string
+	Addr     string
+	Port     string
+	GrpcPort string
 }
 
 // DBConfig holds PostgreSQL database configuration.
@@ -67,8 +68,9 @@ func Load() Config {
 
 	cfg := Config{
 		Server: ServerConfig{
-			Addr: v.GetString("http.addr"),
-			Port: v.GetString("http.port"),
+			Addr:     v.GetString("http.addr"),
+			Port:     v.GetString("http.port"),
+			GrpcPort: v.GetString("http.grpc_port"),
 		},
 		DB: DBConfig{
 			Host:     v.GetString("postgres.host"),
@@ -87,6 +89,9 @@ func Load() Config {
 	}
 	if cfg.Server.Port == "" {
 		cfg.Server.Port = "8080"
+	}
+	if cfg.Server.GrpcPort == "" {
+		cfg.Server.GrpcPort = "50051"
 	}
 	if cfg.DB.Port == 0 {
 		cfg.DB.Port = 5432

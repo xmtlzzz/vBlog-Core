@@ -27,6 +27,18 @@ func DefaultSettings() map[string]string {
 	}
 }
 
+// Get returns the value for a given setting key, or empty string if not found.
+func (s *SettingService) Get(key string) (string, error) {
+	var setting model.Setting
+	if err := s.DB.Where("key = ?", key).First(&setting).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return "", nil
+		}
+		return "", err
+	}
+	return setting.Value, nil
+}
+
 // GetAll returns all settings as a key-value map.
 func (s *SettingService) GetAll() (map[string]string, error) {
 	var settings []model.Setting
@@ -39,6 +51,11 @@ func (s *SettingService) GetAll() (map[string]string, error) {
 		result[s.Key] = s.Value
 	}
 	return result, nil
+}
+
+// Set upserts a single setting key-value pair.
+func (s *SettingService) Set(key, value string) error {
+	return s.DB.Save(&model.Setting{Key: key, Value: value}).Error
 }
 
 // Save upserts all key-value pairs in the settings map.

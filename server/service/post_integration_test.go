@@ -171,6 +171,39 @@ func TestPostService_UpdateWithTags(t *testing.T) {
 	db.Where("name = ?", "NewTag").Delete(&model.Tag{})
 }
 
+func TestPostService_Create_WritesChangeLog(t *testing.T) {
+	db := testutil.GetTestDB(t)
+	postSvc := NewPostService(db)
+	logSvc := NewChangeLogService(db)
+
+	beforeID, _ := logSvc.GetLatestID()
+
+	post := &model.Post{
+		Title:   "Test Change Log Post",
+		Content: "Some content",
+		Status:  "published",
+	}
+	err := postSvc.Create(post)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	logs, _ := logSvc.GetAfterID(beforeID)
+	found := false
+	for _, l := range logs {
+		if l.ChangeType == "new_post" && l.Title == "Test Change Log Post" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected change_log entry for new_post")
+	}
+
+	db.Unscoped().Delete(post)
+	db.Where("change_type = ? AND title = ?", "new_post", "Test Change Log Post").Delete(&model.ChangeLog{})
+}
+
 func TestPostService_Delete(t *testing.T) {
 	db := testutil.GetTestDB(t)
 	svc := NewPostService(db)

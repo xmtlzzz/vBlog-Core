@@ -59,6 +59,44 @@ func TestCommentService_List(t *testing.T) {
 	db.Unscoped().Delete(post)
 }
 
+func TestCommentService_Create_WritesChangeLog(t *testing.T) {
+	db := testutil.GetTestDB(t)
+	commentSvc := NewCommentService(db)
+	logSvc := NewChangeLogService(db)
+
+	// Create a post for the comment
+	post := &model.Post{Title: "ChangeLog Comment Post", Content: "Content", Status: "published"}
+	db.Create(post)
+
+	beforeID, _ := logSvc.GetLatestID()
+
+	comment := &model.Comment{
+		PostID:     post.ID,
+		AuthorName: "tester",
+		Body:       "Test comment",
+	}
+	err := commentSvc.Create(comment)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	logs, _ := logSvc.GetAfterID(beforeID)
+	found := false
+	for _, l := range logs {
+		if l.ChangeType == "new_comment" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected change_log entry for new_comment")
+	}
+
+	db.Unscoped().Delete(comment)
+	db.Where("change_type = ? AND title = ?", "new_comment", "Test comment").Delete(&model.ChangeLog{})
+	db.Unscoped().Delete(post)
+}
+
 func TestCommentService_Approve(t *testing.T) {
 	db := testutil.GetTestDB(t)
 	svc := NewCommentService(db)

@@ -50,11 +50,15 @@ func (s *Server) GetLatestStats(ctx context.Context, in *pb.Empty) (*pb.LatestSt
 	pvToday, uvToday, _ := s.PageViewSvc.GetPVUVByDate(today)
 	pvYesterday, uvYesterday, _ := s.PageViewSvc.GetPVUVByDate(yesterday)
 
-	var postCount, viewTotal, commentCount, tagCount int64
-	s.DailyStatsSvc.DB.Model(&model.Post{}).Where("status = ?", "published").Count(&postCount)
-	s.DailyStatsSvc.DB.Model(&model.Post{}).Select("COALESCE(SUM(views), 0)").Scan(&viewTotal)
-	s.DailyStatsSvc.DB.Model(&model.Comment{}).Count(&commentCount)
-	s.DailyStatsSvc.DB.Model(&model.Tag{}).Count(&tagCount)
+	var postCount, viewTotal int64
+	s.DailyStatsSvc.DB.Model(&model.Post{}).
+		Select("COUNT(*) FILTER (WHERE status = 'published'), COALESCE(SUM(views), 0)").
+		Row().Scan(&postCount, &viewTotal)
+
+	var commentCount, tagCount int64
+	s.DailyStatsSvc.DB.Raw(`SELECT
+		(SELECT COUNT(*) FROM comments),
+		(SELECT COUNT(*) FROM tags)`).Row().Scan(&commentCount, &tagCount)
 
 	return &pb.LatestStats{
 		PvToday:       pvToday,

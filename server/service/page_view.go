@@ -42,13 +42,7 @@ func (s *PageViewService) GetPVUVByDate(date string) (pv int64, uv int64, err er
 	end := start.Add(24 * time.Hour)
 	err = s.DB.Model(&model.PageView{}).
 		Where("created_at >= ? AND created_at < ?", start, end).
-		Count(&pv).Error
-	if err != nil {
-		return
-	}
-	err = s.DB.Model(&model.PageView{}).
-		Where("created_at >= ? AND created_at < ?", start, end).
-		Distinct("ip").
-		Count(&uv).Error
+		Select("COUNT(*), COUNT(DISTINCT ip)").
+		Row().Scan(&pv, &uv)
 	return
 }

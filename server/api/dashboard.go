@@ -18,11 +18,16 @@ func (d *DashboardResource) Register(ws *restful.WebService) {
 }
 
 func (d *DashboardResource) Stats(req *restful.Request, resp *restful.Response) {
-	var postCount, viewTotal, commentCount, tagCount int64
-	d.DB.Model(&model.Post{}).Where("status = ?", "published").Count(&postCount)
-	d.DB.Model(&model.Post{}).Select("COALESCE(SUM(views), 0)").Scan(&viewTotal)
-	d.DB.Model(&model.Comment{}).Count(&commentCount)
-	d.DB.Model(&model.Tag{}).Count(&tagCount)
+	var postCount, viewTotal int64
+	d.DB.Model(&model.Post{}).
+		Select("COUNT(*) FILTER (WHERE status = 'published'), COALESCE(SUM(views), 0)").
+		Row().Scan(&postCount, &viewTotal)
+
+	var commentCount, tagCount int64
+	d.DB.Raw(`SELECT
+		(SELECT COUNT(*) FROM comments),
+		(SELECT COUNT(*) FROM tags)`).Row().Scan(&commentCount, &tagCount)
+
 	resp.WriteEntity(map[string]interface{}{
 		"total_posts":    postCount,
 		"total_views":    viewTotal,

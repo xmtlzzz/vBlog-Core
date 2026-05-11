@@ -3,7 +3,7 @@
   <div class="page-enter">
   <!-- Hero -->
   <header class="hero fade-in">
-    <h1>写代码的人，<br/>也写点别的。</h1>
+    <h1><span v-html="typedText"></span><span class="cursor" v-if="typing">|</span></h1>
     <p>一个关于系统设计、工程实践与极客生活的博客。用 Markdown 写作，为 vibe coder 而建。</p>
   </header>
 
@@ -79,6 +79,24 @@ const perPage = 5
 const total = ref(0)
 let searchTimer = null
 
+const fullText = '写代码的人，\n也写点别的。'
+const typedText = ref('')
+const typing = ref(true)
+
+function startTypewriter() {
+  let i = 0
+  const timer = setInterval(() => {
+    if (i < fullText.length) {
+      const ch = fullText[i]
+      typedText.value += ch === '\n' ? '<br/>' : ch
+      i++
+    } else {
+      clearInterval(timer)
+      setTimeout(() => { typing.value = false }, 1500)
+    }
+  }, 100)
+}
+
 const statItems = computed(() => [
   { value: stats.value.total_posts, label: '篇文章 Articles' },
   { value: stats.value.total_views.toLocaleString(), label: '次阅读 Views' },
@@ -127,6 +145,7 @@ function handlePageChange(p) {
 
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
+  startTypewriter()
   const statsRes = await api.get('/dashboard/stats').catch(() => ({ total_posts: 0, total_views: 0, total_tags: 0 }))
   stats.value = {
     total_posts: statsRes.total_posts || 0,
@@ -161,6 +180,14 @@ onUnmounted(() => {
   color: var(--muted);
   max-width: 520px;
   line-height: 1.6;
+}
+.cursor {
+  font-weight: 300;
+  color: var(--accent);
+  animation: blink 0.8s step-end infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
 }
 .stats-bar {
   max-width: 1080px;

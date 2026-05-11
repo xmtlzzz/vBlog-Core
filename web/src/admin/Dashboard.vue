@@ -1,24 +1,24 @@
 <template>
   <div class="dashboard">
     <div class="stats-grid fade-in stagger">
-      <div class="stat-card card-hover">
+      <div class="stat-card card-hover" ref="cardRef0">
         <div class="stat-label">◎ 文章总数 Total Posts</div>
-        <div class="stat-card-value">{{ stats.total_posts }}</div>
+        <div class="stat-card-value">{{ postsCount.display.value }}</div>
         <div class="stat-change">已发布文章</div>
       </div>
-      <div class="stat-card card-hover">
+      <div class="stat-card card-hover" ref="cardRef1">
         <div class="stat-label">≡ 总阅读量 Total Views</div>
-        <div class="stat-card-value">{{ stats.total_views.toLocaleString() }}</div>
+        <div class="stat-card-value">{{ viewsCount.display.value.toLocaleString() }}</div>
         <div class="stat-change">累计阅读量</div>
       </div>
-      <div class="stat-card card-hover">
+      <div class="stat-card card-hover" ref="cardRef2">
         <div class="stat-label">❝ 评论数 Comments</div>
-        <div class="stat-card-value">{{ stats.total_comments }}</div>
+        <div class="stat-card-value">{{ commentsCount.display.value }}</div>
         <div class="stat-change">全部评论</div>
       </div>
-      <div class="stat-card card-hover">
+      <div class="stat-card card-hover" ref="cardRef3">
         <div class="stat-label">◉ 标签数 Tags</div>
-        <div class="stat-card-value">{{ stats.total_tags }}</div>
+        <div class="stat-card-value">{{ tagsCount.display.value }}</div>
         <div class="stat-change">标签数量</div>
       </div>
     </div>
@@ -74,8 +74,19 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
+import { useCountUp } from '../composables/useCountUp'
 
 const stats = ref({ total_posts: 0, total_views: 0, total_comments: 0, total_tags: 0 })
+
+const postsCount = useCountUp(() => stats.value.total_posts)
+const viewsCount = useCountUp(() => stats.value.total_views)
+const commentsCount = useCountUp(() => stats.value.total_comments)
+const tagsCount = useCountUp(() => stats.value.total_tags)
+
+const cardRef0 = ref(null)
+const cardRef1 = ref(null)
+const cardRef2 = ref(null)
+const cardRef3 = ref(null)
 const posts = ref([])
 const search = ref('')
 const statusFilter = ref('')
@@ -108,6 +119,11 @@ async function deletePost(id) {
 }
 
 onMounted(async () => {
+  if (cardRef0.value) postsCount.mount(cardRef0.value)
+  if (cardRef1.value) viewsCount.mount(cardRef1.value)
+  if (cardRef2.value) commentsCount.mount(cardRef2.value)
+  if (cardRef3.value) tagsCount.mount(cardRef3.value)
+
   const [statsRes, postsRes] = await Promise.all([
     api.get('/dashboard/stats').catch(() => ({})),
     api.get('/posts', { params: { page: 1, per_page: 10 } }).catch(() => ({ data: [] }))
@@ -119,6 +135,11 @@ onMounted(async () => {
     total_tags: statsRes.total_tags || 0
   }
   posts.value = postsRes.data || postsRes.posts || []
+
+  postsCount.start()
+  viewsCount.start()
+  commentsCount.start()
+  tagsCount.start()
 })
 </script>
 

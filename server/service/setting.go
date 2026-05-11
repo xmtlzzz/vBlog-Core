@@ -2,6 +2,7 @@ package service
 
 import (
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"vblog-core/model"
 )
 
@@ -62,13 +63,14 @@ func (s *SettingService) Set(key, value string) error {
 
 // Save upserts all key-value pairs in the settings map.
 func (s *SettingService) Save(settings map[string]string) error {
+	batch := make([]model.Setting, 0, len(settings))
 	for key, value := range settings {
-		setting := model.Setting{Key: key, Value: value}
-		if err := s.DB.Save(&setting).Error; err != nil {
-			return err
-		}
+		batch = append(batch, model.Setting{Key: key, Value: value})
 	}
-	return nil
+	return s.DB.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"value", "updated_at"}),
+	}).Create(&batch).Error
 }
 
 // Reset restores settings to defaults.

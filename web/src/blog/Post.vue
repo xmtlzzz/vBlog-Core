@@ -82,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
@@ -175,10 +175,13 @@ const renderedContent = computed(() => {
   return post.value ? markdownToHtml(post.value.content) : ''
 })
 
-onMounted(async () => {
-  window.addEventListener('scroll', onScroll, { passive: true })
+async function loadPost(id) {
+  post.value = null
+  prevPost.value = null
+  nextPost.value = null
+  tocItems.value = []
   try {
-    const res = await api.get(`/posts/${route.params.id}`)
+    const res = await api.get(`/posts/${id}`)
     post.value = res
     await nextTick()
     tocItems.value = buildToc(renderedContent.value)
@@ -187,6 +190,18 @@ onMounted(async () => {
     post.value = null
   } finally {
     loaded.value = true
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', onScroll, { passive: true })
+  loadPost(route.params.id)
+})
+
+watch(() => route.params.id, (newId) => {
+  if (newId) {
+    window.scrollTo({ top: 0 })
+    loadPost(newId)
   }
 })
 

@@ -74,22 +74,52 @@ func (s *PostService) GetByID(id uint) (*model.Post, error) {
 
 // resolveTags looks up existing tags by name and creates missing ones.
 func (s *PostService) resolveTags(tags []model.Tag) ([]model.Tag, error) {
+	// Collect valid tag names
+	names := make([]string, 0, len(tags))
+	for _, t := range tags {
+		if t.Name != "" {
+			names = append(names, t.Name)
+		}
+	}
+	if len(names) == 0 {
+		return nil, nil
+	}
+
+	// Batch SELECT existing tags
+	var existing []model.Tag
+	if err := s.DB.Where("name IN ?", names).Find(&existing).Error; err != nil {
+		return nil, err
+	}
+
+	// Find missing tags
+	existingMap := make(map[string]bool, len(existing))
+	for _, t := range existing {
+		existingMap[t.Name] = true
+	}
+	var missing []model.Tag
+	for _, t := range tags {
+		if t.Name != "" && !existingMap[t.Name] {
+			missing = append(missing, t)
+		}
+	}
+
+	// Batch INSERT missing tags
+	if len(missing) > 0 {
+		if err := s.DB.CreateInBatches(missing, 100).Error; err != nil {
+			return nil, err
+		}
+		existing = append(existing, missing...)
+	}
+
+	// Preserve original order
+	tagMap := make(map[string]model.Tag, len(existing))
+	for _, t := range existing {
+		tagMap[t.Name] = t
+	}
 	resolved := make([]model.Tag, 0, len(tags))
 	for _, t := range tags {
-		if t.Name == "" {
-			continue
-		}
-		var existing model.Tag
-		err := s.DB.Where("name = ?", t.Name).First(&existing).Error
-		if err == gorm.ErrRecordNotFound {
-			if err := s.DB.Create(&t).Error; err != nil {
-				return nil, err
-			}
-			resolved = append(resolved, t)
-		} else if err != nil {
-			return nil, err
-		} else {
-			resolved = append(resolved, existing)
+		if t.Name != "" {
+			resolved = append(resolved, tagMap[t.Name])
 		}
 	}
 	return resolved, nil

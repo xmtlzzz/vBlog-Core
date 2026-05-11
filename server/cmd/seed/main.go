@@ -51,15 +51,31 @@ func main() {
 
 	postSvc := service.NewPostService(db)
 
-	// Ensure tags exist
+	// Ensure tags exist — batch lookup + batch create
 	var tagModels []model.Tag
+	db.Where("name IN ?", tags).Find(&tagModels)
+	existingNames := make(map[string]bool, len(tagModels))
+	for _, t := range tagModels {
+		existingNames[t.Name] = true
+	}
+	var missing []model.Tag
 	for _, name := range tags {
-		var t model.Tag
-		if err := db.Where("name = ?", name).First(&t).Error; err != nil {
-			t = model.Tag{Name: name}
-			db.Create(&t)
+		if !existingNames[name] {
+			missing = append(missing, model.Tag{Name: name})
 		}
-		tagModels = append(tagModels, t)
+	}
+	if len(missing) > 0 {
+		db.CreateInBatches(missing, 100)
+		tagModels = append(tagModels, missing...)
+	}
+	// Re-sort to match original order
+	tagMap := make(map[string]model.Tag, len(tagModels))
+	for _, t := range tagModels {
+		tagMap[t.Name] = t
+	}
+	tagModels = make([]model.Tag, 0, len(tags))
+	for _, name := range tags {
+		tagModels = append(tagModels, tagMap[name])
 	}
 
 	statuses := []string{"published", "published", "published", "draft"}

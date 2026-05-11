@@ -57,25 +57,33 @@ func (s *ChangeLogService) Backfill() error {
 	// Backfill published posts
 	var posts []model.Post
 	s.DB.Where("status = ?", "published").Order("created_at ASC").Find(&posts)
-	for _, p := range posts {
-		s.DB.Create(&model.ChangeLog{
-			ChangeType: "new_post",
-			TargetID:   &p.ID,
-			Title:      p.Title,
-			CreatedAt:  p.CreatedAt,
-		})
+	if len(posts) > 0 {
+		entries := make([]model.ChangeLog, len(posts))
+		for i, p := range posts {
+			entries[i] = model.ChangeLog{
+				ChangeType: "new_post",
+				TargetID:   &p.ID,
+				Title:      p.Title,
+				CreatedAt:  p.CreatedAt,
+			}
+		}
+		s.DB.CreateInBatches(entries, 100)
 	}
 
 	// Backfill comments
 	var comments []model.Comment
 	s.DB.Order("created_at ASC").Find(&comments)
-	for _, c := range comments {
-		s.DB.Create(&model.ChangeLog{
-			ChangeType: "new_comment",
-			TargetID:   &c.ID,
-			Title:      c.Body,
-			CreatedAt:  c.CreatedAt,
-		})
+	if len(comments) > 0 {
+		entries := make([]model.ChangeLog, len(comments))
+		for i, c := range comments {
+			entries[i] = model.ChangeLog{
+				ChangeType: "new_comment",
+				TargetID:   &c.ID,
+				Title:      c.Body,
+				CreatedAt:  c.CreatedAt,
+			}
+		}
+		s.DB.CreateInBatches(entries, 100)
 	}
 
 	return nil

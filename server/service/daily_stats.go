@@ -22,21 +22,21 @@ func NewDailyStatsService(db *gorm.DB) *DailyStatsService {
 func (s *DailyStatsService) Snapshot() error {
 	today := time.Now().Format("2006-01-02")
 
-	var postCount int64
-	s.DB.Model(&model.Post{}).Where("status = ?", "published").Count(&postCount)
+	var postCount, viewTotal int64
+	s.DB.Model(&model.Post{}).
+		Select("COUNT(*) FILTER (WHERE status = 'published'), COALESCE(SUM(views), 0)").
+		Row().Scan(&postCount, &viewTotal)
 
-	var viewTotal int64
-	s.DB.Model(&model.Post{}).Select("COALESCE(SUM(views), 0)").Scan(&viewTotal)
-
-	var commentCount int64
-	s.DB.Model(&model.Comment{}).Count(&commentCount)
-
-	var tagCount int64
-	s.DB.Model(&model.Tag{}).Count(&tagCount)
+	var commentCount, tagCount int64
+	s.DB.Raw(`SELECT
+		(SELECT COUNT(*) FROM comments),
+		(SELECT COUNT(*) FROM tags)`).Row().Scan(&commentCount, &tagCount)
 
 	var pvToday, uvToday int64
-	s.DB.Model(&model.PageView{}).Where("DATE(created_at) = ?", today).Count(&pvToday)
-	s.DB.Model(&model.PageView{}).Where("DATE(created_at) = ?", today).Distinct("ip").Count(&uvToday)
+	s.DB.Model(&model.PageView{}).
+		Where("DATE(created_at) = ?", today).
+		Select("COUNT(*), COUNT(DISTINCT ip)").
+		Row().Scan(&pvToday, &uvToday)
 
 	return s.DB.Where("stat_date = ?", today).
 		Assign(model.DailyStats{

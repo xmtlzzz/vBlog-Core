@@ -47,7 +47,13 @@
       "Bash(wails build *)",
       "Bash(timeout 10 wails dev)",
       "Bash(./build/bin/vBlog-Monitor.exe)",
-      "Bash(taskkill //F //IM vBlog-Monitor.exe)"
+      "Bash(taskkill //F //IM vBlog-Monitor.exe)",
+      "Skill(codex)",
+      "Bash(npm list *)",
+      "Bash(npx pencil *)",
+      "Bash(codex mcp *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('scripts',{}\\), indent=2\\)\\)\")",
+      "Bash(npx uipro-cli *)"
     ]
   }
 }

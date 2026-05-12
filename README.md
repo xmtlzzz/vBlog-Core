@@ -8,27 +8,27 @@
 
 - **首页**：文章列表、统计概览、Ctrl+F 搜索、分页浏览（支持页码跳转）
 
-![image-20260512091158754](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091158754.png)
+![image-20260512091158754](./assets/image-20260512091158754.png)
 
 - **文章详情**：Markdown 渲染、代码高亮、目录导航（TOC）、阅读量统计、上/下篇导航
 
-![image-20260512091351539](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091351539.png)
+![image-20260512091351539](./assets/image-20260512091351539.png)
 
 - **归档页面**：按时间线浏览所有文章
 
-![image-20260512091212150](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091212150.png)
+![image-20260512091212150](./assets/image-20260512091212150.png)
 
 - **标签页面**：按标签分类浏览，显示每个标签对应的文章数量
 
-![image-20260512091225247](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091225247.png)
+![image-20260512091225247](./assets/image-20260512091225247.png)
 
 - **关于页面**：博主信息展示
 
-![image-20260512091340826](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091340826.png)
+![image-20260512091340826](./assets/image-20260512091340826.png)
 
 - **评论系统**：访客评论，管理员可开关
 
-![image-20260512091402538](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091402538.png)
+![image-20260512091402538](./assets/image-20260512091402538.png)
 
 - **RSS 订阅**：自动生成 RSS 2.0 Feed
 
@@ -44,33 +44,33 @@
 
 - **仪表盘**：文章总数、总阅读量、评论数、标签数统计
 
-![image-20260512091240758](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091240758.png)
+![image-20260512091240758](./assets/image-20260512091240758.png)
 
 
 
 - **文章管理**：创建、编辑、删除文章；Markdown 编辑器（md-editor-v3）支持图片上传；Markdown 文件导入
 
-![image-20260512091433270](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091433270.png)
+![image-20260512091433270](./assets/image-20260512091433270.png)
 
 - **回收站**：文章软删除后进入回收站，支持恢复和彻底删除
 
-![image-20260512091443545](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091443545.png)
+![image-20260512091443545](./assets/image-20260512091443545.png)
 
 - **标签管理**：标签 CRUD，显示文章计数
 
-![image-20260512091454046](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091454046.png)
+![image-20260512091454046](./assets/image-20260512091454046.png)
 
 - **评论管理**：查看、删除评论
 
-![image-20260512091505825](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091505825.png)
+![image-20260512091505825](./assets/image-20260512091505825.png)
 
 - **组件自定义**：iframe 沙盒自定义组件，支持启用/禁用切换，组件可读取博客数据
 
-![image-20260512091516977](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091516977.png)
+![image-20260512091516977](./assets/image-20260512091516977.png)
 
 - **系统设置**：站点信息、作者信息、功能开关、gRPC API Key 管理
 
-![image-20260512091530702](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091530702.png)
+![image-20260512091530702](./assets/image-20260512091530702.png)
 
 - **图片上传**：编辑器内粘贴/拖拽图片自动上传
 
@@ -81,9 +81,9 @@
 - **实时推送**：gRPC 双向流，新文章/评论/里程碑事件实时推送到客户端
 - **桌面客户端**：Wails v2 桌面应用，通知/变动中心风格 UI
 
-![image-20260512091607177](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091607177.png)
+![image-20260512091607177](./assets/image-20260512091607177.png)
 
-![image-20260512091559595](D:\Desktop\code\vibe\vBlog Core\assets\image-20260512091559595.png)
+![image-20260512091559595](./assets/image-20260512091559595.png)
 
 ## 技术栈
 

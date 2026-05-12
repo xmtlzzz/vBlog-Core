@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '../api/request'
 import { formatRelativeTime } from '../utils/format'
@@ -46,7 +46,7 @@ const enabled = ref(false)
 const comments = ref([])
 const submitting = ref(false)
 const form = ref({ author_name: '', author_email: '', body: '' })
-
+let timer = null
 
 async function fetchComments() {
   try {
@@ -71,9 +71,14 @@ onMounted(async () => {
   try {
     const settings = await api.get('/settings')
     enabled.value = settings.enable_comments === 'true'
-    if (enabled.value) fetchComments()
+    if (enabled.value) {
+      fetchComments()
+      timer = setInterval(fetchComments, 10000)
+    }
   } catch { enabled.value = false }
 })
+
+onUnmounted(() => { if (timer) clearInterval(timer) })
 </script>
 
 <style scoped>

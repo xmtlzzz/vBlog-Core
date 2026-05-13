@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	restful "github.com/emicklei/go-restful/v3"
+	restfulspec "github.com/emicklei/go-restful-openapi/v2"
+	"vblog-core/model"
 	"vblog-core/service"
 )
 
@@ -15,13 +17,28 @@ type SettingResource struct {
 // Register adds settings routes to the given WebService.
 func (s *SettingResource) Register(ws *restful.WebService) {
 	ws.Route(ws.GET("/api/settings").To(s.get).
-		Doc("get all settings"))
+		Doc("Get all site settings").
+		Notes("Returns all site settings as key-value pairs.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"settings"}).
+		Writes([]model.Setting{}).
+		Returns(200, "OK", []model.Setting{}).
+		Returns(500, "Internal Server Error", ErrorResponse{}))
 
 	ws.Route(ws.PUT("/api/settings").To(s.save).
-		Doc("save settings"))
+		Doc("Save site settings").
+		Notes("Saves multiple site settings. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"settings"}).
+		Reads(map[string]string{}).
+		Returns(200, "OK", MessageResponse{}).
+		Returns(400, "Bad Request", ErrorResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}))
 
 	ws.Route(ws.POST("/api/settings/reset").To(s.reset).
-		Doc("reset settings to defaults"))
+		Doc("Reset settings to defaults").
+		Notes("Resets all settings to their default values. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"settings"}).
+		Returns(200, "OK", MessageResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}))
 }
 
 func (s *SettingResource) get(req *restful.Request, resp *restful.Response) {

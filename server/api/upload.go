@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -9,11 +10,31 @@ import (
 	"time"
 
 	restful "github.com/emicklei/go-restful/v3"
+	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 )
+
+// File represents a file upload request.
+type File struct {
+	File *multipart.FileHeader `json:"file"`
+}
 
 // UploadResource handles file upload endpoints.
 type UploadResource struct {
 	Dir string // upload directory, e.g. "static/uploads"
+}
+
+// Register adds upload routes to the given WebService.
+func (u *UploadResource) Register(ws *restful.WebService) {
+	ws.Route(ws.POST("/api/upload").To(u.Upload).
+		Doc("Upload an image file").
+		Notes("Uploads an image file. Only image files are allowed. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"upload"}).
+		Reads(File{}).
+		Writes(UploadResponse{}).
+		Returns(200, "OK", UploadResponse{}).
+		Returns(400, "Bad Request", ErrorResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}).
+		Returns(500, "Internal Server Error", ErrorResponse{}))
 }
 
 func (u *UploadResource) Upload(req *restful.Request, resp *restful.Response) {

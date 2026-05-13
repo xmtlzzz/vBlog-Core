@@ -5,6 +5,7 @@ import (
 	"time"
 
 	restful "github.com/emicklei/go-restful/v3"
+	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"vblog-core/middleware"
 	"vblog-core/service"
 )
@@ -18,9 +19,23 @@ type AuthResource struct {
 // Register adds auth routes to the given WebService.
 func (a *AuthResource) Register(ws *restful.WebService) {
 	ws.Route(ws.POST("/api/auth/login").To(a.login).
-		Doc("user login"))
+		Doc("User login").
+		Notes("Authenticates a user and returns JWT access and refresh tokens.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"auth"}).
+		Reads(loginRequest{}).
+		Writes(TokenResponse{}).
+		Returns(200, "OK", TokenResponse{}).
+		Returns(400, "Bad Request", ErrorResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}))
+
 	ws.Route(ws.POST("/api/auth/register").To(a.register).
-		Doc("register new user"))
+		Doc("Register a new user").
+		Notes("Registers a new user account and returns JWT tokens.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"auth"}).
+		Reads(registerRequest{}).
+		Writes(TokenResponse{}).
+		Returns(201, "Created", TokenResponse{}).
+		Returns(400, "Bad Request", ErrorResponse{}))
 }
 
 type loginRequest struct {

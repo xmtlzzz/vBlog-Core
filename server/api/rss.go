@@ -6,6 +6,7 @@ import (
 	"time"
 
 	restful "github.com/emicklei/go-restful/v3"
+	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"gorm.io/gorm"
 	"vblog-core/model"
 )
@@ -36,7 +37,12 @@ type RSSItem struct {
 }
 
 func (r *RSSResource) Register(ws *restful.WebService) {
-	ws.Route(ws.GET("/api/rss").To(r.feed))
+	ws.Route(ws.GET("/api/rss").To(r.feed).
+		Doc("Get RSS feed of published posts").
+		Notes("Returns an RSS 2.0 feed of the 20 most recent published posts.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"rss"}).
+		Writes(RSSFeed{}).
+		Returns(200, "OK", RSSFeed{}))
 }
 
 func (r *RSSResource) feed(req *restful.Request, resp *restful.Response) {

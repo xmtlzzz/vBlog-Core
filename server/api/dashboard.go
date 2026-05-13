@@ -2,6 +2,7 @@ package api
 
 import (
 	restful "github.com/emicklei/go-restful/v3"
+	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"gorm.io/gorm"
 	"vblog-core/model"
 )
@@ -14,7 +15,11 @@ type DashboardResource struct {
 // Register adds dashboard routes to the given WebService.
 func (d *DashboardResource) Register(ws *restful.WebService) {
 	ws.Route(ws.GET("/api/dashboard/stats").To(d.Stats).
-		Doc("get dashboard statistics"))
+		Doc("Get dashboard statistics").
+		Notes("Returns aggregate statistics including post count, total views, comments, and tags.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"dashboard"}).
+		Writes(DashboardStatsResponse{}).
+		Returns(200, "OK", DashboardStatsResponse{}))
 }
 
 func (d *DashboardResource) Stats(req *restful.Request, resp *restful.Response) {

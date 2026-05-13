@@ -12,8 +12,8 @@ func TestCommentResourceRegister(t *testing.T) {
 	cr.Register(ws)
 
 	routes := ws.Routes()
-	if len(routes) != 5 {
-		t.Errorf("expected 5 routes, got %d", len(routes))
+	if len(routes) != 7 {
+		t.Errorf("expected 7 routes, got %d", len(routes))
 	}
 
 	expected := []struct {
@@ -25,6 +25,8 @@ func TestCommentResourceRegister(t *testing.T) {
 		{"PATCH", "/api/comments/{id}/approve"},
 		{"PATCH", "/api/comments/{id}/spam"},
 		{"DELETE", "/api/comments/{id}"},
+		{"GET", "/api/posts/{postId}/comments"},
+		{"POST", "/api/posts/{postId}/comments"},
 	}
 
 	for i, exp := range expected {

@@ -93,6 +93,7 @@
 | 后端 | Go + go-restful/v3 + GORM + gRPC |
 | 数据库 | PostgreSQL |
 | 认证 | JWT（golang-jwt/v5）+ API Key（gRPC） |
+| API 文档 | Swagger 3.0（OpenAPI）+ Swagger UI |
 | 配置 | Viper + TOML |
 | 前端构建 | Vite |
 | 桌面客户端 | Wails v2 + Vue 3 |
@@ -114,7 +115,9 @@ vBlog Core/
 │   │   ├── component.go     # 组件 API
 │   │   ├── dashboard.go     # 仪表盘统计 API
 │   │   ├── rss.go           # RSS Feed
-│   │   └── upload.go        # 图片上传 API
+│   │   ├── upload.go        # 图片上传 API
+│   │   ├── swagger.go       # Swagger 文档配置
+│   │   └── types.go         # API 响应类型定义
 │   ├── grpc/                # gRPC 服务
 │   │   ├── server.go        # gRPC 服务器（GetLatestStats, GetTrends, WatchChanges）
 │   │   ├── auth.go          # API Key 认证拦截器
@@ -193,6 +196,8 @@ go run ./cmd/main.go
 
 后端启动后自动创建数据库表结构，监听 `0.0.0.0:8080`。
 
+Swagger API 文档访问地址：`http://localhost:8080/swagger`
+
 ### 4. 启动前端
 
 ```bash
@@ -238,6 +243,8 @@ go test ./... -v
 项目采用 TDD 开发模式，每个模块的测试文件与实现在同一目录下。
 
 ## API 接口
+
+启动后端后，访问 `/swagger` 可查看完整的 Swagger UI 文档，包含请求/响应模型定义和在线调试功能。
 
 ### 公开接口
 

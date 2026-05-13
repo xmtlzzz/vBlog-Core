@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	restful "github.com/emicklei/go-restful/v3"
+	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"vblog-core/model"
 	"vblog-core/service"
 )
@@ -43,38 +44,83 @@ type PostResource struct {
 // Register adds post routes to the given WebService.
 func (p *PostResource) Register(ws *restful.WebService) {
 	ws.Route(ws.GET("/api/posts").To(p.list).
-		Doc("list posts").
-		Param(ws.QueryParameter("page", "page number").DefaultValue("1")).
-		Param(ws.QueryParameter("per_page", "items per page").DefaultValue("5")).
-		Param(ws.QueryParameter("tag", "filter by tag name")).
-		Param(ws.QueryParameter("status", "filter by status")).
-		Param(ws.QueryParameter("search", "search by title")))
+		Doc("List blog posts with pagination and filters").
+		Notes("Returns a paginated list of posts. Supports filtering by tag, status, and search by title.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
+		Param(ws.QueryParameter("page", "Page number").DataType("integer").DefaultValue("1")).
+		Param(ws.QueryParameter("per_page", "Items per page").DataType("integer").DefaultValue("5")).
+		Param(ws.QueryParameter("tag", "Filter by tag name").DataType("string")).
+		Param(ws.QueryParameter("status", "Filter by status").DataType("string").AllowableValues(map[string]string{"draft": "Draft", "published": "Published"})).
+		Param(ws.QueryParameter("search", "Search by title").DataType("string")).
+		Writes(PostListResponse{}).
+		Returns(200, "OK", PostListResponse{}).
+		Returns(500, "Internal Server Error", ErrorResponse{}))
 
 	ws.Route(ws.GET("/api/posts/{id}").To(p.get).
-		Doc("get a post").
-		Param(ws.PathParameter("id", "post ID")))
+		Doc("Get a single post by ID").
+		Notes("Returns the full post content including tags.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
+		Param(ws.PathParameter("id", "Post ID").DataType("integer")).
+		Writes(postResp{}).
+		Returns(200, "OK", postResp{}).
+		Returns(404, "Not Found", ErrorResponse{}))
 
 	ws.Route(ws.POST("/api/posts").To(p.create).
-		Doc("create a post"))
+		Doc("Create a new blog post").
+		Notes("Creates a new blog post. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
+		Reads(model.Post{}).
+		Writes(postResp{}).
+		Returns(201, "Created", postResp{}).
+		Returns(400, "Bad Request", ErrorResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}))
 
 	ws.Route(ws.PUT("/api/posts/{id}").To(p.update).
-		Doc("update a post").
-		Param(ws.PathParameter("id", "post ID")))
+		Doc("Update an existing blog post").
+		Notes("Updates a blog post by ID. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
+		Param(ws.PathParameter("id", "Post ID").DataType("integer")).
+		Reads(model.Post{}).
+		Writes(postResp{}).
+		Returns(200, "OK", postResp{}).
+		Returns(400, "Bad Request", ErrorResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}).
+		Returns(404, "Not Found", ErrorResponse{}))
 
 	ws.Route(ws.DELETE("/api/posts/{id}").To(p.delete).
-		Doc("delete a post").
-		Param(ws.PathParameter("id", "post ID")))
+		Doc("Delete a blog post (soft delete)").
+		Notes("Soft deletes a post. Can be restored from trash. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
+		Param(ws.PathParameter("id", "Post ID").DataType("integer")).
+		Returns(200, "OK", MessageResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}).
+		Returns(404, "Not Found", ErrorResponse{}))
 
 	ws.Route(ws.GET("/api/posts/trash").To(p.trash).
-		Doc("list deleted posts"))
+		Doc("List all soft-deleted posts").
+		Notes("Returns all posts in the trash. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
+		Writes(PostListResponse{}).
+		Returns(200, "OK", PostListResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}))
 
 	ws.Route(ws.POST("/api/posts/{id}/restore").To(p.restore).
-		Doc("restore a deleted post").
-		Param(ws.PathParameter("id", "post ID")))
+		Doc("Restore a soft-deleted post").
+		Notes("Restores a post from trash. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
+		Param(ws.PathParameter("id", "Post ID").DataType("integer")).
+		Returns(200, "OK", MessageResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}).
+		Returns(404, "Not Found", ErrorResponse{}))
 
 	ws.Route(ws.DELETE("/api/posts/{id}/permanent").To(p.permanentDelete).
-		Doc("permanently delete a post").
-		Param(ws.PathParameter("id", "post ID")))
+		Doc("Permanently delete a post").
+		Notes("Permanently deletes a post from trash. This action cannot be undone. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
+		Param(ws.PathParameter("id", "Post ID").DataType("integer")).
+		Returns(200, "OK", MessageResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}).
+		Returns(404, "Not Found", ErrorResponse{}))
 }
 
 func (p *PostResource) list(req *restful.Request, resp *restful.Response) {

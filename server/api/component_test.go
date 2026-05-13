@@ -12,8 +12,8 @@ func TestComponentResourceRegister(t *testing.T) {
 	cr.Register(ws)
 
 	routes := ws.Routes()
-	if len(routes) != 5 {
-		t.Errorf("expected 5 routes, got %d", len(routes))
+	if len(routes) != 6 {
+		t.Errorf("expected 6 routes, got %d", len(routes))
 	}
 
 	expected := []struct {
@@ -21,6 +21,7 @@ func TestComponentResourceRegister(t *testing.T) {
 		path   string
 	}{
 		{"GET", "/api/components"},
+		{"GET", "/api/components/active"},
 		{"POST", "/api/components"},
 		{"PUT", "/api/components/{id}"},
 		{"DELETE", "/api/components/{id}"},

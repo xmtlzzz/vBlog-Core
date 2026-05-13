@@ -12,8 +12,8 @@ func TestPostResourceRegister(t *testing.T) {
 	p.Register(ws)
 
 	routes := ws.Routes()
-	if len(routes) != 5 {
-		t.Errorf("expected 5 routes, got %d", len(routes))
+	if len(routes) != 8 {
+		t.Errorf("expected 8 routes, got %d", len(routes))
 	}
 
 	// Verify route methods and paths
@@ -26,6 +26,9 @@ func TestPostResourceRegister(t *testing.T) {
 		{"POST", "/api/posts"},
 		{"PUT", "/api/posts/{id}"},
 		{"DELETE", "/api/posts/{id}"},
+		{"GET", "/api/posts/trash"},
+		{"POST", "/api/posts/{id}/restore"},
+		{"DELETE", "/api/posts/{id}/permanent"},
 	}
 
 	for i, exp := range expected {

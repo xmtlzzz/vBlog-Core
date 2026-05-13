@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	restful "github.com/emicklei/go-restful/v3"
+	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"vblog-core/model"
 	"vblog-core/service"
 )
@@ -17,34 +18,73 @@ type CommentResource struct {
 // Register adds comment routes to the given WebService.
 func (c *CommentResource) Register(ws *restful.WebService) {
 	ws.Route(ws.GET("/api/comments").To(c.list).
-		Doc("list comments").
-		Param(ws.QueryParameter("page", "page number").DefaultValue("1")).
-		Param(ws.QueryParameter("per_page", "items per page").DefaultValue("10")).
-		Param(ws.QueryParameter("status", "filter by status")).
-		Param(ws.QueryParameter("search", "search in body")))
+		Doc("List all comments with pagination and filters").
+		Notes("Returns a paginated list of comments. Admin only.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
+		Param(ws.QueryParameter("page", "Page number").DataType("integer").DefaultValue("1")).
+		Param(ws.QueryParameter("per_page", "Items per page").DataType("integer").DefaultValue("10")).
+		Param(ws.QueryParameter("status", "Filter by status").DataType("string").AllowableValues(map[string]string{"pending": "Pending", "approved": "Approved", "spam": "Spam"})).
+		Param(ws.QueryParameter("search", "Search in comment body").DataType("string")).
+		Writes(CommentListResponse{}).
+		Returns(200, "OK", CommentListResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}).
+		Returns(500, "Internal Server Error", ErrorResponse{}))
 
 	ws.Route(ws.POST("/api/comments").To(c.create).
-		Doc("create a comment"))
+		Doc("Create a new comment (admin)").
+		Notes("Creates a new comment with admin privileges. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
+		Reads(model.Comment{}).
+		Writes(model.Comment{}).
+		Returns(201, "Created", model.Comment{}).
+		Returns(400, "Bad Request", ErrorResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}))
 
 	ws.Route(ws.PATCH("/api/comments/{id}/approve").To(c.approve).
-		Doc("approve a comment").
-		Param(ws.PathParameter("id", "comment ID")))
+		Doc("Approve a comment").
+		Notes("Approves a pending comment. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
+		Param(ws.PathParameter("id", "Comment ID").DataType("integer")).
+		Returns(200, "OK", MessageResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}).
+		Returns(404, "Not Found", ErrorResponse{}))
 
 	ws.Route(ws.PATCH("/api/comments/{id}/spam").To(c.markSpam).
-		Doc("mark comment as spam").
-		Param(ws.PathParameter("id", "comment ID")))
+		Doc("Mark comment as spam").
+		Notes("Marks a comment as spam. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
+		Param(ws.PathParameter("id", "Comment ID").DataType("integer")).
+		Returns(200, "OK", MessageResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}).
+		Returns(404, "Not Found", ErrorResponse{}))
 
 	ws.Route(ws.DELETE("/api/comments/{id}").To(c.delete).
-		Doc("delete a comment").
-		Param(ws.PathParameter("id", "comment ID")))
+		Doc("Delete a comment").
+		Notes("Permanently deletes a comment. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
+		Param(ws.PathParameter("id", "Comment ID").DataType("integer")).
+		Returns(200, "OK", MessageResponse{}).
+		Returns(401, "Unauthorized", ErrorResponse{}).
+		Returns(404, "Not Found", ErrorResponse{}))
 
 	// Public endpoints (no auth)
 	ws.Route(ws.GET("/api/posts/{postId}/comments").To(c.listByPost).
-		Doc("list approved comments for a post").
-		Param(ws.PathParameter("postId", "post ID")))
+		Doc("List approved comments for a specific post").
+		Notes("Returns all approved comments for a given post. Public endpoint.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
+		Param(ws.PathParameter("postId", "Post ID").DataType("integer")).
+		Writes(CommentListResponse{}).
+		Returns(200, "OK", CommentListResponse{}))
+
 	ws.Route(ws.POST("/api/posts/{postId}/comments").To(c.createPublic).
-		Doc("submit a comment on a post").
-		Param(ws.PathParameter("postId", "post ID")))
+		Doc("Submit a comment on a post (public, pending approval)").
+		Notes("Submits a new comment on a post. Comments are pending until approved by admin.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
+		Param(ws.PathParameter("postId", "Post ID").DataType("integer")).
+		Reads(model.Comment{}).
+		Writes(MessageResponse{}).
+		Returns(201, "Created", MessageResponse{}).
+		Returns(400, "Bad Request", ErrorResponse{}))
 }
 
 func (c *CommentResource) list(req *restful.Request, resp *restful.Response) {

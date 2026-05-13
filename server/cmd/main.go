@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	restful "github.com/emicklei/go-restful/v3"
+	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 	"github.com/robfig/cron/v3"
 	"vblog-core/api"
 	"vblog-core/config"
@@ -59,16 +60,73 @@ func main() {
 	(&api.AuthResource{Service: authSvc, Secret: cfg.JWT.Secret}).Register(ws)
 	(&api.RSSResource{DB: db}).Register(ws)
 	// Public stats
-	ws.Route(ws.GET("/api/dashboard/stats").To((&api.DashboardResource{DB: db}).Stats))
+	ws.Route(ws.GET("/api/dashboard/stats").To((&api.DashboardResource{DB: db}).Stats).
+		Doc("Get dashboard statistics").
+		Notes("Returns aggregate statistics including post count, total views, comments, and tags.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"dashboard"}).
+		Writes(api.DashboardStatsResponse{}).
+		Returns(200, "OK", api.DashboardStatsResponse{}))
 	// Public active components
-	ws.Route(ws.GET("/api/components/active").To((&api.ComponentResource{Service: componentSvc}).ListActive))
+	ws.Route(ws.GET("/api/components/active").To((&api.ComponentResource{Service: componentSvc}).ListActive).
+		Doc("List active custom components").
+		Notes("Returns only active components. Public endpoint.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"components"}).
+		Writes([]model.Component{}).
+		Returns(200, "OK", []model.Component{}))
 	// Admin routes (JWT protected)
-	ws.Route(ws.GET("/api/components").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).List))
-	ws.Route(ws.POST("/api/components").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Create))
-	ws.Route(ws.PUT("/api/components/{id}").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Update))
-	ws.Route(ws.DELETE("/api/components/{id}").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Delete))
-	ws.Route(ws.PATCH("/api/components/{id}/toggle").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Toggle))
-	ws.Route(ws.POST("/api/upload").Filter(jwtFilter).To((&api.UploadResource{Dir: "static/uploads"}).Upload))
+	ws.Route(ws.GET("/api/components").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).List).
+		Doc("List all components").
+		Notes("Returns all custom components. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"components"}).
+		Writes(api.ComponentListResponse{}).
+		Returns(200, "OK", api.ComponentListResponse{}).
+		Returns(401, "Unauthorized", api.ErrorResponse{}))
+	ws.Route(ws.POST("/api/components").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Create).
+		Doc("Create a component").
+		Notes("Creates a new component. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"components"}).
+		Reads(model.Component{}).
+		Writes(model.Component{}).
+		Returns(201, "Created", model.Component{}).
+		Returns(400, "Bad Request", api.ErrorResponse{}).
+		Returns(401, "Unauthorized", api.ErrorResponse{}))
+	ws.Route(ws.PUT("/api/components/{id}").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Update).
+		Doc("Update a component").
+		Notes("Updates a component by ID. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"components"}).
+		Param(ws.PathParameter("id", "Component ID").DataType("integer")).
+		Reads(model.Component{}).
+		Writes(model.Component{}).
+		Returns(200, "OK", model.Component{}).
+		Returns(400, "Bad Request", api.ErrorResponse{}).
+		Returns(401, "Unauthorized", api.ErrorResponse{}).
+		Returns(404, "Not Found", api.ErrorResponse{}))
+	ws.Route(ws.DELETE("/api/components/{id}").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Delete).
+		Doc("Delete a component").
+		Notes("Deletes a component by ID. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"components"}).
+		Param(ws.PathParameter("id", "Component ID").DataType("integer")).
+		Returns(200, "OK", api.MessageResponse{}).
+		Returns(401, "Unauthorized", api.ErrorResponse{}).
+		Returns(404, "Not Found", api.ErrorResponse{}))
+	ws.Route(ws.PATCH("/api/components/{id}/toggle").Filter(jwtFilter).To((&api.ComponentResource{Service: componentSvc}).Toggle).
+		Doc("Toggle component status").
+		Notes("Toggles a component between active and inactive. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"components"}).
+		Param(ws.PathParameter("id", "Component ID").DataType("integer")).
+		Returns(200, "OK", api.MessageResponse{}).
+		Returns(401, "Unauthorized", api.ErrorResponse{}).
+		Returns(404, "Not Found", api.ErrorResponse{}))
+	ws.Route(ws.POST("/api/upload").Filter(jwtFilter).To((&api.UploadResource{Dir: "static/uploads"}).Upload).
+		Doc("Upload an image").
+		Notes("Uploads an image file. Only image files are allowed. Requires authentication.").
+		Metadata(restfulspec.KeyOpenAPITags, []string{"upload"}).
+		Reads(api.File{}).
+		Writes(api.UploadResponse{}).
+		Returns(200, "OK", api.UploadResponse{}).
+		Returns(400, "Bad Request", api.ErrorResponse{}).
+		Returns(401, "Unauthorized", api.ErrorResponse{}).
+		Returns(500, "Internal Server Error", api.ErrorResponse{}))
 	wsContainer.Add(ws)
 
 	// Daily snapshot cron
@@ -80,6 +138,11 @@ func main() {
 	})
 	c.Start()
 
+	// Register Swagger UI
+	swaggerCfg := api.DefaultSwaggerConfig()
+	swaggerCfg.Host = cfg.Server.Addr + ":" + cfg.Server.Port
+	api.RegisterSwagger(wsContainer, swaggerCfg)
+
 	// Build final handler: static files → go-restful API → SPA fallback
 	handler := http.Handler(wsContainer)
 	if _, err := os.Stat("static"); err == nil {
@@ -87,8 +150,16 @@ func main() {
 		fs := http.FileServer(http.Dir(staticDir))
 		indexFile := filepath.Join(staticDir, "index.html")
 		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Let API routes go through go-restful
+			// Let API routes and swagger go through go-restful
 			if len(r.URL.Path) >= 4 && r.URL.Path[:4] == "/api" {
+				wsContainer.ServeHTTP(w, r)
+				return
+			}
+			if len(r.URL.Path) >= 8 && r.URL.Path[:8] == "/swagger" {
+				wsContainer.ServeHTTP(w, r)
+				return
+			}
+			if r.URL.Path == "/apidocs.json" {
 				wsContainer.ServeHTTP(w, r)
 				return
 			}

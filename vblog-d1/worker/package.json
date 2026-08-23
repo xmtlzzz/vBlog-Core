@@ -1,0 +1,1 @@
+﻿{ "name": "vblog-d1-worker", "private": true, "devDependencies": { "wrangler": "^4.0.0" } }

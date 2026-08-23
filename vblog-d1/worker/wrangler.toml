@@ -1,0 +1,47 @@
+# vBlog D1 — Cloudflare Worker 配置
+# 全免费方案：Worker(API) + Static Assets(前端) + D1(数据库) + R2(图片) / KV(图片回退)
+
+name = "vblog-d1"
+main = "src/index.js"
+compatibility_date = "2025-08-01"
+
+# ── 前端静态资源（构建产物 web/dist，部署前先构建）──────────────
+#   not_found_handling = single-page-application → Vue history 路由兜底
+#   run_worker_first = true                       → /api/* 先经过本 Worker
+#   binding = "ASSETS"                            → Worker 内以 env.ASSETS 取静态资源
+[assets]
+directory = "../web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+# ── D1 数据库 ──────────────────────────────────────────────────
+[[d1_databases]]
+binding = "DB"
+database_name = "vblog-d1-db"
+database_id = "b90ee75d-d288-4ebe-9df4-6da6118136cf"
+
+# ── R2 图片存储（当前账号未启用 R2，注释掉；图片走 KV 回退）─────
+# 开通 R2（Cloudflare 控制台 → R2 → 首次访问即启用）后取消注释，
+# 并把 R2_PUBLIC_URL 填上公开域名即可无缝切换。
+# [[r2_buckets]]
+# binding = "R2"
+# bucket_name = "vblog-images"
+
+# ── KV 图片回退（还没有 R2 时的免费图床，1GB）───────────────────
+[[kv_namespaces]]
+binding = "IMG"
+id = "e4f572377c1b4790bedd0e687016816c"
+
+# ── 每日 05:00(UTC) 统计快照 ───────────────────────────────────
+[triggers]
+crons = ["5 0 * * *"]
+
+# ── 环境变量（非机密）──────────────────────────────────────────
+[vars]
+SITE_URL = "https://blog.xmtlz.dev"
+# 未开通 R2 公开域前必须留空 ""，上传自动走 KV 图床；开通后填回地址即可切 R2
+R2_PUBLIC_URL = ""
+
+# ── 机密（用 wrangler secret put 注入，不要写在这里）────────────
+#   npx wrangler secret put JWT_SECRET

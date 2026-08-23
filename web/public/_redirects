@@ -1,0 +1,20 @@
+# vBlog Core - Cloudflare Pages redirects
+# 前置：把「后端域名」解析到你的 Fly.io 应用（详见 deploy/DEPLOY.md）：
+#   · 方案一（推荐，保留自定义域名 + 自动证书）：在 Fly 控制台的
+#     app → Certificates 里把 api.xmtlz.dev 加到你的 vblog-api 应用
+#   · 方案二（无自定义域名）：直接把这里的 api.xmtlz.dev 全部换成
+#     <你的app>.fly.dev
+#
+# 原理：浏览器始终访问本站同源路径（axios baseURL='/api' 免 CORS），
+# 由 Cloudflare Pages 在边缘把 /api、/uploads、/swagger 反代到后端。
+
+# Proxy API calls to the Go backend（换成你的真实后端域名）
+/api/*          https://api.xmtlz.dev/api/:splat         200
+# Proxy uploaded images to the backend（配合后端 PUBLIC_BASE_URL 使用）
+/uploads/*      https://api.xmtlz.dev/uploads/:splat     200
+# Swagger / OpenAPI 文档（可选）
+/swagger/*      https://api.xmtlz.dev/swagger/:splat     200
+/apidocs.json   https://api.xmtlz.dev/apidocs.json      200
+
+# SPA fallback: serve index.html for all frontend routes（必须放最后）
+/*              /index.html                              200

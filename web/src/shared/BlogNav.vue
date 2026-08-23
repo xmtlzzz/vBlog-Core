@@ -2,7 +2,7 @@
   <nav class="top">
     <div class="inner">
       <router-link class="nav-brand" to="/">
-        <span class="dot"></span>vBlog
+        <img class="mascot" src="/nav-mascot.png" alt="vBlog" />vBlog
       </router-link>
       <div class="nav-links">
         <router-link to="/">首页 Home</router-link>
@@ -61,11 +61,12 @@ const themeStore = useThemeStore()
   align-items: center;
   gap: 8px;
 }
-.dot {
-  width: 8px;
-  height: 8px;
+.mascot {
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--accent);
+  object-fit: cover;
+  flex-shrink: 0;
 }
 .nav-links {
   display: flex;

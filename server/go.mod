@@ -3,7 +3,9 @@ module vblog-core
 go 1.26.1
 
 require (
+	github.com/emicklei/go-restful-openapi/v2 v2.12.0
 	github.com/emicklei/go-restful/v3 v3.13.0
+	github.com/go-openapi/spec v0.22.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/viper v1.21.0
@@ -15,12 +17,10 @@ require (
 )
 
 require (
-	github.com/emicklei/go-restful-openapi/v2 v2.12.0 // indirect
 	github.com/erraggy/oastools v1.36.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-openapi/jsonpointer v0.22.4 // indirect
 	github.com/go-openapi/jsonreference v0.21.4 // indirect
-	github.com/go-openapi/spec v0.22.2 // indirect
 	github.com/go-openapi/swag/conv v0.25.4 // indirect
 	github.com/go-openapi/swag/jsonname v0.25.4 // indirect
 	github.com/go-openapi/swag/jsonutils v0.25.4 // indirect

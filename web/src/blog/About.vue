@@ -3,7 +3,7 @@
   <div class="page-enter">
   <div class="about-container">
     <div class="about-hero">
-      <div class="about-avatar">{{ initial }}</div>
+      <img class="about-avatar" src="/avatar.png" alt="avatar" />
       <div class="about-intro">
         <h1>{{ settings.site_title || 'vBlog Core' }}</h1>
         <p>{{ settings.author_name || '匿名作者' }}</p>
@@ -106,6 +106,8 @@ onMounted(async () => {
   color: var(--accent);
   flex-shrink: 0;
   border: 2px solid var(--border);
+  object-fit: cover;
+  overflow: hidden;
 }
 .about-intro h1 {
   font-family: var(--font-display);

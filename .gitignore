@@ -6,3 +6,20 @@ web/dist/
 hdx/
 *.exe
 .env
+
+# 吉祥物品牌图片（AI 生成资源，不入库；构建产物已被 web/dist/ 忽略）
+web/public/favicon.png
+web/public/avatar.png
+web/public/nav-mascot.png
+
+# vblog-d1（纯 Cloudflare 便捷版）同类资源
+vblog-d1/pict/
+vblog-d1/web/public/favicon.png
+vblog-d1/web/public/avatar.png
+vblog-d1/web/public/nav-mascot.png
+
+# 本地构建缓存 / 敏感本地配置（不入库）
+.gocache/
+.gopath/
+.npm-cache/
+server/config/config.toml

@@ -98,6 +98,10 @@
 | 前端构建 | Vite |
 | 桌面客户端 | Wails v2 + Vue 3 |
 
+## 相关版本
+
+- **vblog-d1/**：纯 Cloudflare 便捷部署版。同一套 Vue 3 前端 + 零依赖 JS Worker（替代 Go 后端）+ D1/KV 数据库与图片，全部在 Cloudflare 免费额度内，`deploy.ps1` 一键上线；Go 版需要服务器托管（Fly/Neon 等）。部署细节、改动明细与更新日志见 [`vblog-d1/README.md`](vblog-d1/README.md)。
+
 ## 项目结构
 
 ```

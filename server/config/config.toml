@@ -1,0 +1,13 @@
+[http]
+addr = "0.0.0.0"
+port = 8080
+
+[postgres]
+host = "192.168.81.101"
+port = 5432
+name = "vblog"
+user = "vblog"
+password = "Qwer1234"
+
+[jwt]
+secret = "vblog-jwt-secret-2026"

@@ -51,6 +51,8 @@ func (s *SettingResource) get(req *restful.Request, resp *restful.Response) {
 		resp.WriteError(http.StatusInternalServerError, err)
 		return
 	}
+	// 公开端点不泄露机密项（gRPC 连接密钥）；管理端修改时留空表示不变更
+	delete(settings, "grpc_api_key")
 	resp.WriteEntity(settings)
 }
 

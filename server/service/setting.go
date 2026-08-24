@@ -62,9 +62,14 @@ func (s *SettingService) Set(key, value string) error {
 }
 
 // Save upserts all key-value pairs in the settings map.
+// Secrets (grpc_api_key) absent from the map are preserved — the public
+// GET omits them, so an admin save round-trip never carries the value.
 func (s *SettingService) Save(settings map[string]string) error {
 	batch := make([]model.Setting, 0, len(settings))
 	for key, value := range settings {
+		if key == "grpc_api_key" && value == "" {
+			continue // empty means "unchanged", prevents accidental wipe
+		}
 		batch = append(batch, model.Setting{Key: key, Value: value})
 	}
 	return s.DB.Clauses(clause.OnConflict{
@@ -73,7 +78,7 @@ func (s *SettingService) Save(settings map[string]string) error {
 	}).Create(&batch).Error
 }
 
-// Reset restores settings to defaults.
+// Reset restores settings to defaults (keeps the existing gRPC API key).
 func (s *SettingService) Reset() error {
 	return s.Save(DefaultSettings())
 }

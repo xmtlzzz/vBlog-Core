@@ -30,7 +30,7 @@ func CheckPassword(hash, password string) bool {
 
 // Register creates a new user account.
 func (s *AuthService) Register(username, password, email string) (*model.User, error) {
-	if username == "" || password == "" {
+	if username == "" || len(password) < 8 {
 		return nil, bcrypt.ErrHashTooShort
 	}
 	// Check if username exists

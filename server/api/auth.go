@@ -16,26 +16,35 @@ type AuthResource struct {
 	Secret  string
 }
 
+// Rate limits: login is stricter (brute force), register looser.
+var (
+	loginRateFilter    = middleware.RateLimitFilter(time.Minute, 10)
+	registerRateFilter = middleware.RateLimitFilter(time.Minute, 5)
+)
+
 // Register adds auth routes to the given WebService.
 func (a *AuthResource) Register(ws *restful.WebService) {
-	ws.Route(ws.POST("/api/auth/login").To(a.login).
+	ws.Route(ws.POST("/api/auth/login").Filter(loginRateFilter).To(a.login).
 		Doc("User login").
-		Notes("Authenticates a user and returns JWT access and refresh tokens.").
+		Notes("Authenticates a user and returns JWT access and refresh tokens. Rate limited to 10 requests/min per IP.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"auth"}).
 		Reads(loginRequest{}).
 		Writes(TokenResponse{}).
 		Returns(200, "OK", TokenResponse{}).
 		Returns(400, "Bad Request", ErrorResponse{}).
-		Returns(401, "Unauthorized", ErrorResponse{}))
+		Returns(401, "Unauthorized", ErrorResponse{}).
+		Returns(429, "Too Many Requests", ErrorResponse{}))
 
-	ws.Route(ws.POST("/api/auth/register").To(a.register).
+	ws.Route(ws.POST("/api/auth/register").Filter(registerRateFilter).To(a.register).
 		Doc("Register a new user").
-		Notes("Registers a new user account and returns JWT tokens.").
+		Notes("Registers a new user account and returns JWT tokens. Only available before the first account exists. Rate limited to 5 requests/min per IP.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"auth"}).
 		Reads(registerRequest{}).
 		Writes(TokenResponse{}).
 		Returns(201, "Created", TokenResponse{}).
-		Returns(400, "Bad Request", ErrorResponse{}))
+		Returns(400, "Bad Request", ErrorResponse{}).
+		Returns(403, "Forbidden", ErrorResponse{}).
+		Returns(429, "Too Many Requests", ErrorResponse{}))
 }
 
 type loginRequest struct {

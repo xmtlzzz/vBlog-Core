@@ -5,7 +5,8 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
-      '/api': 'http://localhost:8080'
+      // wrangler dev 默认监听 8787（Go 版才是 8080）
+      '/api': 'http://127.0.0.1:8787'
     }
   }
 })

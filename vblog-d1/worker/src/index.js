@@ -31,7 +31,9 @@ export default {
       return serveImage(env, path);
     }
     if (!path.startsWith('/api')) {
-      if (method === 'GET') ctx.waitUntil(recordPageView(env, request, path));
+      // 仅记录页面导航（无扩展名或 .html），静态资源不计 PV，避免统计虚高与 D1 写配额浪费
+      const isPage = method === 'GET' && (!/\.[\w]+$/.test(path) || path.endsWith('.html'));
+      if (isPage) ctx.waitUntil(recordPageView(env, request, path));
       return env.ASSETS.fetch(request);
     }
 
@@ -152,6 +154,31 @@ async function route(request, env, url, path, method) {
 }
 
 // ══════════════════════════ 鉴权 ══════════════════════════
+// 基于 Cache API 的按 IP 固定窗口限流（Worker 无状态、零依赖的折衷方案；
+// Cache 是最终一致的全局副本，极端并发下限流略松，但足以挡住脚本爆破）
+async function rateLimit(request, windowSecs, limit) {
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const key = new Request('https://ratelimit.local/' + ip, { method: 'GET' });
+  const cache = caches.default;
+  let count = 0;
+  const hit = await cache.match(key);
+  if (hit) {
+    count = parseInt(hit.headers.get('X-Count') || '0', 10);
+    const resetAt = parseInt(hit.headers.get('X-Reset') || '0', 10);
+    if (Date.now() > resetAt) count = 0;
+  }
+  if (count >= limit) return false;
+  const res = new Response(null, {
+    headers: {
+      'X-Count': String(count + 1),
+      'X-Reset': String(Date.now() + windowSecs * 1000),
+      'Cache-Control': `public, max-age=${windowSecs}`,
+    },
+  });
+  await cache.put(key, res);
+  return true;
+}
+
 async function requireAuth(request, env, handler) {
   const auth = request.headers.get('Authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
@@ -169,6 +196,7 @@ async function issueTokens(env, user) {
 
 // ══════════════════════════ 认证 ══════════════════════════
 async function login(request, env) {
+  if (!(await rateLimit(request, 60, 10))) return fail('请求过于频繁，请稍后再试', 429);
   const body = await readJson(request);
   if (!body) return fail('invalid request body');
   const user = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(String(body.username || '')).first();
@@ -179,6 +207,7 @@ async function login(request, env) {
 }
 
 async function register(request, env) {
+  if (!(await rateLimit(request, 60, 5))) return fail('请求过于频繁，请稍后再试', 429);
   // 首号闸门：已存在用户则关闭公开注册（首个注册者即管理员）
   const anyUser = await env.DB.prepare('SELECT id FROM users LIMIT 1').first();
   if (anyUser) return fail('注册已关闭：管理员已存在', 403);
@@ -213,32 +242,34 @@ async function listSettings(env) {
   const rows = await env.DB.prepare('SELECT key, value FROM settings').all();
   const out = {};
   for (const r of rows.results) out[r.key] = r.value;
+  // 公开端点不泄露机密项（gRPC 连接密钥）；管理端保存时留空表示不变更
+  delete out.grpc_api_key;
   return json(out, 200, { cf: { cacheTtl: 60 } });
 }
 
 async function saveSettings(request, env) {
   const body = await readJson(request);
   if (!body || typeof body !== 'object') return fail('invalid request body');
-  const entries = Object.entries(body);
+  const entries = Object.entries(body).filter(([k, v]) => !(k === 'grpc_api_key' && !v));
   if (entries.length === 0) return fail('invalid request body');
+  // 全部 UPSERT 合并为一次 batch，原子写入
   const stmt = env.DB.prepare(
     `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
   );
-  for (const [k, v] of entries) {
-    await stmt.bind(k, String(v ?? ''), nowISO()).run();
-  }
+  await env.DB.batch(entries.map(([k, v]) => stmt.bind(k, String(v ?? ''), nowISO())));
   return json({ message: 'ok' });
 }
 
 async function resetSettings(env) {
-  const res = [];
-  for (const [k, v] of Object.entries(DEFAULT_SETTINGS)) {
-    res.push(await env.DB.prepare(
+  // 与 Go 版语义一致：重置默认值但保留现有 gRPC API Key（默认表中该键为空串，跳过即保留）
+  const entries = Object.entries(DEFAULT_SETTINGS).filter(([k]) => k !== 'grpc_api_key');
+  await env.DB.batch(entries.map(([k, v]) =>
+    env.DB.prepare(
       `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
-    ).bind(k, v, nowISO()).run());
-  }
+    ).bind(k, v, nowISO())
+  ));
   return json({ message: 'ok' });
 }
 
@@ -401,11 +432,13 @@ async function resolveTags(env, tags) {
   return out;
 }
 
+// D1 batch 原子执行：删除旧关联 + 写入新关联，中途失败整体回滚
 async function replacePostTags(env, postId, tags) {
-  await env.DB.prepare('DELETE FROM post_tags WHERE post_id = ?').bind(postId).run();
-  for (const t of tags) {
-    await env.DB.prepare('INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)').bind(postId, t.id).run();
-  }
+  const del = env.DB.prepare('DELETE FROM post_tags WHERE post_id = ?').bind(postId);
+  const ins = tags.map((t) =>
+    env.DB.prepare('INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)').bind(postId, t.id)
+  );
+  await env.DB.batch([del, ...ins]);
 }
 
 async function createPost(request, env, claims) {
@@ -423,6 +456,8 @@ async function createPost(request, env, claims) {
     String(body.status || 'draft'), pinned, calcReadTime(body.content), (claims && claims.user_id) || 0, nowISO(), nowISO()
   ).run();
   const id = res.meta.last_row_id;
+  // 两步执行：INSERT 需先拿 last_row_id 作标签关联的外键，无法并入同一 batch；
+  // 第二步失败会留下无标签文章（可重新编辑补标签），属已知取舍
   await replacePostTags(env, id, tags);
   return json(await postById(env, id), 201);
 }
@@ -435,15 +470,21 @@ async function updatePost(request, env, id) {
   const tags = await resolveTags(env, body.tags);
   const content = String(body.content || '');
   const pinned = body.pinned ? 1 : 0;
-  await env.DB.prepare(
-    `UPDATE posts SET title = ?, content = ?, excerpt = ?, status = ?, pinned = ?, read_time = ?, updated_at = ?
-     WHERE id = ?`
-  ).bind(
-    String(body.title || '').trim(), content,
-    String(body.excerpt || buildExcerpt(content)),
-    String(body.status || 'draft'), pinned, calcReadTime(content), nowISO(), id
-  ).run();
-  await replacePostTags(env, id, tags);
+  // UPDATE 与标签关联替换合并为一次 batch，保证原子性
+  await env.DB.batch([
+    env.DB.prepare(
+      `UPDATE posts SET title = ?, content = ?, excerpt = ?, status = ?, pinned = ?, read_time = ?, updated_at = ?
+       WHERE id = ?`
+    ).bind(
+      String(body.title || '').trim(), content,
+      String(body.excerpt || buildExcerpt(content)),
+      String(body.status || 'draft'), pinned, calcReadTime(content), nowISO(), id
+    ),
+    env.DB.prepare('DELETE FROM post_tags WHERE post_id = ?').bind(id),
+    ...tags.map((t) =>
+      env.DB.prepare('INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)').bind(id, t.id)
+    ),
+  ]);
   return json(await postById(env, id));
 }
 
@@ -460,6 +501,7 @@ async function listTrash(env) {
   return json({ data: rows.results.map(toPostResp) });
 }
 
+// 逐篇串行删除（permanentDeletePost 内部多表清理，量小可接受）
 async function emptyTrash(env) {
   const rows = await env.DB.prepare('SELECT id FROM posts WHERE deleted_at IS NOT NULL').all();
   for (const row of rows.results) {
@@ -520,6 +562,10 @@ async function listCommentsByPost(env, postId) {
 async function createPublicComment(request, env, postId) {
   const body = await readJson(request);
   if (!body || !body.body) return fail('invalid request body');
+  // post_id 必须是已存在的未删除文章，拒绝脏数据
+  if (!/^\d+$/.test(String(postId))) return fail('invalid post id', 400);
+  const post = await env.DB.prepare('SELECT id FROM posts WHERE id = ? AND deleted_at IS NULL').bind(postId).first();
+  if (!post) return fail('post not found', 404);
   // 设置里 enable_comments = 'false' 时禁止评论
   const setting = await env.DB.prepare("SELECT value FROM settings WHERE key = 'enable_comments'").first();
   if (setting && setting.value === 'false') return fail('comments disabled', 400);
@@ -602,10 +648,15 @@ async function toggleComponent(env, id) {
 // 图片存储策略：
 // · 配置了 R2（R2_PUBLIC_URL 非空）→ 上传到 R2 桶，返回 CDN URL
 // · 未配置 R2 但有 KV 命名空间（IMG 绑定）→ 存 KV，返回本站 /uploads/<name>（Worker 读取）
+const UPLOAD_MAX_SIZE = 10 * 1024 * 1024; // 10MB，对齐 Go 版
+const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+
 async function uploadImage(request, env) {
   const form = await request.formData().catch(() => null);
   const file = form && form.get('file');
-  if (!file || !(file.type || '').startsWith('image/')) return fail('only images allowed', 400);
+  // 类型白名单（客户端 file.type，收窄到位图四类；svg 一律拒绝）；大小上限 10MB 对齐 Go 版
+  if (!file || !ALLOWED_IMAGE_TYPES.has(file.type)) return fail('only png/jpeg/gif/webp images allowed', 400);
+  if (file.size > UPLOAD_MAX_SIZE) return fail('文件超过 10MB 限制', 400);
 
   const ext = (file.name || '').includes('.') ? '.' + file.name.split('.').pop().toLowerCase() : '.png';
   const key = `uploads/${Date.now()}${Math.floor(Math.random() * 1e6)}${ext}`; // 对齐 Go 端纳秒时间戳命名
@@ -628,7 +679,7 @@ async function uploadImage(request, env) {
 // 从 KV 读取图片（无 R2 时的回退图床）
 const IMAGE_MIME = {
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
-  webp: 'image/webp', svg: 'image/svg+xml', avif: 'image/avif', bmp: 'image/bmp',
+  webp: 'image/webp', avif: 'image/avif', bmp: 'image/bmp',
 };
 
 async function serveImage(env, path) {
@@ -704,7 +755,22 @@ async function recordPageView(env, request, path) {
 }
 
 async function dailySnapshot(env) {
-  const day = new Date(Date.now() - 86400000).toISOString().slice(0, 10); // 昨天(UTC)
+  // 补偿机制：从「已有最新快照的次日」补到昨天，漏跑的日子自动回填（回看上限 90 天，与明细保留期一致）
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10); // 昨天(UTC)
+  const earliest = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+  const latest = await env.DB.prepare('SELECT MAX(stat_date) AS d FROM daily_stats').first();
+  let day = (latest && latest.d && latest.d > earliest) ? latest.d : earliest;
+  while (day < yesterday) {
+    day = new Date(new Date(day + 'T00:00:00Z').getTime() + 86400000).toISOString().slice(0, 10);
+    await snapshotDay(env, day); // 从缺口次日起逐日补齐
+  }
+  await snapshotDay(env, yesterday);
+  // 清理 90 天前的明细，控制 D1 写入量
+  await env.DB.prepare("DELETE FROM page_views WHERE date(created_at) < date('now', '-90 days')").run();
+}
+
+// 统计某一天的 PV/UV 并 UPSERT 进 daily_stats（其余计数为当前总量快照）
+async function snapshotDay(env, day) {
   const pvRow = await env.DB.prepare('SELECT COUNT(*) AS n FROM page_views WHERE date(created_at) = ?').bind(day).first();
   const uvRow = await env.DB.prepare("SELECT COUNT(DISTINCT ip) AS n FROM page_views WHERE date(created_at) = ? AND ip != ''").bind(day).first();
   const s = await env.DB.prepare(`
@@ -721,8 +787,6 @@ async function dailySnapshot(env) {
        pv = excluded.pv, uv = excluded.uv, post_count = excluded.post_count,
        view_total = excluded.view_total, comment_count = excluded.comment_count, tag_count = excluded.tag_count`
   ).bind(day, pvRow.n || 0, uvRow.n || 0, s.post_count || 0, s.view_total || 0, s.comment_count || 0, s.tag_count || 0, nowISO()).run();
-  // 清理 90 天前的明细，控制 D1 写入量
-  await env.DB.prepare("DELETE FROM page_views WHERE date(created_at) < date('now', '-90 days')").run();
 }
 
 // ══════════════════════════ 工具 ══════════════════════════

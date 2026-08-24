@@ -32,7 +32,7 @@ vBlog Core 的「纯 Cloudflare 版」克隆：**同一个 Vue 3 前端 + 零依
            ├─ 其余路径      → Static Assets 静态资源（web/dist，SPA 兜底）
            ├─ D1 (SQLite)   → 文章/标签/评论/设置/组件/用户/统计（库位于 APAC 区域）
            ├─ KV            → 图片上传（免费 1GB；配了 R2 自动切 R2）
-           └─ Cron(每日)    → 访问统计快照（05:00 UTC）
+           └─ Cron(每日)    → 访问统计快照（00:05 UTC）
 ```
 
 ## 与 vBlog Core 的差异
@@ -116,7 +116,12 @@ node node_modules\wrangler\bin\wrangler.js dev --port 8787
 pwsh ./backup.ps1
 
 # 恢复（整库覆盖导入）
+# 注意：对非空库直接 import 会撞已存在的表。恢复到已有库前先删表，
+# 或干脆删库重建（wrangler d1 create + 重新绑定 id）后再导入。
 node node_modules\wrangler\bin\wrangler.js d1 import vblog-d1-db --remote --file .\backup\vblog-xxx.sql
+
+# 图床图片恢复：backup/images-<时间戳>/ 里的文件名 __ 即原 key 的 /，
+# 用 wrangler kv key put 逐个写回 IMG 绑定（key 形如 uploads/<纳秒>.<ext>）
 
 # 时点恢复（Cloudflare 侧自动快照）
 node node_modules\wrangler\bin\wrangler.js d1 time-travel vblog-d1-db --remote
@@ -130,7 +135,7 @@ node node_modules\wrangler\bin\wrangler.js d1 time-travel vblog-d1-db --remote
   - 品牌图：浏览器图标用 A1、首页顶栏用 A2、关于页头像用 B1（`web/public/favicon.png` / `nav-mascot.png` / `avatar.png`，AI 生成资源不入 git）
   - 在线预览域名 `vblog.xmtlz.dev` 绑定并验证可用（workers.dev 备用，注意部分网络不可达）
   - 性能优化：D1 重建至 APAC 区域（国内访问延迟大幅下降）、文章标签单查询消除 N+1、公开只读接口边缘缓存、page_view 降载
-  - 图片存储默认回退 Workers KV（未启用 R2 时可用）；每日 05:00(UTC) cron 统计快照
+  - 图片存储默认回退 Workers KV（未启用 R2 时可用）；每日 00:05(UTC) cron 统计快照
   - 新增 `deploy.ps1`（一键构建 + 部署）与 `backup.ps1`（远程 D1 导出备份，破坏性操作前必跑）
 
 ## 性能优化记录（已内置）

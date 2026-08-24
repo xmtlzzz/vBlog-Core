@@ -34,8 +34,10 @@ func (s *PageViewService) GetPVUVToday() (pv int64, uv int64, err error) {
 }
 
 // GetPVUVByDate returns page views and unique visitors for a given date.
+// The date is interpreted in the server's local timezone, matching how
+// page_views.created_at is written (local time) and DATE() comparisons.
 func (s *PageViewService) GetPVUVByDate(date string) (pv int64, uv int64, err error) {
-	start, err := time.Parse("2006-01-02", date)
+	start, err := time.ParseInLocation("2006-01-02", date, time.Local)
 	if err != nil {
 		return 0, 0, err
 	}

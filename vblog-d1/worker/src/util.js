@@ -38,17 +38,18 @@ export async function signJWT(secret, claims, expiresSecs) {
 }
 
 export async function verifyJWT(secret, token) {
-  const parts = String(token || '').split('.');
-  if (parts.length !== 3) return null;
-  const [h, p, sig] = parts;
-  const expected = b64url(await hmacSha256(secret, enc.encode(h + '.' + p)));
-  const a = b64urlToBytes(sig);
-  const b = b64urlToBytes(expected);
-  if (a.length !== b.length) return null;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
-  if (diff !== 0) return null;
+  // 整体 try/catch：畸形 token（非法 base64 等）让 WebCrypto/atob 抛异常时统一按验签失败处理（401 而非 500）
   try {
+    const parts = String(token || '').split('.');
+    if (parts.length !== 3) return null;
+    const [h, p, sig] = parts;
+    const expected = b64url(await hmacSha256(secret, enc.encode(h + '.' + p)));
+    const a = b64urlToBytes(sig);
+    const b = b64urlToBytes(expected);
+    if (a.length !== b.length) return null;
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+    if (diff !== 0) return null;
     const claims = JSON.parse(dec.decode(b64urlToBytes(p)));
     const now = Math.floor(Date.now() / 1000);
     if (!claims || !claims.exp || claims.exp < now) return null;

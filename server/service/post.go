@@ -1,11 +1,15 @@
 package service
 
 import (
+	"errors"
 	"math"
 
 	"gorm.io/gorm"
 	"vblog-core/model"
 )
+
+// ErrNotFound is returned when the target resource does not exist.
+var ErrNotFound = errors.New("record not found")
 
 // PostService handles blog post CRUD operations.
 type PostService struct {
@@ -64,6 +68,9 @@ func (s *PostService) List(page, perPage int, tag, status, search string) ([]mod
 func (s *PostService) GetByID(id uint) (*model.Post, error) {
 	var post model.Post
 	err := s.DB.Preload("Tags").First(&post, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, ErrNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +81,11 @@ func (s *PostService) GetByID(id uint) (*model.Post, error) {
 
 // resolveTags looks up existing tags by name and creates missing ones.
 func (s *PostService) resolveTags(tags []model.Tag) ([]model.Tag, error) {
+	return s.resolveTagsWithDB(s.DB, tags)
+}
+
+// resolveTagsWithDB is resolveTags bound to a specific db handle (tx-safe).
+func (s *PostService) resolveTagsWithDB(db *gorm.DB, tags []model.Tag) ([]model.Tag, error) {
 	// Collect valid tag names
 	names := make([]string, 0, len(tags))
 	for _, t := range tags {
@@ -87,7 +99,7 @@ func (s *PostService) resolveTags(tags []model.Tag) ([]model.Tag, error) {
 
 	// Batch SELECT existing tags
 	var existing []model.Tag
-	if err := s.DB.Where("name IN ?", names).Find(&existing).Error; err != nil {
+	if err := db.Where("name IN ?", names).Find(&existing).Error; err != nil {
 		return nil, err
 	}
 
@@ -105,7 +117,7 @@ func (s *PostService) resolveTags(tags []model.Tag) ([]model.Tag, error) {
 
 	// Batch INSERT missing tags
 	if len(missing) > 0 {
-		if err := s.DB.CreateInBatches(missing, 100).Error; err != nil {
+		if err := db.CreateInBatches(missing, 100).Error; err != nil {
 			return nil, err
 		}
 		existing = append(existing, missing...)
@@ -153,26 +165,31 @@ func (s *PostService) Update(post *model.Post) error {
 	// Save tags separately to control join table sync.
 	tags := post.Tags
 	post.Tags = nil
-	// Persist only editable columns; preserve views/author_id/timestamps.
-	if err := s.DB.Model(post).
-		Select("title", "content", "excerpt", "status", "pinned", "read_time", "updated_at").
-		Updates(post).Error; err != nil {
-		return err
-	}
-	if len(tags) > 0 {
-		resolved, err := s.resolveTags(tags)
-		if err != nil {
+	return s.DB.Transaction(func(tx *gorm.DB) error {
+		// Persist only editable columns; preserve views/author_id/timestamps.
+		if err := tx.Model(post).
+			Select("title", "content", "excerpt", "status", "pinned", "read_time", "updated_at").
+			Updates(post).Error; err != nil {
 			return err
 		}
-		return s.DB.Model(post).Association("Tags").Replace(resolved)
-	}
-	return nil
+		if len(tags) > 0 {
+			resolved, err := s.resolveTagsWithDB(tx, tags)
+			if err != nil {
+				return err
+			}
+			return tx.Model(post).Association("Tags").Replace(resolved)
+		}
+		return nil
+	})
 }
 
 // Delete soft-deletes a post by ID.
 func (s *PostService) Delete(id uint) error {
 	var post model.Post
 	if err := s.DB.First(&post, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrNotFound
+		}
 		return err
 	}
 	if err := s.DB.Delete(&model.Post{}, id).Error; err != nil {
@@ -192,20 +209,40 @@ func (s *PostService) ListTrash() ([]model.Post, error) {
 
 // Restore restores a soft-deleted post.
 func (s *PostService) Restore(id uint) error {
-	return s.DB.Unscoped().Model(&model.Post{}).
-		Where("id = ?", id).Update("deleted_at", nil).Error
+	res := s.DB.Unscoped().Model(&model.Post{}).
+		Where("id = ?", id).Update("deleted_at", nil)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
-// PermanentDelete hard-deletes a post and its associations.
+// PermanentDelete hard-deletes a post and its associations in one transaction.
 func (s *PostService) PermanentDelete(id uint) error {
-	// Remove join table associations first (foreign key)
-	if err := s.DB.Exec("DELETE FROM post_tags WHERE post_id = ?", id).Error; err != nil {
-		return err
-	}
-	// Delete related comments
-	s.DB.Unscoped().Where("post_id = ?", id).Delete(&model.Comment{})
-	// Delete related change_log entries
-	s.DB.Where("target_id = ?", id).Delete(&model.ChangeLog{})
-	// Hard delete the post
-	return s.DB.Unscoped().Delete(&model.Post{}, id).Error
+	return s.DB.Transaction(func(tx *gorm.DB) error {
+		// Remove join table associations first (foreign key)
+		if err := tx.Exec("DELETE FROM post_tags WHERE post_id = ?", id).Error; err != nil {
+			return err
+		}
+		// Delete related comments
+		if err := tx.Unscoped().Where("post_id = ?", id).Delete(&model.Comment{}).Error; err != nil {
+			return err
+		}
+		// Delete related change_log entries (only this post's, not same-ID comments')
+		if err := tx.Where("target_id = ? AND change_type = ?", id, "new_post").Delete(&model.ChangeLog{}).Error; err != nil {
+			return err
+		}
+		// Hard delete the post
+		res := tx.Unscoped().Delete(&model.Post{}, id)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return ErrNotFound
+		}
+		return nil
+	})
 }

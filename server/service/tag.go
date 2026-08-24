@@ -48,7 +48,12 @@ func (s *TagService) Update(tag *model.Tag) error {
 	return s.DB.Save(tag).Error
 }
 
-// Delete deletes a tag by ID.
+// Delete deletes a tag by ID, clearing post associations first to avoid FK errors.
 func (s *TagService) Delete(id uint) error {
-	return s.DB.Delete(&model.Tag{}, id).Error
+	return s.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("DELETE FROM post_tags WHERE tag_id = ?", id).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&model.Tag{}, id).Error
+	})
 }

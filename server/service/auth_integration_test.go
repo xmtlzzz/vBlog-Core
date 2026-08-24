@@ -48,7 +48,7 @@ func TestAuthService_LoginWrongPassword(t *testing.T) {
 	db := testutil.GetTestDB(t)
 	svc := NewAuthService(db)
 
-	svc.Register("wrongpass", "correct", "wrong@test.com")
+	svc.Register("wrongpass", "correct123", "wrong@test.com")
 
 	_, err := svc.Login("wrongpass", "incorrect")
 	if err == nil {

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -165,8 +166,12 @@ func (p *PostResource) get(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	post, err := p.Service.GetByID(uint(id))
-	if err != nil {
+	if errors.Is(err, service.ErrNotFound) {
 		resp.WriteError(http.StatusNotFound, err)
+		return
+	}
+	if err != nil {
+		resp.WriteError(http.StatusInternalServerError, err)
 		return
 	}
 	resp.WriteEntity(newPostResp(post))
@@ -211,6 +216,10 @@ func (p *PostResource) delete(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	if err := p.Service.Delete(uint(id)); err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			resp.WriteError(http.StatusNotFound, err)
+			return
+		}
 		resp.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -237,6 +246,10 @@ func (p *PostResource) restore(req *restful.Request, resp *restful.Response) {
 		return
 	}
 	if err := p.Service.Restore(uint(id)); err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			resp.WriteError(http.StatusNotFound, err)
+			return
+		}
 		resp.WriteError(http.StatusInternalServerError, err)
 		return
 	}
@@ -250,6 +263,10 @@ func (p *PostResource) permanentDelete(req *restful.Request, resp *restful.Respo
 		return
 	}
 	if err := p.Service.PermanentDelete(uint(id)); err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			resp.WriteError(http.StatusNotFound, err)
+			return
+		}
 		resp.WriteError(http.StatusInternalServerError, err)
 		return
 	}

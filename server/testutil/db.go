@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"os"
 	"testing"
 
 	"vblog-core/config"
@@ -16,12 +15,8 @@ func GetTestDB(t *testing.T) *gorm.DB {
 	if testDB != nil {
 		return testDB
 	}
-	os.Setenv("DB_HOST", "192.168.81.101")
-	os.Setenv("DB_USER", "vblog")
-	os.Setenv("DB_PASSWORD", "Qwer1234")
-	os.Setenv("DB_NAME", "vblog")
-	os.Setenv("DB_PORT", "5432")
-
+	// Connection info comes from environment variables or the local
+	// config/config.toml (see config/config.example.toml).
 	cfg := config.Load()
 	db, err := cfg.DB.Connect()
 	if err != nil {

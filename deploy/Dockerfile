@@ -15,7 +15,8 @@ RUN go build -o /vblog ./cmd/main.go
 
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates
+WORKDIR /app
 COPY --from=backend /vblog /usr/local/bin/vblog
-COPY deploy/init.sql /init.sql
+COPY --from=backend /app/server/static /app/static
 EXPOSE 8080
 CMD ["vblog"]

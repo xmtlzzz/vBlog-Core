@@ -39,7 +39,11 @@ func newPostResp(p *model.Post) postResp {
 // PostResource handles blog post REST endpoints.
 type PostResource struct {
 	Service *service.PostService
+	Auth    restful.FilterFunction // optional JWT filter; when nil, admin routes are unprotected
 }
+
+// guard returns the JWT filter when configured (no-op in tests).
+func (p *PostResource) guard() restful.FilterFunction { return p.Auth }
 
 // Register adds post routes to the given WebService.
 func (p *PostResource) Register(ws *restful.WebService) {
@@ -65,7 +69,7 @@ func (p *PostResource) Register(ws *restful.WebService) {
 		Returns(200, "OK", postResp{}).
 		Returns(404, "Not Found", ErrorResponse{}))
 
-	ws.Route(ws.POST("/api/posts").To(p.create).
+	ws.Route(ws.POST("/api/posts").Filter(p.guard()).To(p.create).
 		Doc("Create a new blog post").
 		Notes("Creates a new blog post. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
@@ -75,7 +79,7 @@ func (p *PostResource) Register(ws *restful.WebService) {
 		Returns(400, "Bad Request", ErrorResponse{}).
 		Returns(401, "Unauthorized", ErrorResponse{}))
 
-	ws.Route(ws.PUT("/api/posts/{id}").To(p.update).
+	ws.Route(ws.PUT("/api/posts/{id}").Filter(p.guard()).To(p.update).
 		Doc("Update an existing blog post").
 		Notes("Updates a blog post by ID. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
@@ -87,7 +91,7 @@ func (p *PostResource) Register(ws *restful.WebService) {
 		Returns(401, "Unauthorized", ErrorResponse{}).
 		Returns(404, "Not Found", ErrorResponse{}))
 
-	ws.Route(ws.DELETE("/api/posts/{id}").To(p.delete).
+	ws.Route(ws.DELETE("/api/posts/{id}").Filter(p.guard()).To(p.delete).
 		Doc("Delete a blog post (soft delete)").
 		Notes("Soft deletes a post. Can be restored from trash. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
@@ -96,7 +100,7 @@ func (p *PostResource) Register(ws *restful.WebService) {
 		Returns(401, "Unauthorized", ErrorResponse{}).
 		Returns(404, "Not Found", ErrorResponse{}))
 
-	ws.Route(ws.GET("/api/posts/trash").To(p.trash).
+	ws.Route(ws.GET("/api/posts/trash").Filter(p.guard()).To(p.trash).
 		Doc("List all soft-deleted posts").
 		Notes("Returns all posts in the trash. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
@@ -104,7 +108,7 @@ func (p *PostResource) Register(ws *restful.WebService) {
 		Returns(200, "OK", PostListResponse{}).
 		Returns(401, "Unauthorized", ErrorResponse{}))
 
-	ws.Route(ws.POST("/api/posts/{id}/restore").To(p.restore).
+	ws.Route(ws.POST("/api/posts/{id}/restore").Filter(p.guard()).To(p.restore).
 		Doc("Restore a soft-deleted post").
 		Notes("Restores a post from trash. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
@@ -113,7 +117,7 @@ func (p *PostResource) Register(ws *restful.WebService) {
 		Returns(401, "Unauthorized", ErrorResponse{}).
 		Returns(404, "Not Found", ErrorResponse{}))
 
-	ws.Route(ws.DELETE("/api/posts/{id}/permanent").To(p.permanentDelete).
+	ws.Route(ws.DELETE("/api/posts/{id}/permanent").Filter(p.guard()).To(p.permanentDelete).
 		Doc("Permanently delete a post").
 		Notes("Permanently deletes a post from trash. This action cannot be undone. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).

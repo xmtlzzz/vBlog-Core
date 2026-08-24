@@ -87,6 +87,17 @@ func (a *AuthResource) register(req *restful.Request, resp *restful.Response) {
 		return
 	}
 
+	// First-account gate: public registration closes once an account exists.
+	exists, err := a.Service.HasAnyUser()
+	if err != nil {
+		resp.WriteHeaderAndEntity(http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	if exists {
+		resp.WriteHeaderAndEntity(http.StatusForbidden, map[string]string{"error": "注册已关闭：管理员已存在"})
+		return
+	}
+
 	user, err := a.Service.Register(body.Username, body.Password, body.Email)
 	if err != nil {
 		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "注册失败，用户名可能已存在"})

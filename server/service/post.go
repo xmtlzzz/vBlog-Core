@@ -153,7 +153,10 @@ func (s *PostService) Update(post *model.Post) error {
 	// Save tags separately to control join table sync.
 	tags := post.Tags
 	post.Tags = nil
-	if err := s.DB.Save(post).Error; err != nil {
+	// Persist only editable columns; preserve views/author_id/timestamps.
+	if err := s.DB.Model(post).
+		Select("title", "content", "excerpt", "status", "pinned", "read_time", "updated_at").
+		Updates(post).Error; err != nil {
 		return err
 	}
 	if len(tags) > 0 {

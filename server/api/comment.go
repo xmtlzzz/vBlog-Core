@@ -13,11 +13,15 @@ import (
 // CommentResource handles comment REST endpoints.
 type CommentResource struct {
 	Service *service.CommentService
+	Auth    restful.FilterFunction // optional JWT filter; when nil, admin routes are unprotected
 }
+
+// guard returns the JWT filter when configured (no-op in tests).
+func (c *CommentResource) guard() restful.FilterFunction { return c.Auth }
 
 // Register adds comment routes to the given WebService.
 func (c *CommentResource) Register(ws *restful.WebService) {
-	ws.Route(ws.GET("/api/comments").To(c.list).
+	ws.Route(ws.GET("/api/comments").Filter(c.guard()).To(c.list).
 		Doc("List all comments with pagination and filters").
 		Notes("Returns a paginated list of comments. Admin only.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
@@ -30,7 +34,7 @@ func (c *CommentResource) Register(ws *restful.WebService) {
 		Returns(401, "Unauthorized", ErrorResponse{}).
 		Returns(500, "Internal Server Error", ErrorResponse{}))
 
-	ws.Route(ws.POST("/api/comments").To(c.create).
+	ws.Route(ws.POST("/api/comments").Filter(c.guard()).To(c.create).
 		Doc("Create a new comment (admin)").
 		Notes("Creates a new comment with admin privileges. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
@@ -40,7 +44,7 @@ func (c *CommentResource) Register(ws *restful.WebService) {
 		Returns(400, "Bad Request", ErrorResponse{}).
 		Returns(401, "Unauthorized", ErrorResponse{}))
 
-	ws.Route(ws.PATCH("/api/comments/{id}/approve").To(c.approve).
+	ws.Route(ws.PATCH("/api/comments/{id}/approve").Filter(c.guard()).To(c.approve).
 		Doc("Approve a comment").
 		Notes("Approves a pending comment. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
@@ -49,7 +53,7 @@ func (c *CommentResource) Register(ws *restful.WebService) {
 		Returns(401, "Unauthorized", ErrorResponse{}).
 		Returns(404, "Not Found", ErrorResponse{}))
 
-	ws.Route(ws.PATCH("/api/comments/{id}/spam").To(c.markSpam).
+	ws.Route(ws.PATCH("/api/comments/{id}/spam").Filter(c.guard()).To(c.markSpam).
 		Doc("Mark comment as spam").
 		Notes("Marks a comment as spam. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).
@@ -58,7 +62,7 @@ func (c *CommentResource) Register(ws *restful.WebService) {
 		Returns(401, "Unauthorized", ErrorResponse{}).
 		Returns(404, "Not Found", ErrorResponse{}))
 
-	ws.Route(ws.DELETE("/api/comments/{id}").To(c.delete).
+	ws.Route(ws.DELETE("/api/comments/{id}").Filter(c.guard()).To(c.delete).
 		Doc("Delete a comment").
 		Notes("Permanently deletes a comment. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"comments"}).

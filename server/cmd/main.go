@@ -52,11 +52,11 @@ func main() {
 
 	// All API routes in one WebService
 	ws := new(restful.WebService).Path("/").Produces(restful.MIME_JSON)
-	// Public routes
-	(&api.PostResource{Service: postSvc}).Register(ws)
-	(&api.TagResource{Service: tagSvc}).Register(ws)
-	(&api.CommentResource{Service: commentSvc}).Register(ws)
-	(&api.SettingResource{Service: settingSvc}).Register(ws)
+	// Public routes (admin write routes get jwtFilter via each resource's Auth field)
+	(&api.PostResource{Service: postSvc, Auth: jwtFilter}).Register(ws)
+	(&api.TagResource{Service: tagSvc, Auth: jwtFilter}).Register(ws)
+	(&api.CommentResource{Service: commentSvc, Auth: jwtFilter}).Register(ws)
+	(&api.SettingResource{Service: settingSvc, Auth: jwtFilter}).Register(ws)
 	(&api.AuthResource{Service: authSvc, Secret: cfg.JWT.Secret}).Register(ws)
 	(&api.RSSResource{DB: db}).Register(ws)
 	// Public stats

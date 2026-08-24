@@ -13,7 +13,11 @@ import (
 // TagResource handles tag REST endpoints.
 type TagResource struct {
 	Service *service.TagService
+	Auth    restful.FilterFunction // optional JWT filter; when nil, admin routes are unprotected
 }
+
+// guard returns the JWT filter when configured (no-op in tests).
+func (t *TagResource) guard() restful.FilterFunction { return t.Auth }
 
 // Register adds tag routes to the given WebService.
 func (t *TagResource) Register(ws *restful.WebService) {
@@ -25,7 +29,7 @@ func (t *TagResource) Register(ws *restful.WebService) {
 		Returns(200, "OK", TagListResponse{}).
 		Returns(500, "Internal Server Error", ErrorResponse{}))
 
-	ws.Route(ws.POST("/api/tags").To(t.create).
+	ws.Route(ws.POST("/api/tags").Filter(t.guard()).To(t.create).
 		Doc("Create a new tag").
 		Notes("Creates a new tag. Tag name must be unique. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"tags"}).
@@ -35,7 +39,7 @@ func (t *TagResource) Register(ws *restful.WebService) {
 		Returns(400, "Bad Request", ErrorResponse{}).
 		Returns(401, "Unauthorized", ErrorResponse{}))
 
-	ws.Route(ws.PUT("/api/tags/{id}").To(t.update).
+	ws.Route(ws.PUT("/api/tags/{id}").Filter(t.guard()).To(t.update).
 		Doc("Update an existing tag").
 		Notes("Updates a tag by ID. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"tags"}).
@@ -47,7 +51,7 @@ func (t *TagResource) Register(ws *restful.WebService) {
 		Returns(401, "Unauthorized", ErrorResponse{}).
 		Returns(404, "Not Found", ErrorResponse{}))
 
-	ws.Route(ws.DELETE("/api/tags/{id}").To(t.delete).
+	ws.Route(ws.DELETE("/api/tags/{id}").Filter(t.guard()).To(t.delete).
 		Doc("Delete a tag").
 		Notes("Deletes a tag by ID. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"tags"}).

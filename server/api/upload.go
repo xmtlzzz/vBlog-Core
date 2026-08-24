@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	restful "github.com/emicklei/go-restful/v3"
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
 )
+
+const maxUploadSize = 10 << 20 // 10MB
 
 // File represents a file upload request.
 type File struct {
@@ -38,28 +39,33 @@ func (u *UploadResource) Register(ws *restful.WebService) {
 }
 
 func (u *UploadResource) Upload(req *restful.Request, resp *restful.Response) {
-	file, header, err := req.Request.FormFile("file")
+	req.Request.Body = http.MaxBytesReader(resp.ResponseWriter, req.Request.Body, maxUploadSize)
+
+	file, _, err := req.Request.FormFile("file")
 	if err != nil {
 		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "missing file"})
 		return
 	}
 	defer file.Close()
 
-	// Validate content type
-	ct := header.Header.Get("Content-Type")
-	if !strings.HasPrefix(ct, "image/") {
-		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "only images allowed"})
+	// Detect real content type from magic bytes; extension derived from it.
+	head := make([]byte, 512)
+	n, _ := file.Read(head)
+	kind := http.DetectContentType(head[:n])
+	exts := map[string]string{
+		"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "image/webp": ".webp",
+	}
+	ext, ok := exts[kind]
+	if !ok {
+		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "only png/jpeg/gif/webp images allowed"})
 		return
 	}
+	file.Seek(0, 0)
 
 	// Ensure upload dir exists
 	os.MkdirAll(u.Dir, 0o755)
 
 	// Generate unique filename
-	ext := filepath.Ext(header.Filename)
-	if ext == "" {
-		ext = ".png"
-	}
 	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 	dst := filepath.Join(u.Dir, filename)
 

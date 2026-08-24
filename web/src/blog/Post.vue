@@ -90,6 +90,7 @@ import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
 import CommentSection from '../shared/CommentSection.vue'
+import MarkdownIt from 'markdown-it'
 
 const route = useRoute()
 const post = ref(null)
@@ -107,53 +108,29 @@ function scrollToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-function markdownToHtml(md) {
-  if (!md) return ''
-  let html = md
-    // Code blocks
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="lang-$1">$2</code></pre>')
-    // Inline code
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    // Headings
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, (match, text) => {
-      const id = text.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
-      return `<h2 id="${id}">${text}</h2>`
-    })
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    // Bold and italic
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-    // Images
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
-    // Blockquotes
-    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-    // Unordered lists
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    // Horizontal rules
-    .replace(/^---$/gm, '<hr />')
-    // Paragraphs
-    .replace(/\n\n/g, '</p><p>')
-    // Line breaks
-    .replace(/\n/g, '<br />')
+// 使用 markdown-it 渲染，html:false（默认值）转义内嵌 HTML，防止存储型 XSS；开启 linkify 方便裸链接
+const md = new MarkdownIt({ html: false, linkify: true })
 
-  // Wrap loose <li> in <ul>
-  html = html.replace(/(<li>.*?<\/li>)+/gs, '<ul>$&</ul>')
-  // Wrap in paragraph if not starting with block element
-  if (!/^<(h[1-6]|pre|ul|blockquote|hr)/.test(html)) {
-    html = '<p>' + html + '</p>'
+// 为 h2 注入锚点 id（供右侧目录定位），沿用原有 slug 规则
+md.core.ruler.push('vblog_heading_ids', (state) => {
+  const tokens = state.tokens
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i]
+    if (t.type === 'heading_open' && t.tag === 'h2') {
+      const inline = tokens[i + 1]
+      const text = inline && inline.type === 'inline' ? inline.content.trim() : ''
+      const id = text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+      t.attrSet('id', id)
+    }
   }
-  return html
-}
+})
 
 function buildToc(html) {
   const items = []
-  const regex = /<h2 id="([^"]+)">([^<]+)<\/h2>/g
+  const regex = /<h2 id="([^"]*)">([\s\S]*?)<\/h2>/g
   let match
   while ((match = regex.exec(html)) !== null) {
-    items.push({ id: match[1], text: match[2] })
+    items.push({ id: match[1], text: match[2].replace(/<[^>]+>/g, '') })
   }
   return items
 }
@@ -172,7 +149,7 @@ async function fetchAdjacentPosts() {
 }
 
 const renderedContent = computed(() => {
-  return post.value ? markdownToHtml(post.value.content) : ''
+  return post.value ? md.render(post.value.content || '') : ''
 })
 
 async function loadPost(id) {

@@ -179,6 +179,9 @@ async function login(request, env) {
 }
 
 async function register(request, env) {
+  // 首号闸门：已存在用户则关闭公开注册（首个注册者即管理员）
+  const anyUser = await env.DB.prepare('SELECT id FROM users LIMIT 1').first();
+  if (anyUser) return fail('注册已关闭：管理员已存在', 403);
   const body = await readJson(request);
   const username = String((body && body.username) || '');
   const password = String((body && body.password) || '');

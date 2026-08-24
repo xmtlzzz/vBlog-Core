@@ -12,7 +12,11 @@ import (
 // SettingResource handles site settings REST endpoints.
 type SettingResource struct {
 	Service *service.SettingService
+	Auth    restful.FilterFunction // optional JWT filter; when nil, admin routes are unprotected
 }
+
+// guard returns the JWT filter when configured (no-op in tests).
+func (s *SettingResource) guard() restful.FilterFunction { return s.Auth }
 
 // Register adds settings routes to the given WebService.
 func (s *SettingResource) Register(ws *restful.WebService) {
@@ -24,7 +28,7 @@ func (s *SettingResource) Register(ws *restful.WebService) {
 		Returns(200, "OK", []model.Setting{}).
 		Returns(500, "Internal Server Error", ErrorResponse{}))
 
-	ws.Route(ws.PUT("/api/settings").To(s.save).
+	ws.Route(ws.PUT("/api/settings").Filter(s.guard()).To(s.save).
 		Doc("Save site settings").
 		Notes("Saves multiple site settings. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"settings"}).
@@ -33,7 +37,7 @@ func (s *SettingResource) Register(ws *restful.WebService) {
 		Returns(400, "Bad Request", ErrorResponse{}).
 		Returns(401, "Unauthorized", ErrorResponse{}))
 
-	ws.Route(ws.POST("/api/settings/reset").To(s.reset).
+	ws.Route(ws.POST("/api/settings/reset").Filter(s.guard()).To(s.reset).
 		Doc("Reset settings to defaults").
 		Notes("Resets all settings to their default values. Requires authentication.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"settings"}).

@@ -11,3 +11,6 @@ web/public/favicon.png
 web/public/avatar.png
 web/public/nav-mascot.png
 pict/
+
+# 整库备份导出产物（含全部数据，严禁入库）
+backup/

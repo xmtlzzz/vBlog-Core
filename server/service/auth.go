@@ -55,6 +55,15 @@ func (s *AuthService) Register(username, password, email string) (*model.User, e
 	return user, nil
 }
 
+// HasAnyUser reports whether any user account exists.
+func (s *AuthService) HasAnyUser() (bool, error) {
+	var count int64
+	if err := s.DB.Model(&model.User{}).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 // Login authenticates a user by username and password.
 func (s *AuthService) Login(username, password string) (*model.User, error) {
 	var user model.User

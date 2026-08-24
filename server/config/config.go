@@ -62,8 +62,22 @@ func Load() Config {
 	v.SetConfigType("toml")
 	v.AddConfigPath(filepath.Join(projectRoot, "config"))
 
+	// Environment overrides (used by docker-compose and tests)
+	v.BindEnv("http.addr", "HTTP_ADDR")
+	v.BindEnv("http.port", "HTTP_PORT")
+	v.BindEnv("http.grpc_port", "HTTP_GRPC_PORT")
+	v.BindEnv("postgres.host", "DB_HOST", "PGHOST")
+	v.BindEnv("postgres.port", "DB_PORT", "PGPORT")
+	v.BindEnv("postgres.name", "DB_NAME", "PGDATABASE")
+	v.BindEnv("postgres.user", "DB_USER", "PGUSER")
+	v.BindEnv("postgres.password", "DB_PASSWORD", "PGPASSWORD")
+	v.BindEnv("jwt.secret", "JWT_SECRET")
+
 	if err := v.ReadInConfig(); err != nil {
-		log.Fatalf("failed to read config: %v", err)
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			log.Fatalf("failed to read config: %v", err)
+		}
+		log.Println("config.toml not found; using environment variables and defaults")
 	}
 
 	cfg := Config{

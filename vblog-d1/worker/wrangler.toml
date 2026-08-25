@@ -42,6 +42,10 @@ crons = ["5 0 * * *"]
 SITE_URL = "https://blog.xmtlz.dev"
 # 未开通 R2 公开域前必须留空 ""，上传自动走 KV 图床；开通后填回地址即可切 R2
 R2_PUBLIC_URL = ""
+# Turnstile 人机验证：后端允许的前端域名白名单（生产值不得含 localhost；
+# 本地开发在 .dev.vars 里覆盖为 localhost,127.0.0.1）
+TURNSTILE_HOSTNAMES = "vblog.xmtlz.dev"
 
 # ── 机密（用 wrangler secret put 注入，不要写在这里）────────────
 #   npx wrangler secret put JWT_SECRET
+#   npx wrangler secret put TURNSTILE_SECRET

@@ -24,6 +24,7 @@
         <input v-model="form.author_email" placeholder="邮箱（可选）" type="email" class="form-input" />
       </div>
       <textarea v-model="form.body" placeholder="写下你的评论..." required class="form-textarea" rows="4"></textarea>
+      <div ref="turnstileEl" class="cf-turnstile-wrap"></div>
       <div class="form-footer">
         <span class="form-hint">评论将在审核后显示</span>
         <button type="submit" class="submit-btn" :disabled="submitting">
@@ -39,14 +40,56 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '../api/request'
 import { formatRelativeTime } from '../utils/format'
+import { useThemeStore } from '../stores/theme'
 
+const themeStore = useThemeStore()
 const props = defineProps({ postId: [Number, String] })
+
+// Cloudflare Turnstile（sitekey 为公开值，secret 只存在于后端）
+const TURNSTILE_SITEKEY = '0x4AAAAAAEa7oWGKpbWV4mEF'
+const TURNSTILE_ACTION = 'comment'
 
 const enabled = ref(false)
 const comments = ref([])
 const submitting = ref(false)
-const form = ref({ author_name: '', author_email: '', body: '' })
+const form = ref({ author_name: '', author_email: '', body: '', 'cf-turnstile-response': '' })
+const turnstileEl = ref(null)
 let timer = null
+let turnstileWidgetId = null
+
+function loadTurnstileScript() {
+  return new Promise((resolve) => {
+    if (window.turnstile) return resolve()
+    const s = document.createElement('script')
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+    s.async = true
+    s.defer = true
+    s.onload = () => resolve()
+    s.onerror = () => resolve() // 加载失败时放行（后端仍会拒绝无 token 请求）
+    document.head.appendChild(s)
+  })
+}
+
+async function mountTurnstile() {
+  await loadTurnstileScript()
+  if (!window.turnstile || !turnstileEl.value) return
+  if (turnstileWidgetId != null) return
+  turnstileWidgetId = window.turnstile.render(turnstileEl.value, {
+    sitekey: TURNSTILE_SITEKEY,
+    action: TURNSTILE_ACTION,
+    theme: themeStore.theme === 'dark' ? 'dark' : 'light',
+    callback: (token) => { form.value['cf-turnstile-response'] = token },
+    'expired-callback': () => { form.value['cf-turnstile-response'] = '' },
+    'error-callback': () => { form.value['cf-turnstile-response'] = '' },
+  })
+}
+
+function resetTurnstile() {
+  form.value['cf-turnstile-response'] = ''
+  if (turnstileWidgetId != null && window.turnstile) {
+    window.turnstile.reset(turnstileWidgetId)
+  }
+}
 
 async function fetchComments() {
   try {
@@ -57,6 +100,10 @@ async function fetchComments() {
 
 async function submitComment() {
   if (!form.value.author_name.trim() || !form.value.body.trim()) return
+  if (!form.value['cf-turnstile-response']) {
+    ElMessage.warning('请先完成人机验证')
+    return
+  }
   submitting.value = true
   try {
     await api.post(`/posts/${props.postId}/comments`, form.value)
@@ -64,7 +111,10 @@ async function submitComment() {
     form.value = { author_name: form.value.author_name, author_email: form.value.author_email, body: '' }
   } catch {
     ElMessage.error('提交失败')
-  } finally { submitting.value = false }
+  } finally {
+    submitting.value = false
+    resetTurnstile()
+  }
 }
 
 onMounted(async () => {
@@ -73,12 +123,18 @@ onMounted(async () => {
     enabled.value = settings.enable_comments === 'true'
     if (enabled.value) {
       fetchComments()
+      mountTurnstile()
       timer = setInterval(fetchComments, 10000)
     }
   } catch { enabled.value = false }
 })
 
-onUnmounted(() => { if (timer) clearInterval(timer) })
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+  if (turnstileWidgetId != null && window.turnstile) {
+    try { window.turnstile.remove(turnstileWidgetId) } catch { /* noop */ }
+  }
+})
 </script>
 
 <style scoped>
@@ -156,6 +212,10 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
+}
+.cf-turnstile-wrap {
+  margin-top: 12px;
+  min-height: 65px;
 }
 .form-row {
   display: flex;

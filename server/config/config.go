@@ -5,15 +5,17 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/spf13/viper"
 )
 
 // Config holds all application configuration.
 type Config struct {
-	Server ServerConfig
-	DB     DBConfig
-	JWT    JWTConfig
+	Server   ServerConfig
+	DB       DBConfig
+	JWT      JWTConfig
+	Turnstile TurnstileConfig
 }
 
 // ServerConfig holds HTTP server configuration.
@@ -35,6 +37,25 @@ type DBConfig struct {
 // JWTConfig holds JWT authentication configuration.
 type JWTConfig struct {
 	Secret string
+}
+
+// TurnstileConfig holds Cloudflare Turnstile bot-protection config.
+// Allowed only when TURNSTILE_SECRET is set and TURNSTILE_HOSTNAMES lists at
+// least one frontend hostname (production value must not include localhost).
+type TurnstileConfig struct {
+	Secret    string
+	Hostnames []string
+}
+
+// splitCSV splits a comma-separated env value into a trimmed, non-empty list.
+func splitCSV(s string) []string {
+	var out []string
+	for _, p := range strings.Split(s, ",") {
+		if t := strings.TrimSpace(p); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 var projectRoot string
@@ -72,6 +93,8 @@ func Load() Config {
 	v.BindEnv("postgres.user", "DB_USER", "PGUSER")
 	v.BindEnv("postgres.password", "DB_PASSWORD", "PGPASSWORD")
 	v.BindEnv("jwt.secret", "JWT_SECRET")
+	v.BindEnv("turnstile.secret", "TURNSTILE_SECRET")
+	v.BindEnv("turnstile.hostnames", "TURNSTILE_HOSTNAMES")
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -95,6 +118,10 @@ func Load() Config {
 		},
 		JWT: JWTConfig{
 			Secret: v.GetString("jwt.secret"),
+		},
+		Turnstile: TurnstileConfig{
+			Secret:    v.GetString("turnstile.secret"),
+			Hostnames: splitCSV(v.GetString("turnstile.hostnames")),
 		},
 	}
 

@@ -81,6 +81,9 @@ node node_modules\wrangler\bin\wrangler.js kv namespace create IMG
 # 3) 注入 JWT 密钥（至少 32 位随机串）
 node node_modules\wrangler\bin\wrangler.js secret put JWT_SECRET
 
+# 3b) 注入 Turnstile 人机验证 secret（Cloudflare 控制台 → Turnstile → 你的 widget → Secret Key；勿贴进聊天）
+node node_modules\wrangler\bin\wrangler.js secret put TURNSTILE_SECRET
+
 # 4) 可选：R2 图床（需先在 Cloudflare 控制台 → R2 首次访问启用服务）
 #    - 控制台建桶 vblog-images，绑定自定义域（如 uploads.blog.xmtlz.dev）
 #    - wrangler.toml 取消 [[r2_buckets]] 注释，把公开地址填进 R2_PUBLIC_URL
@@ -130,6 +133,11 @@ node node_modules\wrangler\bin\wrangler.js d1 time-travel vblog-d1-db --remote
 > 教训记录：删库前必须先备份/导出。D1 删除后无法用 time-travel 恢复（控制台如有「已删除数据库」入口可尝试，30 天内）。
 
 ## 最近更新
+
+- **2026-08 Cloudflare Turnstile 人机验证（评论）**
+  - 前端 `web/src/shared/CommentSection.vue` 显式渲染 Turnstile（action=`comment`，主题随站点，提交后 reset 支持重试）
+  - 后端 Worker `verifyTurnstile()`：`siteverify` 校验 `success / action / hostname`，missing 或伪造 token 一律 `403`（在线已实测拦截）
+  - 配置：`TURNSTILE_SECRET`（secret）+ `TURNSTILE_HOSTNAMES=vblog.xmtlz.dev`（`[vars]`，生产不含 localhost；本地开发在 `.dev.vars` 用 `localhost,127.0.0.1`）
 
 - **2026-08-22 熊猫吉祥物 & 性能与部署收尾**
   - 品牌图：浏览器图标用 A1、首页顶栏用 A2、关于页头像用 B1（`web/public/favicon.png` / `nav-mascot.png` / `avatar.png`，AI 生成资源不入 git）

@@ -23,3 +23,6 @@ vblog-d1/web/public/nav-mascot.png
 .gopath/
 .npm-cache/
 server/config/config.toml
+
+# wrangler ±¾µØ»º´æ
+.wrangler/

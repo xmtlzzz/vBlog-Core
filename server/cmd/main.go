@@ -55,7 +55,7 @@ func main() {
 	// Public routes (admin write routes get jwtFilter via each resource's Auth field)
 	(&api.PostResource{Service: postSvc, Auth: jwtFilter}).Register(ws)
 	(&api.TagResource{Service: tagSvc, Auth: jwtFilter}).Register(ws)
-	(&api.CommentResource{Service: commentSvc, Auth: jwtFilter}).Register(ws)
+	(&api.CommentResource{Service: commentSvc, Auth: jwtFilter, TurnstileSecret: cfg.Turnstile.Secret, TurnstileHostnames: cfg.Turnstile.Hostnames}).Register(ws)
 	(&api.SettingResource{Service: settingSvc, Auth: jwtFilter}).Register(ws)
 	(&api.AuthResource{Service: authSvc, Secret: cfg.JWT.Secret}).Register(ws)
 	(&api.RSSResource{DB: db}).Register(ws)

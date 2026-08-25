@@ -102,6 +102,15 @@
 
 - **vblog-d1/**：纯 Cloudflare 便捷部署版。同一套 Vue 3 前端 + 零依赖 JS Worker（替代 Go 后端）+ D1/KV 数据库与图片，全部在 Cloudflare 免费额度内，`deploy.ps1` 一键上线；Go 版需要服务器托管（Fly/Neon 等）。部署细节、改动明细与更新日志见 [`vblog-d1/README.md`](vblog-d1/README.md)。
 
+## 防垃圾 · Cloudflare Turnstile
+
+公开评论接口（`POST /api/posts/{id}/comments`）接入 Turnstile 人机验证，`gate 不 replace`：
+
+- **前端**：`web/src/shared/CommentSection.vue` 显式渲染组件（`action="comment"`），提交携带 `cf-turnstile-response`，提交后 reset 支持重试；未通过验证不发送
+- **后端（Go 版）**：`server/api/turnstile.go` 的 `verifyTurnstile()` 调 siteverify，校验 `success / action / hostname`；missing 或伪造 token 一律 `403`
+- **环境变量**：`TURNSTILE_SECRET`（secret）+ `TURNSTILE_HOSTNAMES`（生产值如 `vblog.xmtlz.dev`，逗号分隔；**不得含 localhost**）
+- vblog-d1 版的配置见 [`vblog-d1/README.md`](vblog-d1/README.md)
+
 ## 项目结构
 
 ```

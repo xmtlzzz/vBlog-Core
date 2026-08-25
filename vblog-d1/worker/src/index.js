@@ -559,9 +559,52 @@ async function listCommentsByPost(env, postId) {
   return json({ data: rows.results, total: rows.results.length, page: 1 });
 }
 
+// ── Turnstile 人机验证：gate 不 replace，校验失败直接 403 ──────────
+// 浏览器 → 本 Worker → siteverify（绝不从前端直接调 siteverify）
+async function verifyTurnstile(request, env, body, expectedAction) {
+  const token = body['cf-turnstile-response'];
+  const expectedHostnames = new Set(
+    (env.TURNSTILE_HOSTNAMES ?? '').split(',').map((h) => h.trim()).filter(Boolean),
+  );
+  if (
+    typeof token !== 'string' ||
+    token.length === 0 ||
+    token.length > 2048 ||
+    expectedHostnames.size === 0
+  ) {
+    return false;
+  }
+  let result;
+  try {
+    const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      signal: AbortSignal.timeout(10_000),
+      body: new URLSearchParams({
+        secret: env.TURNSTILE_SECRET || '',
+        response: token,
+        remoteip: request.headers.get('CF-Connecting-IP') || '',
+      }),
+    });
+    if (!r.ok) throw new Error('siteverify ' + r.status);
+    result = await r.json();
+  } catch {
+    return false;
+  }
+  return (
+    result.success === true &&
+    result.action === expectedAction &&
+    expectedHostnames.has(result.hostname)
+  );
+}
+
 async function createPublicComment(request, env, postId) {
   const body = await readJson(request);
   if (!body || !body.body) return fail('invalid request body');
+  // Turnstile 人机验证（保护公开评论，防垃圾评论）
+  if (!(await verifyTurnstile(request, env, body, 'comment'))) {
+    return fail('forbidden', 403);
+  }
   // post_id 必须是已存在的未删除文章，拒绝脏数据
   if (!/^\d+$/.test(String(postId))) return fail('invalid post id', 400);
   const post = await env.DB.prepare('SELECT id FROM posts WHERE id = ? AND deleted_at IS NULL').bind(postId).first();

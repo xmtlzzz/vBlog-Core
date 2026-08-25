@@ -1,6 +1,9 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -14,6 +17,10 @@ import (
 type CommentResource struct {
 	Service *service.CommentService
 	Auth    restful.FilterFunction // optional JWT filter; when nil, admin routes are unprotected
+
+	// Turnstile 人机验证（公开评论入口；为空则 fail-closed，禁止公开写评论）
+	TurnstileSecret    string
+	TurnstileHostnames []string
 }
 
 // guard returns the JWT filter when configured (no-op in tests).
@@ -178,6 +185,25 @@ func (c *CommentResource) listByPost(req *restful.Request, resp *restful.Respons
 
 func (c *CommentResource) createPublic(req *restful.Request, resp *restful.Response) {
 	postId, _ := strconv.ParseUint(req.PathParameter("postId"), 10, 32)
+
+	// Cloudflare Turnstile 人机验证（gate 不 replace）：先取 body 里的 token 校验
+	raw, err := io.ReadAll(req.Request.Body)
+	if err != nil {
+		resp.WriteError(http.StatusBadRequest, err)
+		return
+	}
+	req.Request.Body = io.NopCloser(bytes.NewReader(raw))
+	var probe struct {
+		Token string `json:"cf-turnstile-response"`
+	}
+	if len(raw) > 0 {
+		_ = json.Unmarshal(raw, &probe)
+	}
+	if !verifyTurnstile(req.Request, c.TurnstileSecret, c.TurnstileHostnames, probe.Token, "comment") {
+		resp.WriteHeaderAndEntity(http.StatusForbidden, map[string]string{"error": "forbidden"})
+		return
+	}
+
 	var comment model.Comment
 	if err := req.ReadEntity(&comment); err != nil {
 		resp.WriteError(http.StatusBadRequest, err)

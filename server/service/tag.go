@@ -30,7 +30,7 @@ func (s *TagService) List() ([]TagWithCount, error) {
 		LEFT JOIN (
 			SELECT pt.tag_id, COUNT(*) AS cnt
 			FROM post_tags pt
-			JOIN posts p ON p.id = pt.post_id AND p.status = 'published'
+			JOIN posts p ON p.id = pt.post_id AND p.status = 'published' AND p.deleted_at IS NULL
 			GROUP BY pt.tag_id
 		) pc ON pc.tag_id = t.id
 		ORDER BY t.name

@@ -91,3 +91,7 @@ All prototypes in `hdx/` define the exact design tokens. Use these CSS variables
 - Each database module is an independent table
 - Blog content is Markdown; admin editor outputs Markdown
 - REST for web frontend, gRPC only for desktop client communication
+
+## Testing & Environment Notes
+
+- **不要使用 `.env` / `DB_*` 环境变量指向的测试数据库**（`192.168.81.101` 的 Postgres 等）——该环境已不可用。Go 集成测试（`testutil.GetTestDB`）会尝试连接它并长时间挂起；只运行不依赖数据库的单元测试（如 `go test ./service/ -run "TestNewTagService|TestTagServiceStruct" -timeout 30s`），需要数据库验证时先询问用户。

@@ -292,7 +292,18 @@ async function dashboardStats(env) {
 
 // ══════════════════════════ 标签 ══════════════════════════
 async function listTags(env) {
-  const rows = await env.DB.prepare('SELECT id, name, description, created_at FROM tags ORDER BY created_at DESC').all();
+  // 计数口径对齐 /posts?tag=：仅统计已发布且未删除的文章
+  const rows = await env.DB.prepare(`
+    SELECT t.id, t.name, t.description, t.created_at, COALESCE(pc.cnt, 0) AS post_count
+    FROM tags t
+    LEFT JOIN (
+      SELECT pt.tag_id, COUNT(*) AS cnt
+      FROM post_tags pt
+      JOIN posts p ON p.id = pt.post_id AND p.status = 'published' AND p.deleted_at IS NULL
+      GROUP BY pt.tag_id
+    ) pc ON pc.tag_id = t.id
+    ORDER BY t.created_at DESC
+  `).all();
   return json({ data: rows.results }, 200, { cf: { cacheTtl: 60 } });
 }
 

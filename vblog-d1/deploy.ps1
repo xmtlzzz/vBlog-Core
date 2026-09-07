@@ -42,8 +42,20 @@ if (-not $SkipBuild) {
 
 Write-Host '[2/3] 部署 Worker + 静态资源…' -ForegroundColor Cyan
 Push-Location $Worker
-node node_modules\wrangler\bin\wrangler.js deploy
+# --config 显式指定配置：防止游离的 wrangler.jsonc/wrangler.toml 被优先采用，
+# 导致 main 入口与 D1/KV 绑定丢失（2026-09 生产事故教训）
+node node_modules\wrangler\bin\wrangler.js deploy --config $Worker\wrangler.toml
 if ($LASTEXITCODE -ne 0) { Write-Host '[x] 部署失败' -ForegroundColor Red; exit 1 }
+
+# 部署后防呆：secrets 绑定在 Worker 上，异常部署可能清空它们。
+# JWT_SECRET 丢失 → 正确密码登录也会 500（空 key HMAC 抛 DataError）；TURNSTILE_SECRET 丢失 → 评论全 403
+$secrets = node node_modules\wrangler\bin\wrangler.js secret list --config $Worker\wrangler.toml | ConvertFrom-Json
+$names = @($secrets | ForEach-Object { $_.name })
 Pop-Location
+foreach ($required in @('JWT_SECRET', 'TURNSTILE_SECRET')) {
+  if ($names -notcontains $required) {
+    Write-Host "[!] 缺少 secret: $required（登录/评论将不可用）。恢复：node node_modules\wrangler\bin\wrangler.js secret put $required" -ForegroundColor Yellow
+  }
+}
 
 Write-Host '[3/3] 部署完成 ✅' -ForegroundColor Green

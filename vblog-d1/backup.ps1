@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   vBlog D1 — 备份远程 D1 数据库 + KV 图床图片
 
@@ -22,7 +22,7 @@ New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
 Write-Host '导出远程数据库…' -ForegroundColor Cyan
 Push-Location $Worker
-node node_modules\wrangler\bin\wrangler.js d1 export vblog-d1-db --remote --output (Join-Path $outDir "vblog-$stamp.sql")
+node node_modules\wrangler\bin\wrangler.js d1 export vblog-d1-db --remote --output (Join-Path $outDir "vblog-$stamp.sql") --config $Worker\wrangler.toml
 if ($LASTEXITCODE -ne 0) { Pop-Location; Write-Host '[x] D1 备份失败' -ForegroundColor Red; exit 1 }
 Pop-Location
 
@@ -31,12 +31,12 @@ Write-Host '导出 KV 图床图片…' -ForegroundColor Cyan
 $imgDir = Join-Path $outDir "images-$stamp"
 New-Item -ItemType Directory -Force -Path $imgDir | Out-Null
 Push-Location $Worker
-$keys = node node_modules\wrangler\bin\wrangler.js kv key list --binding IMG --remote | ConvertFrom-Json
+$keys = node node_modules\wrangler\bin\wrangler.js kv key list --binding IMG --remote --config $Worker\wrangler.toml | ConvertFrom-Json
 foreach ($k in $keys) {
   $safeName = $k.name -replace '/', '__'
   $target = Join-Path $imgDir $safeName
   # 借 cmd 做字节级重定向（PS 的 > 会按文本解码编码，损坏二进制图片且不报错）
-  cmd /c "node node_modules\wrangler\bin\wrangler.js kv key get --binding IMG --remote $($k.name) > `"$target`""
+  cmd /c "node node_modules\wrangler\bin\wrangler.js kv key get --binding IMG --remote $($k.name) --config ..\worker\wrangler.toml > `"$target`""
   if ($LASTEXITCODE -ne 0) { Write-Host ("[!] 跳过 {0}" -f $k.name) -ForegroundColor Yellow }
 }
 Pop-Location

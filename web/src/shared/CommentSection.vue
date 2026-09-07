@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import api from '../api/request'
 import { formatRelativeTime } from '../utils/format'
@@ -72,8 +72,11 @@ function loadTurnstileScript() {
 
 async function mountTurnstile() {
   await loadTurnstileScript()
-  if (!window.turnstile || !turnstileEl.value) return
+  if (!window.turnstile) return
   if (turnstileWidgetId != null) return
+  // 确保模板 v-if 已把 ref 元素挂载（Vue 的 DOM 更新是异步的，直接访问 ref 可能为 null）
+  await nextTick()
+  if (!turnstileEl.value) return
   turnstileWidgetId = window.turnstile.render(turnstileEl.value, {
     sitekey: TURNSTILE_SITEKEY,
     action: TURNSTILE_ACTION,

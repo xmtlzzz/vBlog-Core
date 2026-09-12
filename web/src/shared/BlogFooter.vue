@@ -10,7 +10,7 @@
           v-if="badgeEnabled && badgeVisible"
           class="qr-badge"
           :class="{ zoomed: qrZoomed }"
-          :style="{ background: qrBackground }"
+          :style="badgeStyle"
           title="GitHub · 点击变形为二维码"
         >
           <EveryQrBadge
@@ -55,6 +55,17 @@ const qrPalette = computed(() => {
 const qrBackground = computed(() =>
   /^#[0-9a-fA-F]{3,8}$/.test(settings.value.qr_bg || '') ? settings.value.qr_bg : '#ffffff'
 )
+// 徽章尺寸后台可调（28–120px），二维码放大视图按比例约 2.6 倍
+const badgeSize = computed(() => {
+  const n = parseInt(settings.value.qr_size)
+  return Math.min(120, Math.max(28, Number.isFinite(n) ? n : 40))
+})
+const zoomedSize = computed(() => Math.round(badgeSize.value * 2.6))
+const badgeStyle = computed(() => ({
+  background: qrBackground.value,
+  width: (qrZoomed.value ? zoomedSize.value : badgeSize.value) + 'px',
+  height: (qrZoomed.value ? zoomedSize.value : badgeSize.value) + 'px'
+}))
 
 onMounted(async () => {
   try {

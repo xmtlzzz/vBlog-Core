@@ -6,6 +6,8 @@
     <p>通过组件定制上传的功能模块，每个模块独立运行。</p>
   </header>
 
+  <QrLinksSection />
+
   <main class="modules-grid" v-if="modules.length">
     <div v-for="mod in modules" :key="mod.id" class="module-card fade-in">
       <div class="module-card-top">
@@ -57,6 +59,7 @@ import { ref, onMounted } from 'vue'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
+import QrLinksSection from '../shared/QrLinksSection.vue'
 import { buildSrcdoc } from '../utils/component'
 
 const modules = ref([])

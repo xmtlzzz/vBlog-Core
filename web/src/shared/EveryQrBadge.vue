@@ -73,6 +73,14 @@ function sceneConfig() {
   return scene
 }
 
+// 模型视图放大让树更饱满（库钳制 0.82–1.45）；二维码视图保持 1.0，避免裁掉静区
+const TREE_ZOOM = 1.4
+
+function applyView(renderer) {
+  renderer.setFlat(flat.value)
+  renderer.setZoom(flat.value ? 1 : TREE_ZOOM)
+}
+
 const canvasRef = ref(null)
 const canvasKey = ref(0)
 const fallback = ref(null)
@@ -120,7 +128,7 @@ async function render() {
       props.model === 'terrain' ? 'terrain' : 'tree',
       { onError: () => { if (rev === revision) showFallback(qr) } }
     )
-    renderer.setFlat(flat.value)
+    applyView(renderer)
     renderer.resize()
     observer = new ResizeObserver(() => renderer?.resize())
     observer.observe(canvas)
@@ -132,7 +140,7 @@ async function render() {
 function toggleView() {
   if (fallback.value) return
   flat.value = !flat.value
-  renderer?.setFlat(flat.value)
+  if (renderer) applyView(renderer)
   emit('viewchange', flat.value)
 }
 

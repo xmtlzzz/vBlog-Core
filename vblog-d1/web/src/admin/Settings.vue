@@ -122,7 +122,20 @@
             </el-select>
             <div class="field-hint">仅作用于樱花树模型；地形模型使用自带配色</div>
           </el-form-item>
+          <el-form-item label="徽章尺寸（px）">
+            <el-input-number v-model="qrSizeNum" :min="28" :max="120" :step="4" />
+            <div class="field-hint">默认 40；点击变形为二维码时自动放大约 2.6 倍</div>
+          </el-form-item>
         </div>
+        <el-form-item label="项目二维码导航（模块页）">
+          <el-input
+            v-model="settings.qr_links"
+            type="textarea"
+            :rows="4"
+            placeholder="My App|https://app.example.com&#10;Demo|https://demo.example.com"
+          />
+          <div class="field-hint">每行一条「名称|URL」，每个地址确定性生成专属 3D 徽章，展示在「模块」页顶部；留空隐藏该区块</div>
+        </el-form-item>
         <el-form-item label="徽章背景色">
           <el-color-picker v-model="qrBackground" />
           <span class="field-hint" style="margin-left: 8px">默认白色；二维码为彩色模块，需浅色背景保证扫码对比度</span>
@@ -235,6 +248,14 @@ const qrBackground = computed({
   set: (v) => { settings.value.qr_bg = v || '' }
 })
 
+const qrSizeNum = computed({
+  get: () => {
+    const n = parseInt(settings.value.qr_size)
+    return Number.isFinite(n) ? Math.min(120, Math.max(28, n)) : 40
+  },
+  set: (v) => { settings.value.qr_size = String(v) }
+})
+
 async function fetchSettings() {
   const res = await api.get('/settings').catch(() => ({}))
   settings.value = Array.isArray(res) ? Object.fromEntries(res.map(s => [s.key, s.value])) : (res || {})
@@ -242,6 +263,7 @@ async function fetchSettings() {
   if (settings.value.qr_model === undefined) settings.value.qr_model = 'tree'
   if (settings.value.qr_effect === undefined) settings.value.qr_effect = 'auto'
   if (settings.value.qr_palette === undefined) settings.value.qr_palette = 'sakura'
+  if (settings.value.qr_size === undefined) settings.value.qr_size = '40'
 }
 
 async function saveSettings() {

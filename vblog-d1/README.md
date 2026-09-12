@@ -134,6 +134,14 @@ node node_modules\wrangler\bin\wrangler.js d1 time-travel vblog-d1-db --remote
 
 ## 最近更新
 
+- **2026-09 体验补全（后台可配置化 + 移动端）**
+  - 首页标语 `hero_title`：打字机大标题后台可配（支持换行），设置就绪后才开始打字，并做 HTML 转义
+  - 关于页技术栈 `about_tech`：每行「名称|角色|图标（emoji 或 vue）」，整项留空使用内置默认卡片
+  - QR 徽章配色预设 `qr_palette`：樱花（默认）/森林/海洋/落日（仅树模型）；二维码放大视图左侧显示「手机扫码访问 GitHub」提示
+  - 浏览器标签页标题跟随后台「站点标题」（App.vue 统一设置，index.html 兜底 `vBlog`）
+  - 移动端导航（≤640px）：两行布局——品牌+操作一行、链接一行横向滑动，消除 375px 下折行与页面横向滚动
+  - 页脚版权年份动态化（不再写死）
+
 - **2026-09 页脚 every-qrcode 动态二维码徽章（后台可配置）**
   - 新组件 `web/src/shared/EveryQrBadge.vue`：基于 `@every-qrcode/core` + `renderer-webgpu` 官方底层包（其 Web Component 不暴露 scene 样式参数），作者 GitHub 链接确定性生成 3D 樱花树/地形
   - 交互：点击徽章放大至 104px 并变形为可扫描二维码（内容即 GitHub 主页，已实测解码），再点恢复小徽章；WebGPU 不可用自动降级静态 SVG 二维码

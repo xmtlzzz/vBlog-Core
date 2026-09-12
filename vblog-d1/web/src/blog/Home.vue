@@ -80,16 +80,18 @@ const perPage = 5
 const total = ref(0)
 let searchTimer = null
 
-const fullText = '写代码的人，\n也写点别的。'
+const DEFAULT_HERO_TITLE = '写代码的人，\n也写点别的。'
 const typedText = ref('')
 const typing = ref(true)
 
-function startTypewriter() {
+const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+function startTypewriter(text) {
   let i = 0
   const timer = setInterval(() => {
-    if (i < fullText.length) {
-      const ch = fullText[i]
-      typedText.value += ch === '\n' ? '<br/>' : ch
+    if (i < text.length) {
+      const ch = text[i]
+      typedText.value += ch === '\n' ? '<br/>' : escapeHtml(ch)
       i++
     } else {
       clearInterval(timer)
@@ -149,7 +151,6 @@ function handlePageChange(p) {
 
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
-  startTypewriter()
   const [statsRes, settingsRes] = await Promise.all([
     api.get('/dashboard/stats').catch(() => ({ total_posts: 0, total_views: 0, total_tags: 0 })),
     api.get('/settings').catch(() => ({}))
@@ -160,6 +161,8 @@ onMounted(async () => {
     total_tags: statsRes.total_tags || 0
   }
   settings.value = settingsRes || {}
+  // 等设置就绪再打字：标语来自后台「首页标语」，未配置时用默认文案
+  startTypewriter(settings.value.hero_title || DEFAULT_HERO_TITLE)
   await fetchPosts()
 })
 

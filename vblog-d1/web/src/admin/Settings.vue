@@ -22,6 +22,16 @@
         </div>
         <el-form-item label="站点描述">
           <el-input v-model="settings.description" type="textarea" :rows="2" placeholder="站点描述" />
+          <div class="field-hint">同时用作首页 Hero 副标题</div>
+        </el-form-item>
+        <el-form-item label="首页标语">
+          <el-input
+            v-model="settings.hero_title"
+            type="textarea"
+            :rows="2"
+            placeholder="写代码的人，&#10;也写点别的。"
+          />
+          <div class="field-hint">首页打字机大标题，支持换行；留空使用默认文案</div>
         </el-form-item>
         <div class="form-grid">
           <el-form-item label="语言">
@@ -58,6 +68,22 @@
       </el-form>
     </div>
 
+    <!-- About -->
+    <div class="settings-section slide-up" style="animation-delay: 150ms">
+      <h2 class="section-title">关于页</h2>
+      <el-form label-position="top">
+        <el-form-item label="技术栈">
+          <el-input
+            v-model="settings.about_tech"
+            type="textarea"
+            :rows="5"
+            placeholder="Vue|前端框架|vue&#10;Go|后端语言|🐹&#10;Cloudflare Workers|部署|⛅"
+          />
+          <div class="field-hint">每行一条：名称|角色|图标（图标可填 emoji 或 vue，留空显示首字符）；整项留空使用内置默认卡片</div>
+        </el-form-item>
+      </el-form>
+    </div>
+
     <!-- QR badge -->
     <div class="settings-section slide-up" style="animation-delay: 250ms">
       <h2 class="section-title">页脚二维码徽章</h2>
@@ -86,6 +112,15 @@
               <el-option label="下雨 Rain" value="rain" />
               <el-option label="刮风 Wind" value="wind" />
             </el-select>
+          </el-form-item>
+          <el-form-item label="配色预设">
+            <el-select v-model="settings.qr_palette" style="width: 100%">
+              <el-option label="樱花 Sakura（默认）" value="sakura" />
+              <el-option label="森林 Forest" value="forest" />
+              <el-option label="海洋 Ocean" value="ocean" />
+              <el-option label="落日 Sunset" value="sunset" />
+            </el-select>
+            <div class="field-hint">仅作用于樱花树模型；地形模型使用自带配色</div>
           </el-form-item>
         </div>
         <el-form-item label="徽章背景色">
@@ -206,6 +241,7 @@ async function fetchSettings() {
   // qr 配置缺省值（仅前端表单展示，保存时才写入）
   if (settings.value.qr_model === undefined) settings.value.qr_model = 'tree'
   if (settings.value.qr_effect === undefined) settings.value.qr_effect = 'auto'
+  if (settings.value.qr_palette === undefined) settings.value.qr_palette = 'sakura'
 }
 
 async function saveSettings() {

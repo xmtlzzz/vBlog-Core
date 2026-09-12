@@ -24,7 +24,7 @@
               <path d="M78.8,10L64,35.4L49.2,10H0l64,110l64-110H78.8z" fill="#41b883"/>
               <path d="M78.8,10L64,35.4L49.2,10H25.6L64,76l38.4-66H78.8z" fill="#34495e"/>
             </svg>
-            <template v-else>{{ tech.icon }}</template>
+            <template v-else>{{ tech.icon || tech.name.charAt(0) }}</template>
           </div>
           <div class="tech-card-name">{{ tech.name }}</div>
           <div class="tech-card-role">{{ tech.role }}</div>
@@ -65,7 +65,7 @@ const initial = computed(() => {
   return name.charAt(0).toUpperCase()
 })
 
-const techStack = [
+const DEFAULT_TECH_STACK = [
   { name: 'Vue', icon: 'vue', role: '前端框架' },
   { name: 'Go', icon: '🐹', role: '后端语言' },
   { name: 'PostgreSQL', icon: '🐘', role: '数据库' },
@@ -73,6 +73,22 @@ const techStack = [
   { name: 'gRPC', icon: '📡', role: 'RPC 通信' },
   { name: 'Markdown', icon: '📝', role: '内容格式' },
 ]
+
+// 后台「关于页 → 技术栈」每行一条：名称|角色|图标（图标可填 emoji 或 vue，留空用首字符）
+const techStack = computed(() => {
+  const raw = (settings.value.about_tech || '').trim()
+  if (!raw) return DEFAULT_TECH_STACK
+  const list = raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [name, role, icon] = line.split('|').map((s) => s.trim())
+      return { name: name || '', role: role || '', icon: icon || '' }
+    })
+    .filter((t) => t.name)
+  return list.length ? list : DEFAULT_TECH_STACK
+})
 
 onMounted(async () => {
   const res = await api.get('/settings').catch(() => ({}))

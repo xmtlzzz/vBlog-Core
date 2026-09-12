@@ -126,16 +126,47 @@ const themeStore = useThemeStore()
 }
 
 @media (max-width: 640px) {
-  .nav-links {
-    gap: 0;
+  /* 两行布局：品牌 + 右侧操作一行，导航链接第二行横向滑动，避免折行溢出 */
+  .inner {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 6px 12px 0;
   }
-  .nav-links a {
-    padding: 6px 8px;
-    font-size: 13px;
+  .nav-brand {
+    font-size: 16px;
+  }
+  .nav-right {
+    gap: 6px;
   }
   .admin-btn {
-    padding: 4px 8px;
+    padding: 5px 8px;
     font-size: 12px;
+  }
+  .theme-toggle {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  .nav-links {
+    order: 3;
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 2px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 6px;
+    margin-top: 2px;
+  }
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+  .nav-links a {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 13px;
   }
 }
 </style>

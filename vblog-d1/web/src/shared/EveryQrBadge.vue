@@ -32,10 +32,46 @@ const props = defineProps({
   // tree（樱花树）| terrain（地形）
   model: { type: String, default: 'tree' },
   // ''（库默认）| calm | snow | rain | wind
-  effect: { type: String, default: '' }
+  effect: { type: String, default: '' },
+  // sakura（库默认樱花）| forest | ocean | sunset（仅作用于树模型）
+  palette: { type: String, default: 'sakura' }
 })
 
 const emit = defineEmits(['viewchange'])
+
+// 五色槽含义（对齐库默认樱花配色）：[花, 瓣, 亮块, 枝干/二维码模块, 草地]
+const QR_PALETTES = {
+  sakura: null,
+  forest: [
+    [0.55, 0.76, 0.45],
+    [0.72, 0.85, 0.56],
+    [0.88, 0.91, 0.79],
+    [0.25, 0.38, 0.16],
+    [0.92, 0.94, 0.86]
+  ],
+  ocean: [
+    [0.45, 0.72, 0.86],
+    [0.63, 0.83, 0.91],
+    [0.86, 0.93, 0.96],
+    [0.15, 0.32, 0.46],
+    [0.88, 0.94, 0.96]
+  ],
+  sunset: [
+    [0.96, 0.55, 0.32],
+    [1.0, 0.76, 0.42],
+    [0.96, 0.87, 0.72],
+    [0.5, 0.22, 0.12],
+    [0.99, 0.92, 0.82]
+  ]
+}
+
+function sceneConfig() {
+  const scene = {}
+  if (props.effect) scene.effect = props.effect
+  const palette = QR_PALETTES[props.palette]
+  if (palette) scene.palette = palette
+  return scene
+}
 
 const canvasRef = ref(null)
 const canvasKey = ref(0)
@@ -80,7 +116,7 @@ async function render() {
     renderer = mountSeed(
       canvas,
       seed,
-      props.effect ? { effect: props.effect } : {},
+      sceneConfig(),
       props.model === 'terrain' ? 'terrain' : 'tree',
       { onError: () => { if (rev === revision) showFallback(qr) } }
     )
@@ -102,8 +138,8 @@ function toggleView() {
 
 watch([() => props.url, () => props.model], render)
 watch(
-  () => props.effect,
-  (v) => renderer?.setScene(v ? { effect: v } : {})
+  [() => props.effect, () => props.palette],
+  () => renderer?.setScene(sceneConfig())
 )
 
 render()

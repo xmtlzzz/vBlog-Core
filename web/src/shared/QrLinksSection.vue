@@ -41,13 +41,15 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 作为「功能模块」页内容的一部分直接呈现，无独立标题 */
+/* 与模块页内容同容器（1080px 居中），作为页面内容直接呈现 */
 .qr-links {
-  margin-bottom: 8px;
+  max-width: 1080px;
+  margin: 0 auto 8px;
+  padding: 0 24px;
 }
 .qr-links-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 14px;
 }
 .qr-link-card {
@@ -64,16 +66,17 @@ onMounted(async () => {
 .qr-link-card:hover {
   border-color: var(--accent);
 }
+/* 不设内框：徽章撑满卡片宽度，树可以长满整个画布 */
 .qr-link-badge {
   display: block;
-  width: 112px;
-  height: 112px;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1;
   border-radius: 10px;
   overflow: hidden;
-  border: 1px solid var(--border);
   background: #fff;
   cursor: pointer;
-  margin-bottom: 6px;
+  margin: 0 auto 8px;
 }
 .qr-link-badge every-qr-code,
 .qr-link-badge canvas,

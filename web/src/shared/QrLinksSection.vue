@@ -1,13 +1,11 @@
 <template>
   <section v-if="projects.length" class="qr-links fade-in">
-    <h2 class="qr-links-title">项目导航 · 扫码访问</h2>
     <div class="qr-links-grid">
       <div v-for="p in projects" :key="p.url" class="qr-link-card">
         <span class="qr-link-badge" :title="p.url + ' · 点击变形为二维码'">
           <EveryQrBadge :url="p.url" :model="model" :effect="effect" :palette="palette" />
         </span>
         <a class="qr-link-name" :href="p.url" target="_blank" rel="noopener">{{ p.name }}</a>
-        <span class="qr-link-host">{{ hostOf(p.url) }}</span>
       </div>
     </div>
   </section>
@@ -35,14 +33,6 @@ const palette = computed(() => {
   return ['sakura', 'forest', 'ocean', 'sunset'].includes(v) ? v : 'sakura'
 })
 
-function hostOf(url) {
-  try {
-    return new URL(url).host
-  } catch {
-    return url
-  }
-}
-
 onMounted(async () => {
   try {
     settings.value = await api.get('/settings')
@@ -51,16 +41,9 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 作为「功能模块」页内容的一部分直接呈现，无独立标题 */
 .qr-links {
-  margin-bottom: 28px;
-}
-.qr-links-title {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--fg);
-  margin-bottom: 16px;
-  letter-spacing: -0.01em;
+  margin-bottom: 8px;
 }
 .qr-links-grid {
   display: grid;
@@ -104,13 +87,10 @@ onMounted(async () => {
   font-weight: 600;
   color: var(--fg);
   text-decoration: none;
+  text-align: center;
+  word-break: break-all;
 }
 .qr-link-name:hover {
   color: var(--accent);
-}
-.qr-link-host {
-  font-size: 12px;
-  color: var(--muted);
-  font-family: var(--font-mono);
 }
 </style>

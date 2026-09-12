@@ -134,6 +134,13 @@ node node_modules\wrangler\bin\wrangler.js d1 time-travel vblog-d1-db --remote
 
 ## 最近更新
 
+- **2026-09 页脚 every-qrcode 动态二维码徽章（后台可配置）**
+  - 新组件 `web/src/shared/EveryQrBadge.vue`：基于 `@every-qrcode/core` + `renderer-webgpu` 官方底层包（其 Web Component 不暴露 scene 样式参数），作者 GitHub 链接确定性生成 3D 樱花树/地形
+  - 交互：点击徽章放大至 104px 并变形为可扫描二维码（内容即 GitHub 主页，已实测解码），再点恢复小徽章；WebGPU 不可用自动降级静态 SVG 二维码
+  - 后台「设置 → 页脚二维码徽章」：启用开关 / 模型（tree|terrain）/ 氛围特效（calm|snow|rain|wind）/ 背景色——settings 为自由 KV，后端零改动
+  - 性能：徽章含 3D 渲染器，懒加载——页脚进入视口才动态加载（gzip ≈124KB 独立 chunk，首屏不受影响）
+  - 顺带：首页 Hero 副标题不再硬编码，读后台「站点描述」；`web/` 与 `vblog-d1/web` 镜像同步修改
+
 - **2026-08 Cloudflare Turnstile 人机验证（评论）**
   - 前端 `web/src/shared/CommentSection.vue` 显式渲染 Turnstile（action=`comment`，主题随站点，提交后 reset 支持重试）
   - 后端 Worker `verifyTurnstile()`：`siteverify` 校验 `success / action / hostname`，missing 或伪造 token 一律 `403`（在线已实测拦截）

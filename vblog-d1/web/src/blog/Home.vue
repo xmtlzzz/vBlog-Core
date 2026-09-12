@@ -4,7 +4,7 @@
   <!-- Hero -->
   <header class="hero fade-in">
     <h1><span v-html="typedText"></span><span class="cursor" v-if="typing">|</span></h1>
-    <p>一个关于系统设计、工程实践与极客生活的博客。用 Markdown 写作，为 vibe coder 而建。</p>
+    <p v-if="heroTagline">{{ heroTagline }}</p>
   </header>
 
   <!-- Stats bar -->
@@ -70,6 +70,7 @@ import CustomWidgets from '../shared/CustomWidgets.vue'
 import PostCard from '../shared/PostCard.vue'
 
 const stats = ref({ total_posts: 0, total_views: 0, total_tags: 0 })
+const settings = ref({})
 const posts = ref([])
 const searchQuery = ref('')
 const showSearch = ref(false)
@@ -102,6 +103,9 @@ const statItems = computed(() => [
   { value: stats.value.total_views.toLocaleString(), label: '次阅读 Views' },
   { value: stats.value.total_tags, label: '个标签 Tags' }
 ])
+
+// 副标题来自后台「设置 → 站点描述」，不再硬编码
+const heroTagline = computed(() => settings.value.description || settings.value.site_description || '')
 
 async function fetchPosts() {
   const params = { page: page.value, per_page: perPage, status: 'published' }
@@ -146,12 +150,16 @@ function handlePageChange(p) {
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
   startTypewriter()
-  const statsRes = await api.get('/dashboard/stats').catch(() => ({ total_posts: 0, total_views: 0, total_tags: 0 }))
+  const [statsRes, settingsRes] = await Promise.all([
+    api.get('/dashboard/stats').catch(() => ({ total_posts: 0, total_views: 0, total_tags: 0 })),
+    api.get('/settings').catch(() => ({}))
+  ])
   stats.value = {
     total_posts: statsRes.total_posts || 0,
     total_views: statsRes.total_views || 0,
     total_tags: statsRes.total_tags || 0
   }
+  settings.value = settingsRes || {}
   await fetchPosts()
 })
 

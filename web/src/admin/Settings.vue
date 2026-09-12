@@ -58,8 +58,45 @@
       </el-form>
     </div>
 
+    <!-- QR badge -->
+    <div class="settings-section slide-up" style="animation-delay: 250ms">
+      <h2 class="section-title">页脚二维码徽章</h2>
+      <div class="toggle-list">
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <div class="toggle-label">启用 GitHub 徽章</div>
+            <div class="toggle-desc">页脚展示 every-qrcode 生成的动态二维码（点击可在 3D 模型与二维码间变形；需先填写作者 GitHub）</div>
+          </div>
+          <el-switch v-model="qrBadgeEnabled" />
+        </div>
+      </div>
+      <el-form label-position="top" style="margin-top: 16px">
+        <div class="form-grid">
+          <el-form-item label="模型形态">
+            <el-select v-model="settings.qr_model" style="width: 100%">
+              <el-option label="樱花树 Tree" value="tree" />
+              <el-option label="地形 Terrain" value="terrain" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="氛围特效">
+            <el-select v-model="settings.qr_effect" style="width: 100%">
+              <el-option label="跟随默认" value="auto" />
+              <el-option label="平静 Calm" value="calm" />
+              <el-option label="落雪 Snow" value="snow" />
+              <el-option label="下雨 Rain" value="rain" />
+              <el-option label="刮风 Wind" value="wind" />
+            </el-select>
+          </el-form-item>
+        </div>
+        <el-form-item label="徽章背景色">
+          <el-color-picker v-model="qrBackground" />
+          <span class="field-hint" style="margin-left: 8px">默认白色；二维码为彩色模块，需浅色背景保证扫码对比度</span>
+        </el-form-item>
+      </el-form>
+    </div>
+
     <!-- gRPC -->
-    <div class="settings-section slide-up" style="animation-delay: 200ms">
+    <div class="settings-section slide-up" style="animation-delay: 300ms">
       <h2 class="section-title">gRPC 监控</h2>
       <el-form label-position="top">
         <el-form-item label="API Key">
@@ -77,7 +114,7 @@
     </div>
 
     <!-- Features -->
-    <div class="settings-section slide-up" style="animation-delay: 300ms">
+    <div class="settings-section slide-up" style="animation-delay: 400ms">
       <h2 class="section-title">功能开关</h2>
       <div class="toggle-list">
         <div class="toggle-item">
@@ -153,9 +190,22 @@ const enableViewCounter = computed({
   set: (v) => { settings.value.enable_view_counter = String(v) }
 })
 
+const qrBadgeEnabled = computed({
+  get: () => settings.value.qr_badge !== 'false',
+  set: (v) => { settings.value.qr_badge = String(v) }
+})
+
+const qrBackground = computed({
+  get: () => settings.value.qr_bg || '#ffffff',
+  set: (v) => { settings.value.qr_bg = v || '' }
+})
+
 async function fetchSettings() {
   const res = await api.get('/settings').catch(() => ({}))
   settings.value = Array.isArray(res) ? Object.fromEntries(res.map(s => [s.key, s.value])) : (res || {})
+  // qr 配置缺省值（仅前端表单展示，保存时才写入）
+  if (settings.value.qr_model === undefined) settings.value.qr_model = 'tree'
+  if (settings.value.qr_effect === undefined) settings.value.qr_effect = 'auto'
 }
 
 async function saveSettings() {

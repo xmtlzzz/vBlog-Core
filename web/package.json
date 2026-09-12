@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
+    "@every-qrcode/web-component": "^0.1.2",
     "axios": "^1.16.0",
     "element-plus": "^2.14.0",
     "markdown-it": "^14.1.1",

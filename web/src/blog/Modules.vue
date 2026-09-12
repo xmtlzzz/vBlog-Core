@@ -40,7 +40,7 @@
     </div>
   </main>
 
-  <div v-else class="empty-state fade-in">
+  <div v-else-if="!qrProjects.length" class="empty-state fade-in">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)">
       <rect x="3" y="3" width="18" height="18" rx="2"/>
       <path d="M3 9h18"/>
@@ -55,15 +55,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import QrLinksSection from '../shared/QrLinksSection.vue'
 import { buildSrcdoc } from '../utils/component'
+import { parseQrLinks } from '../utils/qrLinks'
 
 const modules = ref([])
 const blogData = ref(null)
+const settings = ref({})
+
+// 有项目二维码时页面并不算空，不显示「暂无功能模块」
+const qrProjects = computed(() => parseQrLinks(settings.value.qr_links))
 
 function srcdoc(code) {
   return buildSrcdoc(code, { data: blogData.value })
@@ -71,11 +76,13 @@ function srcdoc(code) {
 
 onMounted(async () => {
   try {
-    const [compRes, statsRes] = await Promise.all([
+    const [compRes, statsRes, settingsRes] = await Promise.all([
       api.get('/components/active'),
-      api.get('/dashboard/stats').catch(() => null)
+      api.get('/dashboard/stats').catch(() => null),
+      api.get('/settings').catch(() => ({}))
     ])
     modules.value = Array.isArray(compRes) ? compRes : (compRes.data || [])
+    settings.value = settingsRes || {}
     if (statsRes) {
       var s = statsRes.data || statsRes
       blogData.value = {

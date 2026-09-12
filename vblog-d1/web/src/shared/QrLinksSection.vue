@@ -16,25 +16,13 @@
 <script setup>
 import { ref, computed, defineAsyncComponent, onMounted } from 'vue'
 import api from '../api/request'
+import { parseQrLinks } from '../utils/qrLinks'
 
 const EveryQrBadge = defineAsyncComponent(() => import('./EveryQrBadge.vue'))
 
 const settings = ref({})
 
-const projects = computed(() => {
-  const raw = (settings.value.qr_links || '').trim()
-  if (!raw) return []
-  const list = raw
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [name, url] = line.split('|').map((s) => s.trim())
-      return { name: name || url || '', url: url || name || '' }
-    })
-    .filter((p) => /^https?:\/\//.test(p.url))
-  return list
-})
+const projects = computed(() => parseQrLinks(settings.value.qr_links))
 
 // 与后台 QR 徽章共用同一组外观配置
 const model = computed(() => (settings.value.qr_model === 'terrain' ? 'terrain' : 'tree'))

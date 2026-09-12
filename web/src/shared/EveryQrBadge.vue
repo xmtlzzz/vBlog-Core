@@ -73,8 +73,9 @@ function sceneConfig() {
   return scene
 }
 
-// 模型视图放大让树更饱满（库钳制 0.82–1.45）；二维码视图保持 1.0，避免裁掉静区
-const TREE_ZOOM = 1.4
+// 模型视图放大让树更饱满（库钳制 0.82–1.45）；超过约 1.25 会裁掉树冠，
+// 二维码视图保持 1.0，避免裁掉静区
+const TREE_ZOOM = 1.2
 
 function applyView(renderer) {
   renderer.setFlat(flat.value)

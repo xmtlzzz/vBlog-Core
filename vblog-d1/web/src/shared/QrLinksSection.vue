@@ -1,5 +1,15 @@
 <template>
   <section v-if="projects.length" class="qr-links fade-in">
+    <div class="qr-links-toolbar" role="group" aria-label="氛围特效">
+      <button
+        v-for="opt in EFFECTS"
+        :key="opt.value"
+        type="button"
+        class="qr-effect-btn"
+        :class="{ active: effect === opt.value }"
+        @click="activeEffect = opt.value"
+      >{{ opt.label }}</button>
+    </div>
     <div class="qr-links-grid">
       <div v-for="p in projects" :key="p.url" class="qr-link-card">
         <span class="qr-link-badge" :title="p.url + ' · 点击变形为二维码'">
@@ -25,10 +35,23 @@ const projects = computed(() => parseQrLinks(settings.value.qr_links))
 
 // 与后台 QR 徽章共用同一组外观配置
 const model = computed(() => (settings.value.qr_model === 'terrain' ? 'terrain' : 'tree'))
-const effect = computed(() => {
+
+const EFFECTS = [
+  { value: '', label: '默认' },
+  { value: 'calm', label: '平静' },
+  { value: 'wind', label: '刮风' },
+  { value: 'rain', label: '下雨' },
+  { value: 'snow', label: '落雪' }
+]
+
+// null = 跟随后台配置；点击按钮后仅本地切换，不写回设置
+const configuredEffect = computed(() => {
   const v = settings.value.qr_effect
   return ['calm', 'snow', 'rain', 'wind'].includes(v) ? v : ''
 })
+const activeEffect = ref(null)
+const effect = computed(() => (activeEffect.value === null ? configuredEffect.value : activeEffect.value))
+
 const palette = computed(() => {
   const v = settings.value.qr_palette
   return ['sakura', 'forest', 'ocean', 'sunset'].includes(v) ? v : 'sakura'
@@ -55,6 +78,30 @@ onMounted(async () => {
   max-width: 1080px;
   margin: 0 auto 8px;
   padding: 0 24px;
+}
+.qr-links-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.qr-effect-btn {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.qr-effect-btn:hover {
+  color: var(--fg);
+  border-color: var(--fg);
+}
+.qr-effect-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 .qr-links-grid {
   display: grid;

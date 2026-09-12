@@ -6,6 +6,7 @@
           <EveryQrBadge :url="p.url" :model="model" :effect="effect" :palette="palette" />
         </span>
         <a class="qr-link-name" :href="p.url" target="_blank" rel="noopener">{{ p.name }}</a>
+        <a class="qr-link-host" :href="p.url" target="_blank" rel="noopener">{{ hostOf(p.url) }}</a>
       </div>
     </div>
   </section>
@@ -32,6 +33,14 @@ const palette = computed(() => {
   const v = settings.value.qr_palette
   return ['sakura', 'forest', 'ocean', 'sunset'].includes(v) ? v : 'sakura'
 })
+
+function hostOf(url) {
+  try {
+    return new URL(url).host.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
 
 onMounted(async () => {
   try {
@@ -95,5 +104,25 @@ onMounted(async () => {
 }
 .qr-link-name:hover {
   color: var(--accent);
+}
+/* 可点击的域名胶囊：新标签直达项目 */
+.qr-link-host {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  margin-top: 6px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+.qr-link-host:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 </style>

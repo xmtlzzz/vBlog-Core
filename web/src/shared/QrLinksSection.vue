@@ -11,9 +11,9 @@
       >{{ opt.label }}</button>
     </div>
     <div class="qr-links-grid">
-      <div v-for="p in projects" :key="p.url" class="qr-link-card">
+      <div v-for="(p, i) in projects" :key="p.url" class="qr-link-card">
         <span class="qr-link-badge" :title="p.url + ' · 点击变形为二维码'">
-          <EveryQrBadge :url="p.url" :model="model" :effect="effect" :palette="palette" />
+          <EveryQrBadge :url="p.url" :model="model" :effect="effect" :palette="paletteOf(p, i)" />
         </span>
         <a class="qr-link-name" :href="p.url" target="_blank" rel="noopener">{{ p.name }}</a>
         <a class="qr-link-host" :href="p.url" target="_blank" rel="noopener">{{ hostOf(p.url) }}</a>
@@ -25,7 +25,7 @@
 <script setup>
 import { ref, computed, defineAsyncComponent, onMounted } from 'vue'
 import api from '../api/request'
-import { parseQrLinks } from '../utils/qrLinks'
+import { parseQrLinks, QR_PALETTE_NAMES } from '../utils/qrLinks'
 
 const EveryQrBadge = defineAsyncComponent(() => import('./EveryQrBadge.vue'))
 
@@ -52,10 +52,10 @@ const configuredEffect = computed(() => {
 const activeEffect = ref(null)
 const effect = computed(() => (activeEffect.value === null ? configuredEffect.value : activeEffect.value))
 
-const palette = computed(() => {
-  const v = settings.value.qr_palette
-  return ['sakura', 'forest', 'ocean', 'sunset'].includes(v) ? v : 'sakura'
-})
+// 配色分发：行内第三段手动指定优先，否则按行轮换预设（相邻卡片不同色）
+function paletteOf(p, index) {
+  return p.palette || QR_PALETTE_NAMES[index % QR_PALETTE_NAMES.length]
+}
 
 function hostOf(url) {
   try {

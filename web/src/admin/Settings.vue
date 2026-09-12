@@ -132,9 +132,9 @@
             v-model="settings.qr_links"
             type="textarea"
             :rows="4"
-            placeholder="My App|https://app.example.com&#10;https://demo.example.com"
+            placeholder="My App|https://app.example.com&#10;https://demo.example.com&#10;Holo|https://holo.example.com|ocean"
           />
-          <div class="field-hint">每行一条「名称|URL」，也可以只填 URL（名称自动取域名）；每个地址确定性生成专属 3D 徽章，展示在「模块」页顶部；留空隐藏该区块</div>
+          <div class="field-hint">每行一条「名称|URL」或只填 URL（名称自动取域名）；配色按行自动轮换（樱花/森林/海洋/落雪），也可第三段手动指定；展示在「模块」页顶部，留空隐藏该区块</div>
         </el-form-item>
         <el-form-item label="徽章背景色">
           <el-color-picker v-model="qrBackground" />

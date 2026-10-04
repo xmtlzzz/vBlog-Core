@@ -12,6 +12,11 @@
         <router-link to="/about">关于 About</router-link>
       </div>
       <div class="nav-right">
+        <button class="nav-search-btn" @click="handleSearch" aria-label="搜索文章" title="搜索文章 (⌘K / Ctrl+F)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+        </button>
         <router-link to="/admin" class="admin-btn">后台 Admin</router-link>
         <button class="theme-toggle" @click="themeStore.toggle()" aria-label="切换主题">
           <span v-if="themeStore.theme === 'dark'">☀</span>
@@ -23,8 +28,20 @@
 </template>
 
 <script setup>
+import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
+
+const router = useRouter()
+const route = useRoute()
 const themeStore = useThemeStore()
+
+function handleSearch() {
+  if (route.path === '/') {
+    window.dispatchEvent(new CustomEvent('vblog-open-search'))
+  } else {
+    router.push({ path: '/', query: { search: 'open' } })
+  }
+}
 </script>
 
 <style scoped>
@@ -108,6 +125,24 @@ const themeStore = useThemeStore()
   color: var(--fg);
   border-color: var(--fg);
 }
+.nav-search-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  border-radius: 6px;
+}
+.nav-search-btn:hover {
+  color: var(--fg);
+  border-color: var(--accent);
+  background: var(--card-hover);
+}
 .theme-toggle {
   width: 36px;
   height: 36px;
@@ -141,6 +176,10 @@ const themeStore = useThemeStore()
   .admin-btn {
     padding: 5px 8px;
     font-size: 12px;
+  }
+  .nav-search-btn {
+    width: 32px;
+    height: 32px;
   }
   .theme-toggle {
     width: 32px;

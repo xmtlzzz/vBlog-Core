@@ -41,7 +41,7 @@
         v-model="form.content"
         :theme="editorTheme"
         language="zh-CN"
-        style="height: 600px"
+        class="vblog-md-editor"
         :preview="true"
         :htmlPreview="true"
         @onUploadImg="onUploadImg"
@@ -233,5 +233,10 @@ onMounted(() => {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  height: calc(100vh - 240px);
+  min-height: 520px;
+}
+.vblog-md-editor {
+  height: 100% !important;
 }
 </style>

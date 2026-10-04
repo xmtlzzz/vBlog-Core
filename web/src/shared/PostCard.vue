@@ -41,10 +41,14 @@ defineProps({
   border-bottom: 1px solid var(--border);
   text-decoration: none;
   color: var(--fg);
-  transition: opacity 0.15s;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .post-card:hover {
-  opacity: 0.7;
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+.post-card:hover .post-title {
+  color: var(--accent);
 }
 .post-card:last-child {
   border-bottom: none;

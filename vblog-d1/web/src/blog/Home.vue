@@ -15,25 +15,24 @@
     </div>
   </section>
 
-  <!-- Search overlay (Ctrl+F) -->
-  <Transition name="search-slide">
-    <section v-if="showSearch" class="search-overlay">
-      <div class="search-box">
-        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-        </svg>
-        <input
-          ref="searchInputRef"
-          v-model="searchQuery"
-          class="search-input"
-          placeholder="搜索文章..."
-          @input="debounceSearch"
-          @keyup.escape="closeSearch"
-        />
-        <button v-if="searchQuery" class="search-clear" @click="closeSearch">✕</button>
-      </div>
-    </section>
-  </Transition>
+  <!-- Search section -->
+  <section class="search-overlay fade-in" style="animation-delay: 200ms">
+    <div class="search-box">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input
+        ref="searchInputRef"
+        v-model="searchQuery"
+        class="search-input"
+        placeholder="搜索文章... (支持 ⌘K / Ctrl+F)"
+        @input="debounceSearch"
+        @keyup.escape="closeSearch"
+      />
+      <button v-if="searchQuery" class="search-clear" @click="closeSearch" title="清除">✕</button>
+      <span v-else class="search-kbd">⌘K</span>
+    </div>
+  </section>
 
   <!-- Post list -->
   <section class="post-list">
@@ -63,17 +62,18 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
 import PostCard from '../shared/PostCard.vue'
 
+const route = useRoute()
 const stats = ref({ total_posts: 0, total_views: 0, total_tags: 0 })
 const settings = ref({})
 const posts = ref([])
 const searchQuery = ref('')
-const showSearch = ref(false)
 const searchInputRef = ref(null)
 const page = ref(1)
 const perPage = 5
@@ -123,12 +123,13 @@ function debounceSearch() {
 }
 
 function openSearch() {
-  showSearch.value = true
-  nextTick(() => searchInputRef.value?.focus())
+  nextTick(() => {
+    searchInputRef.value?.focus()
+    searchInputRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  })
 }
 
 function closeSearch() {
-  showSearch.value = false
   if (searchQuery.value) {
     searchQuery.value = ''
     page.value = 1
@@ -137,7 +138,7 @@ function closeSearch() {
 }
 
 function onKeydown(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+  if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'k')) {
     e.preventDefault()
     openSearch()
   }
@@ -151,6 +152,11 @@ function handlePageChange(p) {
 
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
+  window.addEventListener('vblog-open-search', openSearch)
+  if (route.query.search === 'open') {
+    openSearch()
+  }
+
   const [statsRes, settingsRes] = await Promise.all([
     api.get('/dashboard/stats').catch(() => ({ total_posts: 0, total_views: 0, total_tags: 0 })),
     api.get('/settings').catch(() => ({}))
@@ -168,6 +174,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('vblog-open-search', openSearch)
 })
 </script>
 
@@ -279,6 +286,18 @@ onUnmounted(() => {
 .search-clear:hover {
   color: var(--fg);
   background: var(--border);
+}
+.search-kbd {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  background: var(--surface-hover, var(--border));
+  color: var(--muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  user-select: none;
+  pointer-events: none;
 }
 .search-slide-enter-active,
 .search-slide-leave-active {

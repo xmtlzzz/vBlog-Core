@@ -39,11 +39,12 @@
       <el-table-column label="日期 Date" width="120">
         <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
       </el-table-column>
-      <el-table-column label="操作 Actions" width="200" fixed="right">
+      <el-table-column label="操作 Actions" width="280" fixed="right">
         <template #default="{ row }">
           <div class="action-btn-group">
             <button class="action-btn" @click="viewPost(row)">查看 View</button>
             <button class="action-btn" @click="router.push(`/admin/posts/${row.id}/edit`)">编辑</button>
+            <button v-if="row.status === 'published'" class="action-btn" @click="moveToDraft(row.id)">转为草稿</button>
             <button class="action-btn action-danger" @click="deletePost(row.id)">删除</button>
           </div>
         </template>
@@ -129,6 +130,15 @@ async function deletePost(id) {
     ElMessage.success('已移入回收站')
     fetchPosts()
   } catch {}
+}
+
+async function moveToDraft(id) {
+  try {
+    const post = await api.get(`/posts/${id}`)
+    await api.put(`/posts/${id}`, { ...post, status: 'draft' })
+    ElMessage.success('已转为草稿，可在编辑页重新发布')
+    await fetchPosts()
+  } catch { ElMessage.error('转为草稿失败，请重试') }
 }
 
 function triggerUpload() {

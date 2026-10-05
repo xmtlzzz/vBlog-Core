@@ -4,7 +4,7 @@
       <router-link class="nav-brand" to="/">
         <img class="mascot" src="/nav-mascot.png" alt="vBlog" />vBlog
       </router-link>
-      <div class="nav-links">
+      <div id="blog-navigation" :class="['nav-links', { 'is-open': menuOpen }]">
         <router-link to="/">首页 Home</router-link>
         <router-link to="/archives">归档 Archives</router-link>
         <router-link to="/modules">模块 Modules</router-link>
@@ -12,7 +12,7 @@
         <router-link to="/about">关于 About</router-link>
       </div>
       <div class="nav-right">
-        <button class="nav-search-btn" @click="handleSearch" aria-label="搜索文章" title="搜索文章 (⌘K / Ctrl+F)">
+        <button class="nav-search-btn" @click="handleSearch" aria-label="搜索文章" title="搜索文章 (⌘K / Ctrl+K)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
           </svg>
@@ -22,20 +22,30 @@
           <span v-if="themeStore.theme === 'dark'">☀</span>
           <span v-else>☾</span>
         </button>
+        <button class="menu-toggle" :aria-expanded="menuOpen" aria-controls="blog-navigation" :aria-label="menuOpen ? '收起导航' : '展开导航'" @click="menuOpen = !menuOpen">
+          {{ menuOpen ? '关闭' : '菜单' }}
+        </button>
       </div>
     </div>
   </nav>
 </template>
 
 <script setup>
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 
 const router = useRouter()
 const route = useRoute()
 const themeStore = useThemeStore()
+const menuOpen = ref(false)
+watch(() => route.fullPath, () => { menuOpen.value = false })
+function closeOnEscape(event) { if (event.key === 'Escape') menuOpen.value = false }
+onMounted(() => window.addEventListener('keydown', closeOnEscape))
+onUnmounted(() => window.removeEventListener('keydown', closeOnEscape))
 
 function handleSearch() {
+  menuOpen.value = false
   if (route.path === '/') {
     window.dispatchEvent(new CustomEvent('vblog-open-search'))
   } else {
@@ -59,6 +69,7 @@ function handleSearch() {
   background: rgba(10, 10, 10, 0.85);
 }
 .inner {
+  min-width: 0;
   max-width: 1080px;
   margin: 0 auto;
   padding: 0 24px;
@@ -86,6 +97,7 @@ function handleSearch() {
   flex-shrink: 0;
 }
 .nav-links {
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -159,13 +171,15 @@ function handleSearch() {
 .theme-toggle:hover {
   background: var(--card-hover);
 }
+.menu-toggle { display: none; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--fg); cursor: pointer; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-@media (max-width: 640px) {
+@media (max-width: 800px) {
   /* 两行布局：品牌 + 右侧操作一行，导航链接第二行横向滑动，避免折行溢出 */
   .inner {
     height: auto;
     flex-wrap: wrap;
-    padding: 6px 12px 0;
+    padding: 10px 12px;
   }
   .nav-brand {
     font-size: 16px;
@@ -187,17 +201,19 @@ function handleSearch() {
     font-size: 14px;
   }
   .nav-links {
+    display: none;
     order: 3;
-    flex: 1 0 100%;
-    flex-wrap: nowrap;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
     justify-content: flex-start;
     gap: 2px;
-    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: 6px;
     margin-top: 2px;
   }
+  .nav-links.is-open { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .menu-toggle { display: flex; }
   .nav-links::-webkit-scrollbar {
     display: none;
   }

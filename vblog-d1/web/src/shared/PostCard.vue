@@ -1,10 +1,10 @@
 <template>
   <router-link
     :to="`/post/${post.id}`"
-    :class="['post-card fade-in', { pinned: post.is_pinned }]"
+    :class="['post-card fade-in', { pinned: post.pinned || post.is_pinned }]"
   >
     <div class="post-card-body">
-      <div v-if="post.is_pinned" class="pin-badge">置顶 Pinned</div>
+      <div v-if="post.pinned || post.is_pinned" class="pin-badge">置顶 Pinned</div>
       <div class="post-meta">
         <span
           v-for="tag in (post.tags || [])"
@@ -14,7 +14,7 @@
         <span class="meta-date">{{ formatDate(post.created_at) }}</span>
       </div>
       <div class="post-title">{{ post.title }}</div>
-      <div class="post-excerpt">{{ post.excerpt }}</div>
+      <div class="post-excerpt">{{ plainExcerpt(post.excerpt || post.content) }}</div>
     </div>
     <div class="post-stats">
       <span class="read-time">{{ post.read_time || 0 }} min</span>
@@ -25,6 +25,7 @@
 
 <script setup>
 import { formatDate } from '../utils/format'
+import { plainExcerpt } from '../utils/markdown'
 
 defineProps({
   post: { type: Object, required: true }
@@ -34,7 +35,7 @@ defineProps({
 <style scoped>
 .post-card {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
   align-items: start;
   padding: 20px 0;
@@ -47,6 +48,7 @@ defineProps({
   transform: translateY(-2px);
   border-color: var(--accent);
 }
+.post-card-body { min-width: 0; overflow-wrap: anywhere; }
 .post-card:hover .post-title {
   color: var(--accent);
 }
@@ -122,7 +124,10 @@ defineProps({
 @media (max-width: 640px) {
   .post-card {
     padding: 16px 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
   }
+  .post-stats { flex-direction: row; align-items: center; gap: 16px; }
   .post-card.pinned {
     padding: 16px;
   }

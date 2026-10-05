@@ -127,11 +127,7 @@ export function calcReadTime(content) {
 }
 
 // 摘要：截断到 maxLen 字符并加省略号（对齐 Go 端 BuildExcerpt）
-export function buildExcerpt(content, maxLen = 200) {
-  const s = content || '';
-  if (s.length <= maxLen) return s;
-  return s.slice(0, maxLen) + '...';
-}
+export { plainExcerpt as buildExcerpt } from './markdown.js';
 
 export function nowISO() {
   return new Date().toISOString();

@@ -1,10 +1,24 @@
 package api
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	restful "github.com/emicklei/go-restful/v3"
 )
+
+func TestPostReadWithoutOptionalAuth(t *testing.T) {
+	container := restful.NewContainer()
+	ws := new(restful.WebService).Path("/").Produces(restful.MIME_JSON)
+	(&PostResource{}).Register(ws)
+	container.Add(ws)
+	response := httptest.NewRecorder()
+	container.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/posts/not-a-number", nil))
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("invalid post ID returned %d, want 400", response.Code)
+	}
+}
 
 func TestPostResourceRegister(t *testing.T) {
 	p := &PostResource{}

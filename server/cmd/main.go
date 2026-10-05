@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
-	restful "github.com/emicklei/go-restful/v3"
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
+	restful "github.com/emicklei/go-restful/v3"
 	"github.com/robfig/cron/v3"
 	"vblog-core/api"
 	"vblog-core/config"
@@ -16,6 +18,7 @@ import (
 	"vblog-core/middleware"
 	"vblog-core/model"
 	"vblog-core/service"
+	"vblog-core/webmeta"
 )
 
 func main() {
@@ -53,7 +56,7 @@ func main() {
 	// All API routes in one WebService
 	ws := new(restful.WebService).Path("/").Produces(restful.MIME_JSON)
 	// Public routes (admin write routes get jwtFilter via each resource's Auth field)
-	(&api.PostResource{Service: postSvc, Auth: jwtFilter}).Register(ws)
+	(&api.PostResource{Service: postSvc, Auth: jwtFilter, ReadAuth: middleware.OptionalJWTFilter(cfg.JWT.Secret)}).Register(ws)
 	(&api.TagResource{Service: tagSvc, Auth: jwtFilter}).Register(ws)
 	(&api.CommentResource{Service: commentSvc, Auth: jwtFilter, TurnstileSecret: cfg.Turnstile.Secret, TurnstileHostnames: cfg.Turnstile.Hostnames}).Register(ws)
 	(&api.SettingResource{Service: settingSvc, Auth: jwtFilter}).Register(ws)
@@ -165,12 +168,44 @@ func main() {
 			}
 			// Try to serve static file directly
 			path := filepath.Join(staticDir, r.URL.Path)
-			if _, err := os.Stat(path); err == nil {
+			if info, err := os.Stat(path); err == nil && !info.IsDir() && r.URL.Path != "/index.html" {
 				fs.ServeHTTP(w, r)
 				return
 			}
 			// SPA fallback
-			http.ServeFile(w, r, indexFile)
+			index, err := os.ReadFile(indexFile)
+			if err != nil {
+				http.Error(w, "页面暂不可用", http.StatusServiceUnavailable)
+				return
+			}
+			settings, _ := settingSvc.GetAll()
+			scheme := "http"
+			if r.TLS != nil {
+				scheme = "https"
+			}
+			page := webmeta.NewPage(settings, scheme+"://"+r.Host, r.URL.Path)
+			if strings.HasPrefix(r.URL.Path, "/post/") {
+				id, parseErr := strconv.ParseUint(strings.TrimPrefix(r.URL.Path, "/post/"), 10, 64)
+				var post model.Post
+				if parseErr == nil && db.Where("id = ? AND status = ?", id, "published").First(&post).Error == nil {
+					page.Title, page.Article = post.Title, true
+					content := post.Excerpt
+					if content == "" {
+						content = post.Content
+					}
+					page.Description = service.BuildExcerpt(content, 160)
+				} else {
+					page.Title, page.Missing = "文章不存在", true
+				}
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-cache")
+			if page.Missing {
+				w.WriteHeader(http.StatusNotFound)
+			}
+			if r.Method != http.MethodHead {
+				_, _ = w.Write(webmeta.Render(index, page))
+			}
 		})
 		log.Printf("serving static files from %s", staticDir)
 	}

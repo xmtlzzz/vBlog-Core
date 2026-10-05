@@ -37,6 +37,9 @@ func TestBuildExcerpt(t *testing.T) {
 		{"long content truncated with ellipsis", "hello world this is a long string", 5, "hello..."},
 		{"empty content", "", 10, ""},
 		{"maxLen 0 always truncates", "abc", 0, "..."},
+		{"Markdown becomes readable text", "# 项目\n\n[导航](https://example.com) **介绍**", 200, "项目 导航 介绍"},
+		{"code fences do not dominate excerpt", "简介\n\n```js\nconst secret = 1;\n```\n\n更多内容", 200, "简介 更多内容"},
+		{"Chinese is truncated by characters", "**你好世界**", 3, "你好世..."},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

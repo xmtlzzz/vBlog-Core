@@ -25,21 +25,21 @@
         <span>{{ (post.views || 0).toLocaleString() }} views</span>
       </div>
       <h1 class="article-title">{{ post.title }}</h1>
-      <p class="article-deck" v-if="post.excerpt">{{ post.excerpt }}</p>
+      <p class="article-deck" v-if="post.excerpt">{{ plainExcerpt(post.excerpt) }}</p>
     </header>
 
     <div class="article-author">
-      <div class="author-avatar">{{ post.author?.[0] || 'V' }}</div>
+      <div class="author-avatar">{{ authorName[0] }}</div>
       <div>
-        <div class="author-name">{{ post.author || 'vBlog Admin' }}</div>
-        <div class="author-role">全栈工程师 / 极客博主</div>
+        <div class="author-name">{{ authorName }}</div>
+        <div v-if="settings.author_bio" class="author-role">{{ settings.author_bio }}</div>
       </div>
     </div>
 
     <div class="article-body">
       <MdPreview
         :editorId="editorId"
-        :modelValue="post.content || ''"
+        :modelValue="articleMarkdown(post.content || '')"
         :theme="editorTheme"
         language="zh-CN"
         :previewTheme="'github'"
@@ -98,6 +98,8 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
+import { plainExcerpt, articleMarkdown } from '../utils/markdown'
+import { updateMetadata } from '../utils/metadata'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
@@ -109,6 +111,9 @@ import 'md-editor-v3/lib/preview.css'
 const route = useRoute()
 const themeStore = useThemeStore()
 const post = ref(null)
+const settings = ref({})
+const authorName = computed(() => post.value?.author || settings.value.author_name || settings.value.about_name || settings.value.site_title || 'vBlog')
+let requestId = 0
 const loaded = ref(false)
 const tocItems = ref([])
 const prevPost = ref(null)
@@ -143,18 +148,26 @@ async function fetchAdjacentPosts() {
 }
 
 async function loadPost(id) {
+  const currentRequest = ++requestId
+  loaded.value = false
   post.value = null
   prevPost.value = null
   nextPost.value = null
   tocItems.value = []
   try {
-    const res = await api.get(`/posts/${id}`)
+    const [res, siteSettings] = await Promise.all([api.get(`/posts/${id}`), api.get('/settings').catch(() => ({}))])
+    if (currentRequest !== requestId) return
+    settings.value = siteSettings || {}
     post.value = res
+    updateMetadata(settings.value, { title: res.title, description: res.excerpt || res.content, article: true, path: `/post/${id}` })
     fetchAdjacentPosts()
   } catch {
-    post.value = null
+    if (currentRequest === requestId) {
+      post.value = null
+      updateMetadata(settings.value, { title: '文章不存在' })
+    }
   } finally {
-    loaded.value = true
+    if (currentRequest === requestId) loaded.value = true
   }
 }
 
@@ -171,6 +184,7 @@ watch(() => route.params.id, (newId) => {
 })
 
 onUnmounted(() => {
+  ++requestId
   window.removeEventListener('scroll', onScroll)
 })
 </script>
@@ -185,6 +199,7 @@ onUnmounted(() => {
   padding: 64px 24px 80px;
 }
 .article {
+  overflow-wrap: anywhere;
   max-width: 720px;
   min-width: 0;
   flex: 1;
@@ -305,10 +320,14 @@ onUnmounted(() => {
 }
 
 .article-body {
+  min-width: 0;
   font-size: 16px;
   line-height: 1.75;
   color: var(--fg);
 }
+.article-body :deep(img) { max-width: 100%; height: auto; }
+.article-body :deep(pre), .article-body :deep(.md-editor-code) { max-width: 100%; overflow-x: auto; }
+.article-body :deep(table) { display: block; max-width: 100%; overflow-x: auto; }
 .article-body :deep(.md-editor-previewOnly) {
   background: transparent !important;
   border: none;

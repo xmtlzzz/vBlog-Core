@@ -5,26 +5,26 @@ import (
 	"net/http"
 	"strconv"
 
-	restful "github.com/emicklei/go-restful/v3"
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
+	restful "github.com/emicklei/go-restful/v3"
 	"vblog-core/model"
 	"vblog-core/service"
 )
 
 // postResp wraps a Post with formatted dates for JSON.
 type postResp struct {
-	ID        uint         `json:"id"`
-	Title     string       `json:"title"`
-	Content   string       `json:"content"`
-	Excerpt   string       `json:"excerpt"`
-	Status    string       `json:"status"`
-	Pinned    bool         `json:"pinned"`
-	Views     int          `json:"views"`
-	ReadTime  int          `json:"read_time"`
-	AuthorID  uint         `json:"author_id"`
-	Tags      []model.Tag  `json:"tags"`
-	CreatedAt string       `json:"created_at"`
-	UpdatedAt string       `json:"updated_at"`
+	ID        uint        `json:"id"`
+	Title     string      `json:"title"`
+	Content   string      `json:"content"`
+	Excerpt   string      `json:"excerpt"`
+	Status    string      `json:"status"`
+	Pinned    bool        `json:"pinned"`
+	Views     int         `json:"views"`
+	ReadTime  int         `json:"read_time"`
+	AuthorID  uint        `json:"author_id"`
+	Tags      []model.Tag `json:"tags"`
+	CreatedAt string      `json:"created_at"`
+	UpdatedAt string      `json:"updated_at"`
 }
 
 func newPostResp(p *model.Post) postResp {
@@ -39,16 +39,26 @@ func newPostResp(p *model.Post) postResp {
 
 // PostResource handles blog post REST endpoints.
 type PostResource struct {
-	Service *service.PostService
-	Auth    restful.FilterFunction // optional JWT filter; when nil, admin routes are unprotected
+	Service  *service.PostService
+	Auth     restful.FilterFunction // optional JWT filter; when nil, admin routes are unprotected
+	ReadAuth restful.FilterFunction // identifies editors for public/draft read separation
 }
 
 // guard returns the JWT filter when configured (no-op in tests).
 func (p *PostResource) guard() restful.FilterFunction { return p.Auth }
 
+func (p *PostResource) readGuard() restful.FilterFunction {
+	if p.ReadAuth != nil {
+		return p.ReadAuth
+	}
+	return func(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+		chain.ProcessFilter(req, resp)
+	}
+}
+
 // Register adds post routes to the given WebService.
 func (p *PostResource) Register(ws *restful.WebService) {
-	ws.Route(ws.GET("/api/posts").To(p.list).
+	ws.Route(ws.GET("/api/posts").Filter(p.readGuard()).To(p.list).
 		Doc("List blog posts with pagination and filters").
 		Notes("Returns a paginated list of posts. Supports filtering by tag, status, and search by title.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
@@ -61,7 +71,7 @@ func (p *PostResource) Register(ws *restful.WebService) {
 		Returns(200, "OK", PostListResponse{}).
 		Returns(500, "Internal Server Error", ErrorResponse{}))
 
-	ws.Route(ws.GET("/api/posts/{id}").To(p.get).
+	ws.Route(ws.GET("/api/posts/{id}").Filter(p.readGuard()).To(p.get).
 		Doc("Get a single post by ID").
 		Notes("Returns the full post content including tags.").
 		Metadata(restfulspec.KeyOpenAPITags, []string{"posts"}).
@@ -139,6 +149,9 @@ func (p *PostResource) list(req *restful.Request, resp *restful.Response) {
 	}
 	tag := req.QueryParameter("tag")
 	status := req.QueryParameter("status")
+	if p.ReadAuth != nil && req.Attribute("claims") == nil {
+		status = "published"
+	}
 	search := req.QueryParameter("search")
 
 	posts, total, err := p.Service.List(page, perPage, tag, status, search)
@@ -165,7 +178,7 @@ func (p *PostResource) get(req *restful.Request, resp *restful.Response) {
 		resp.WriteError(http.StatusBadRequest, err)
 		return
 	}
-	post, err := p.Service.GetByID(uint(id))
+	post, err := p.Service.GetByIDForReader(uint(id), p.ReadAuth != nil && req.Attribute("claims") == nil)
 	if errors.Is(err, service.ErrNotFound) {
 		resp.WriteError(http.StatusNotFound, err)
 		return

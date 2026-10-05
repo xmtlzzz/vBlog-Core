@@ -25,22 +25,33 @@
         ref="searchInputRef"
         v-model="searchQuery"
         class="search-input"
-        placeholder="搜索文章... (支持 ⌘K / Ctrl+F)"
+        placeholder="搜索文章…"
+        aria-label="搜索文章"
         @input="debounceSearch"
         @keyup.escape="closeSearch"
       />
-      <button v-if="searchQuery" class="search-clear" @click="closeSearch" title="清除">✕</button>
+      <button v-if="searchQuery" class="search-clear" @click="closeSearch" aria-label="清除搜索" title="清除">✕</button>
       <span v-else class="search-kbd">⌘K</span>
     </div>
   </section>
 
   <!-- Post list -->
   <section class="post-list">
-    <TransitionGroup name="post-list" tag="div">
+    <p v-if="loading" class="list-feedback" role="status">正在加载文章…</p>
+    <div v-else-if="error" class="empty-state" role="alert">
+      <p>文章加载失败，请稍后重试。</p>
+      <button @click="fetchPosts">重新加载</button>
+    </div>
+    <TransitionGroup v-else name="post-list" tag="div">
       <PostCard v-for="(post, i) in posts" :key="post.id" :post="post" :style="{ animationDelay: (i * 60) + 'ms' }" class="fade-in" />
     </TransitionGroup>
-    <div v-if="posts.length === 0" class="empty-state fade-in">
-      <p>暂无文章</p>
+    <div v-if="!loading && !error && posts.length === 0" class="empty-state fade-in" role="status">
+      <template v-if="searchQuery.trim()">
+        <p>没有找到匹配文章</p>
+        <p>试试更短的关键词，或返回全部文章。</p>
+        <button @click="closeSearch">清除搜索</button>
+      </template>
+      <p v-else>暂无文章，新的记录正在准备中。</p>
     </div>
   </section>
 
@@ -68,6 +79,7 @@ import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
 import PostCard from '../shared/PostCard.vue'
+import { updateMetadata } from '../utils/metadata'
 
 const route = useRoute()
 const stats = ref({ total_posts: 0, total_views: 0, total_tags: 0 })
@@ -79,6 +91,11 @@ const page = ref(1)
 const perPage = 5
 const total = ref(0)
 let searchTimer = null
+let typingTimer = null
+let cursorTimer = null
+let requestId = 0
+const loading = ref(true)
+const error = ref(false)
 
 const DEFAULT_HERO_TITLE = '写代码的人，\n也写点别的。'
 const typedText = ref('')
@@ -87,15 +104,20 @@ const typing = ref(true)
 const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 function startTypewriter(text) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    typedText.value = escapeHtml(text).replace(/\n/g, '<br/>')
+    typing.value = false
+    return
+  }
   let i = 0
-  const timer = setInterval(() => {
+  typingTimer = setInterval(() => {
     if (i < text.length) {
       const ch = text[i]
       typedText.value += ch === '\n' ? '<br/>' : escapeHtml(ch)
       i++
     } else {
-      clearInterval(timer)
-      setTimeout(() => { typing.value = false }, 1500)
+      clearInterval(typingTimer)
+      cursorTimer = setTimeout(() => { typing.value = false }, 1500)
     }
   }, 100)
 }
@@ -110,15 +132,27 @@ const statItems = computed(() => [
 const heroTagline = computed(() => settings.value.description || settings.value.site_description || '')
 
 async function fetchPosts() {
+  const currentRequest = ++requestId
+  loading.value = true
+  error.value = false
   const params = { page: page.value, per_page: perPage, status: 'published' }
-  if (searchQuery.value) params.search = searchQuery.value
-  const res = await api.get('/posts', { params })
-  posts.value = res.data || []
-  total.value = res.total || 0
+  if (searchQuery.value.trim()) params.search = searchQuery.value.trim()
+  try {
+    const res = await api.get('/posts', { params })
+    if (currentRequest !== requestId) return
+    posts.value = res.data || []
+    total.value = res.total || 0
+  } catch {
+    if (currentRequest === requestId) { error.value = true; total.value = 0 }
+  } finally {
+    if (currentRequest === requestId) loading.value = false
+  }
 }
 
 function debounceSearch() {
   clearTimeout(searchTimer)
+  ++requestId
+  loading.value = true
   searchTimer = setTimeout(() => { page.value = 1; fetchPosts() }, 300)
 }
 
@@ -130,6 +164,7 @@ function openSearch() {
 }
 
 function closeSearch() {
+  clearTimeout(searchTimer)
   if (searchQuery.value) {
     searchQuery.value = ''
     page.value = 1
@@ -138,7 +173,7 @@ function closeSearch() {
 }
 
 function onKeydown(e) {
-  if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'f' || e.key.toLowerCase() === 'k')) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault()
     openSearch()
   }
@@ -167,12 +202,17 @@ onMounted(async () => {
     total_tags: statsRes.total_tags || 0
   }
   settings.value = settingsRes || {}
+  updateMetadata(settings.value)
   // 等设置就绪再打字：标语来自后台「首页标语」，未配置时用默认文案
   startTypewriter(settings.value.hero_title || DEFAULT_HERO_TITLE)
   await fetchPosts()
 })
 
 onUnmounted(() => {
+  ++requestId
+  clearTimeout(searchTimer)
+  clearInterval(typingTimer)
+  clearTimeout(cursorTimer)
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('vblog-open-search', openSearch)
 })
@@ -208,6 +248,7 @@ onUnmounted(() => {
   50% { opacity: 0; }
 }
 .stats-bar {
+  flex-wrap: wrap;
   max-width: 1080px;
   margin: 0 auto;
   padding: 0 24px 40px;
@@ -259,6 +300,7 @@ onUnmounted(() => {
   align-items: center;
 }
 .search-input {
+  min-width: 0;
   flex: 1;
   border: none;
   outline: none;
@@ -328,6 +370,9 @@ onUnmounted(() => {
   padding: 64px 24px;
   color: var(--muted);
 }
+.list-feedback { padding: 32px 0; color: var(--muted); }
+.empty-state button { margin-top: 12px; padding: 10px 18px; color: var(--fg); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+.empty-state button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .pagination-wrap {
   max-width: 1080px;
   margin: 0 auto;

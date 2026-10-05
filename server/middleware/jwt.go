@@ -63,3 +63,16 @@ func JWTFilter(secret string) restful.FilterFunction {
 		chain.ProcessFilter(req, resp)
 	}
 }
+
+// OptionalJWTFilter identifies authenticated editors while keeping public reads available.
+func OptionalJWTFilter(secret string) restful.FilterFunction {
+	return func(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+		auth := req.HeaderParameter("Authorization")
+		if strings.HasPrefix(auth, "Bearer ") {
+			if claims, err := ValidateToken(strings.TrimPrefix(auth, "Bearer "), secret); err == nil {
+				req.SetAttribute("claims", claims)
+			}
+		}
+		chain.ProcessFilter(req, resp)
+	}
+}

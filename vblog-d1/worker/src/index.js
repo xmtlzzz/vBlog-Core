@@ -7,7 +7,7 @@
 //   · 静态资源（SPA）   → Worker Static Assets（env.ASSETS）
 //   · 图片上传          → R2 对象存储
 //   · 每日统计快照      → Cron Trigger（scheduled）
-// 零 npm 依赖（JWT/PBKDF2 用 WebCrypto，见 util.js）。
+// Markdown 摘要使用 markdown-it；JWT/PBKDF2 使用 WebCrypto，见 util.js。
 //
 // 部署见 ../README.md；wrangler.toml 中需配置 D1/R2 绑定与 JWT_SECRET。
 
@@ -15,6 +15,7 @@ import {
   json, fail, signJWT, verifyJWT, hashPassword, checkPassword,
   fmtDate, fmtDateTime, calcReadTime, buildExcerpt, nowISO,
 } from './util.js';
+import { pageMetadata, rewriteMetadata } from './metadata.js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -32,9 +33,14 @@ export default {
     }
     if (!path.startsWith('/api')) {
       // 仅记录页面导航（无扩展名或 .html），静态资源不计 PV，避免统计虚高与 D1 写配额浪费
-      const isPage = method === 'GET' && (!/\.[\w]+$/.test(path) || path.endsWith('.html'));
-      if (isPage) ctx.waitUntil(recordPageView(env, request, path));
-      return env.ASSETS.fetch(request);
+      const isPage = ['GET', 'HEAD'].includes(method) && (!/\.[\w]+$/.test(path) || path.endsWith('.html'));
+      if (isPage && method === 'GET') ctx.waitUntil(recordPageView(env, request, path));
+      const response = await env.ASSETS.fetch(request);
+      if (isPage && response.headers.get('content-type')?.includes('text/html')) {
+        try { return rewriteMetadata(response, await pageMetadata(env, url)); }
+        catch (error) { console.error('Page metadata unavailable:', error.message); }
+      }
+      return response;
     }
 
     // API 请求不记 page_view（减少 D1 写入压力）
@@ -98,13 +104,13 @@ async function route(request, env, url, path, method) {
         if (method === 'POST') return createPublicComment(request, env, second);
       }
       if (!second) {
-        if (method === 'GET') return listPosts(env, url);
+        if (method === 'GET') return listPosts(env, url, Boolean(await readerClaims(request, env)));
         if (method === 'POST') return requireAuth(request, env, (claims) => createPost(request, env, claims));
       } else if (/^\d+$/.test(second)) {
         if (third === 'restore' && method === 'POST') return requireAuth(request, env, () => restorePost(env, second));
         if (third === 'permanent' && method === 'DELETE') return requireAuth(request, env, () => permanentDeletePost(env, second));
         if (!third) {
-          if (method === 'GET') return getPost(env, second);
+          if (method === 'GET') return getPost(env, second, Boolean(await readerClaims(request, env)));
           if (method === 'PUT') return requireAuth(request, env, () => updatePost(request, env, second));
           if (method === 'DELETE') return requireAuth(request, env, () => deletePost(env, second));
         }
@@ -186,6 +192,11 @@ async function requireAuth(request, env, handler) {
   const claims = await verifyJWT(env.JWT_SECRET || '', token);
   if (!claims) return fail('invalid token', 401);
   return handler(claims);
+}
+
+async function readerClaims(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  return auth.startsWith('Bearer ') ? verifyJWT(env.JWT_SECRET || '', auth.slice(7)) : null;
 }
 
 async function issueTokens(env, user) {
@@ -381,11 +392,11 @@ async function postById(env, id) {
 
 const POST_SELECT = `SELECT p.*, ${TAGS_JSON_SQL} FROM posts p`;
 
-async function listPosts(env, url) {
+async function listPosts(env, url, authenticated = false) {
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
   const perPage = Math.max(1, parseInt(url.searchParams.get('per_page') || '5', 10) || 5);
   const tag = url.searchParams.get('tag');
-  const status = url.searchParams.get('status');
+  const status = authenticated ? url.searchParams.get('status') : 'published';
   const search = url.searchParams.get('search');
 
   const where = ['p.deleted_at IS NULL'];
@@ -409,9 +420,9 @@ async function listPosts(env, url) {
   return json({ data, total: total.n || 0, page }, 200, { cf: { cacheTtl: 30 } });
 }
 
-async function getPost(env, id) {
+async function getPost(env, id, authenticated = false) {
   const row = await env.DB.prepare(
-    `${POST_SELECT} WHERE p.id = ? AND p.deleted_at IS NULL`
+    `${POST_SELECT} WHERE p.id = ? AND p.deleted_at IS NULL${authenticated ? '' : " AND p.status = 'published'"}`
   ).bind(id).first();
   if (!row) return fail('not found', 404);
   // 阅读量 +1（对齐 Go 端 GetByID；不缓存详情保证计数准确）

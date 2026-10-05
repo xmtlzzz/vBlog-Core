@@ -1,1 +1,15 @@
-﻿{ "name": "vblog-d1-worker", "private": true, "devDependencies": { "wrangler": "^4.0.0" } }
+{
+  "name": "vblog-d1-worker",
+  "private": true,
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "markdown-it": "^14.1.1"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "node src/experience.test.js",
+    "test:runtime": "node tests/runtime.test.js"
+  }
+}

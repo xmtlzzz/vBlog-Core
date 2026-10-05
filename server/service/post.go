@@ -2,8 +2,13 @@ package service
 
 import (
 	"errors"
+	"html"
 	"math"
+	"strings"
 
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/text"
 	"gorm.io/gorm"
 	"vblog-core/model"
 )
@@ -31,11 +36,37 @@ func CalcReadTime(content string) int {
 	return minutes
 }
 
-// BuildExcerpt truncates content to maxLen runes with "..." suffix.
+// BuildExcerpt extracts prose from Markdown and truncates by Unicode characters.
 func BuildExcerpt(content string, maxLen int) string {
-	runes := []rune(content)
+	source := []byte(content)
+	var prose strings.Builder
+	root := goldmark.DefaultParser().Parse(text.NewReader(source))
+	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if node.Kind() == ast.KindFencedCodeBlock || node.Kind() == ast.KindCodeBlock {
+			return ast.WalkSkipChildren, nil
+		}
+		if entering {
+			switch n := node.(type) {
+			case *ast.Text:
+				prose.Write(n.Value(source))
+				if n.SoftLineBreak() || n.HardLineBreak() {
+					prose.WriteByte(' ')
+				}
+			case *ast.String:
+				prose.Write(n.Value)
+			}
+		} else if node.Type() == ast.TypeBlock {
+			prose.WriteByte(' ')
+		}
+		return ast.WalkContinue, nil
+	})
+	plain := strings.Join(strings.Fields(html.UnescapeString(prose.String())), " ")
+	runes := []rune(plain)
+	if maxLen < 0 {
+		maxLen = 0
+	}
 	if len(runes) <= maxLen {
-		return content
+		return plain
 	}
 	return string(runes[:maxLen]) + "..."
 }
@@ -66,8 +97,17 @@ func (s *PostService) List(page, perPage int, tag, status, search string) ([]mod
 
 // GetByID returns a single post by ID with tags preloaded and increments view count.
 func (s *PostService) GetByID(id uint) (*model.Post, error) {
+	return s.GetByIDForReader(id, false)
+}
+
+// GetByIDForReader excludes drafts before incrementing views for public requests.
+func (s *PostService) GetByIDForReader(id uint, publishedOnly bool) (*model.Post, error) {
 	var post model.Post
-	err := s.DB.Preload("Tags").First(&post, id).Error
+	query := s.DB.Preload("Tags")
+	if publishedOnly {
+		query = query.Where("status = ?", "published")
+	}
+	err := query.First(&post, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrNotFound
 	}
@@ -162,6 +202,9 @@ func (s *PostService) Create(post *model.Post) error {
 // Update updates an existing post, recalculating read time and syncing tags.
 func (s *PostService) Update(post *model.Post) error {
 	post.ReadTime = CalcReadTime(post.Content)
+	if post.Excerpt == "" {
+		post.Excerpt = BuildExcerpt(post.Content, 200)
+	}
 	// Save tags separately to control join table sync.
 	tags := post.Tags
 	post.Tags = nil

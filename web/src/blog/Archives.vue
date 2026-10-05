@@ -23,7 +23,7 @@
           <span class="archive-date">{{ formatDay(post.created_at) }}</span>
           <div class="archive-content">
             <div class="archive-title">{{ post.title }}</div>
-            <div class="archive-excerpt">{{ post.excerpt }}</div>
+            <div class="archive-excerpt">{{ plainExcerpt(post.excerpt || post.content) }}</div>
             <div class="archive-tags">
               <span
                 v-for="tag in (post.tags || [])"
@@ -59,6 +59,7 @@
 </template>
 
 <script setup>
+import { plainExcerpt } from '../utils/markdown'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '../api/request'
 import { formatDay } from '../utils/format'

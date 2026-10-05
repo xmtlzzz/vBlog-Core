@@ -204,9 +204,25 @@ vblog-d1/
 │   ├── src/util.js          # 零依赖工具：JWT / PBKDF2 / 日期
 │   ├── migrations/0001_init.sql   # D1 schema
 │   ├── wrangler.toml        # Worker/Assets/D1/KV/R2 配置
-│   ├── package.json         # 本地 wrangler 依赖（devDependency）
+│   ├── package.json         # Wrangler 与 Markdown 摘要依赖
 │   └── .dev.vars            # 本地开发密钥（gitignore）
 ├── deploy.ps1               # 一键构建 + 部署
 ├── backup.ps1               # 一键备份远程 D1
 └── README.md
 ```
+
+## 本地回归检查
+
+两套前端分别在 `web/` 和 `../web/` 运行 `npm test`、`npm run build`。Worker 在 `worker/` 运行 `npm test`。
+
+运行完整 D1 回归时，在 `worker/` 依次执行下面命令；测试配置只使用本地数据库，不连接生产绑定。第二个终端执行最后一行，检查公开文章、登录后草稿访问、保留正文与标签的草稿转换，以及服务端分享元信息。
+
+```powershell
+npx wrangler d1 execute DB --local --config tests/wrangler.toml --persist-to .wrangler/ui-tests --file migrations/0001_init.sql
+npx wrangler d1 execute DB --local --config tests/wrangler.toml --persist-to .wrangler/ui-tests --file tests/fixtures.sql
+npx wrangler dev --local --config tests/wrangler.toml --persist-to .wrangler/ui-tests --port 8787
+# 另一个终端（仍在 worker/）
+npm run test:runtime
+```
+
+预览使用 `tests/fixtures.sql` 中的演示文章。线上测试文章可在后台「全部文章」转为草稿，并可通过编辑页重新发布；程序不按文件名或标题自动过滤文章。

@@ -408,7 +408,11 @@ async function listPosts(env, url, authenticated = false) {
     binds.push(tag);
   }
   if (status) { where.push('p.status = ?'); binds.push(status); }
-  if (search) { where.push('p.title LIKE ?'); binds.push('%' + search + '%'); }
+  if (search) {
+    where.push('(p.title LIKE ? OR p.excerpt LIKE ? OR p.content LIKE ?)');
+    const kw = '%' + search + '%';
+    binds.push(kw, kw, kw);
+  }
   const whereSql = 'WHERE ' + where.join(' AND ');
 
   const total = await env.DB.prepare(`SELECT COUNT(DISTINCT p.id) AS n FROM posts p ${join} ${whereSql}`).bind(...binds).first();

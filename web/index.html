@@ -8,6 +8,21 @@
     <meta name="description" content="记录开发、技术与日常。" />
     <meta property="og:title" content="vBlog" />
     <meta property="og:description" content="记录开发、技术与日常。" />
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('vblog-theme');
+          var isDark = t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

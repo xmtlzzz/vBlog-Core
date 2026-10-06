@@ -42,10 +42,13 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* ── Global smooth transitions for theme switching ── */
+/* ── Box sizing & scoped smooth transitions for theme switching ── */
 *, *::before, *::after {
   box-sizing: border-box;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body, .top, .article-body, .post-card, .search-box, .sidebar, .admin-layout, .nav-links a, .theme-toggle, .btn {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
 
 /* ── Fade in ── */

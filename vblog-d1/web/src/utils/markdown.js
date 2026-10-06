@@ -23,13 +23,21 @@ export function plainExcerpt(source = '', limit = 200) {
 
 // Token maps identify real headings; fenced code is never rewritten.
 export function articleMarkdown(source = '') {
+  if (!source) return ''
   const lines = source.split('\n')
   const tokens = markdown.parse(source, {})
-  const headings = tokens.flatMap((token, index) => token.type === 'heading_open' ? [{ token, text: tokens[index + 1].content }] : [])
+  const headings = tokens.flatMap((token, index) =>
+    token.type === 'heading_open' && token.map && tokens[index + 1]
+      ? [{ token, text: tokens[index + 1].content }]
+      : []
+  )
   for (const { token, text } of headings.reverse()) {
+    if (!token.map) continue
     const [start, end] = token.map
+    if (start >= lines.length) continue
     const level = Math.min(Number(token.tag.slice(1)) + 1, 6)
-    const prefix = lines[start].match(/^([ \t]*(?:(?:>[ \t]*|(?:[-+*]|\d+[.)])[ \t]+)[ \t]*)*)/)[1]
+    const match = lines[start].match(/^([ \t]*(?:(?:>[ \t]*|(?:[-+*]|\d+[.)])[ \t]+)[ \t]*)*)/)
+    const prefix = match ? match[1] : ''
     lines.splice(start, end - start, `${prefix}${'#'.repeat(level)} ${text}`)
   }
   return lines.join('\n')

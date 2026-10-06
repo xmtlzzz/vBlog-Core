@@ -81,7 +81,8 @@ func (s *PostService) List(page, perPage int, tag, status, search string) ([]mod
 		q = q.Where("status = ?", status)
 	}
 	if search != "" {
-		q = q.Where("title ILIKE ?", "%"+search+"%")
+		keyword := "%" + search + "%"
+		q = q.Where("title ILIKE ? OR excerpt ILIKE ? OR content ILIKE ?", keyword, keyword, keyword)
 	}
 	if tag != "" {
 		q = q.Joins("JOIN post_tags ON post_tags.post_id = posts.id").

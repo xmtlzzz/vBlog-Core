@@ -40,9 +40,15 @@ const route = useRoute()
 const themeStore = useThemeStore()
 const menuOpen = ref(false)
 watch(() => route.fullPath, () => { menuOpen.value = false })
-function closeOnEscape(event) { if (event.key === 'Escape') menuOpen.value = false }
-onMounted(() => window.addEventListener('keydown', closeOnEscape))
-onUnmounted(() => window.removeEventListener('keydown', closeOnEscape))
+function onGlobalKeydown(event) {
+  if (event.key === 'Escape') menuOpen.value = false
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    handleSearch()
+  }
+}
+onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onGlobalKeydown))
 
 function handleSearch() {
   menuOpen.value = false

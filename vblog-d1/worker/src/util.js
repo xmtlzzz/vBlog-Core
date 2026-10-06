@@ -92,10 +92,19 @@ export async function checkPassword(hash, password) {
 // ── HTTP 响应工具 ─────────────────────────────────────────────────
 // opts 可传 ResponseInit 扩展字段，如 { cf: { cacheTtl: 60 } } 做边缘缓存
 export function json(data, status = 200, opts = {}) {
+  const headers = Object.assign(
+    { 'Content-Type': 'application/json; charset=utf-8' },
+    opts.headers || {}
+  );
+  const cacheTtl = opts.cf?.cacheTtl || opts.cacheTtl;
+  if (cacheTtl && !headers['Cache-Control']) {
+    headers['Cache-Control'] = `public, max-age=5, s-maxage=${cacheTtl}, stale-while-revalidate=60`;
+  }
+  const { cf, ...restOpts } = opts;
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    ...opts,
+    headers,
+    ...restOpts,
   });
 }
 

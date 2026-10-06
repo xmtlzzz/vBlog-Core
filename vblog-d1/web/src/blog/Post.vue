@@ -1,77 +1,78 @@
 <template>
   <BlogNav />
   <div class="post-layout fade-in" v-if="post">
-    <nav class="toc" v-if="tocItems.length">
+    <article class="article">
+      <router-link to="/" class="back-link">← 返回首页</router-link>
+
+      <header class="article-header">
+        <div class="article-meta">
+          <span
+            v-for="tag in (post.tags || [])"
+            :key="tag.id || tag.name || tag"
+            class="tag"
+          >{{ tag.name || tag }}</span>
+          <span>{{ formatDate(post.created_at) }}</span>
+          <span>{{ post.read_time || 0 }} min</span>
+          <span>{{ (post.views || 0).toLocaleString() }} views</span>
+        </div>
+        <h1 class="article-title">{{ post.title }}</h1>
+        <p class="article-deck" v-if="post.excerpt">{{ plainExcerpt(post.excerpt) }}</p>
+      </header>
+
+      <div class="article-author">
+        <div class="author-avatar">{{ authorName[0] }}</div>
+        <div>
+          <div class="author-name">{{ authorName }}</div>
+          <div v-if="settings.author_bio" class="author-role">{{ settings.author_bio }}</div>
+        </div>
+      </div>
+
+      <div class="article-body">
+        <MdPreview
+          :editorId="editorId"
+          :modelValue="articleMarkdown(post.content || '')"
+          :theme="editorTheme"
+          language="zh-CN"
+          :previewTheme="'github'"
+          :codeTheme="'atom'"
+          :showCodeRowNumber="true"
+          @onGetCatalog="onGetCatalog"
+        />
+      </div>
+
+      <footer class="article-footer">
+        <div class="footer-tags">
+          <span
+            v-for="tag in (post.tags || [])"
+            :key="tag.id || tag.name || tag"
+            class="tag"
+          >{{ tag.name || tag }}</span>
+        </div>
+      </footer>
+
+      <nav class="post-nav" v-if="prevPost || nextPost">
+        <router-link v-if="prevPost" :to="'/post/' + prevPost.id" class="post-nav-item prev">
+          <div class="post-nav-label">← 上一篇 Previous</div>
+          <div class="post-nav-title">{{ prevPost.title }}</div>
+        </router-link>
+        <router-link v-if="nextPost" :to="'/post/' + nextPost.id" class="post-nav-item next">
+          <div class="post-nav-label">下一篇 Next →</div>
+          <div class="post-nav-title">{{ nextPost.title }}</div>
+        </router-link>
+      </nav>
+
+      <CommentSection :post-id="route.params.id" />
+    </article>
+
+    <aside class="toc" v-if="tocItems.length">
       <div class="toc-title">目录 Contents</div>
       <MdCatalog
         :editorId="editorId"
         :theme="editorTheme"
         :scrollElement="scrollElement"
+        :offsetTop="80"
       />
-    </nav>
-
-    <article class="article">
-    <router-link to="/" class="back-link">← 返回首页</router-link>
-
-    <header class="article-header">
-      <div class="article-meta">
-        <span
-          v-for="tag in (post.tags || [])"
-          :key="tag.id || tag.name || tag"
-          class="tag"
-        >{{ tag.name || tag }}</span>
-        <span>{{ formatDate(post.created_at) }}</span>
-        <span>{{ post.read_time || 0 }} min</span>
-        <span>{{ (post.views || 0).toLocaleString() }} views</span>
-      </div>
-      <h1 class="article-title">{{ post.title }}</h1>
-      <p class="article-deck" v-if="post.excerpt">{{ plainExcerpt(post.excerpt) }}</p>
-    </header>
-
-    <div class="article-author">
-      <div class="author-avatar">{{ authorName[0] }}</div>
-      <div>
-        <div class="author-name">{{ authorName }}</div>
-        <div v-if="settings.author_bio" class="author-role">{{ settings.author_bio }}</div>
-      </div>
-    </div>
-
-    <div class="article-body">
-      <MdPreview
-        :editorId="editorId"
-        :modelValue="articleMarkdown(post.content || '')"
-        :theme="editorTheme"
-        language="zh-CN"
-        :previewTheme="'github'"
-        :codeTheme="'atom'"
-        :showCodeRowNumber="true"
-        @onGetCatalog="onGetCatalog"
-      />
-    </div>
-
-    <footer class="article-footer">
-      <div class="footer-tags">
-        <span
-          v-for="tag in (post.tags || [])"
-          :key="tag.id || tag.name || tag"
-          class="tag"
-        >{{ tag.name || tag }}</span>
-      </div>
-    </footer>
-
-    <nav class="post-nav" v-if="prevPost || nextPost">
-      <router-link v-if="prevPost" :to="'/post/' + prevPost.id" class="post-nav-item prev">
-        <div class="post-nav-label">← 上一篇 Previous</div>
-        <div class="post-nav-title">{{ prevPost.title }}</div>
-      </router-link>
-      <router-link v-if="nextPost" :to="'/post/' + nextPost.id" class="post-nav-item next">
-        <div class="post-nav-label">下一篇 Next →</div>
-        <div class="post-nav-title">{{ nextPost.title }}</div>
-      </router-link>
-    </nav>
-
-    <CommentSection :post-id="route.params.id" />
-    </article>
+    </aside>
   </div>
 
   <article class="article not-found" v-else-if="loaded">
@@ -136,12 +137,12 @@ function onGetCatalog(list) {
 
 async function fetchAdjacentPosts() {
   try {
-    const res = await api.get('/posts', { params: { page: 1, per_page: 100, status: 'published' } })
+    const res = await api.get('/posts', { params: { page: 1, per_page: 50, status: 'published' } })
     const allPosts = res.data || []
     const currentId = Number(route.params.id)
     const idx = allPosts.findIndex(p => p.id === currentId)
-    if (idx > 0) prevPost.value = allPosts[idx - 1]
-    if (idx >= 0 && idx < allPosts.length - 1) nextPost.value = allPosts[idx + 1]
+    if (idx >= 0 && idx < allPosts.length - 1) prevPost.value = allPosts[idx + 1]
+    if (idx > 0) nextPost.value = allPosts[idx - 1]
   } catch {
     // silently fail
   }
@@ -199,7 +200,8 @@ onUnmounted(() => {
   padding: 64px 24px 80px;
 }
 .article {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: normal;
   max-width: 720px;
   min-width: 0;
   flex: 1;
@@ -287,7 +289,7 @@ onUnmounted(() => {
 }
 .toc {
   display: none;
-  width: 220px;
+  width: 240px;
   flex-shrink: 0;
   position: sticky;
   top: 80px;
@@ -337,6 +339,11 @@ onUnmounted(() => {
   padding: 0;
   font-family: var(--font-sans);
   color: var(--fg);
+}
+.article-body :deep(code),
+.article-body :deep(pre),
+.article-body :deep(.md-editor-code) {
+  font-family: var(--font-mono) !important;
 }
 .article-body :deep(.md-editor-code) {
   border-radius: 8px;

@@ -58,9 +58,11 @@
         </div>
         <div class="topbar-right">
           <router-link to="/" class="view-blog-link">← 查看博客 View Blog</router-link>
-          <button class="theme-toggle" @click="themeStore.toggle()">
-            {{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}
-          </button>
+          <ThemeToggleAnimated
+            :is-dark="themeStore.theme === 'dark'"
+            size="sm"
+            @toggle="themeStore.toggle()"
+          />
         </div>
       </header>
       <main class="content">
@@ -77,6 +79,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
+import ThemeToggleAnimated from '../shared/ThemeToggleAnimated.vue'
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
 const route = useRoute()

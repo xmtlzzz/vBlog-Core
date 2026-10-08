@@ -18,10 +18,11 @@
           </svg>
         </button>
         <router-link to="/admin" class="admin-btn">后台 Admin</router-link>
-        <button class="theme-toggle" @click="themeStore.toggle()" aria-label="切换主题">
-          <span v-if="themeStore.theme === 'dark'">☀</span>
-          <span v-else>☾</span>
-        </button>
+        <ThemeToggleAnimated
+          :is-dark="themeStore.theme === 'dark'"
+          size="sm"
+          @toggle="themeStore.toggle()"
+        />
         <button class="menu-toggle" :aria-expanded="menuOpen" aria-controls="blog-navigation" :aria-label="menuOpen ? '收起导航' : '展开导航'" @click="menuOpen = !menuOpen">
           {{ menuOpen ? '关闭' : '菜单' }}
         </button>
@@ -45,6 +46,7 @@ import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import SearchModal from './SearchModal.vue'
+import ThemeToggleAnimated from './ThemeToggleAnimated.vue'
 
 const route = useRoute()
 const themeStore = useThemeStore()

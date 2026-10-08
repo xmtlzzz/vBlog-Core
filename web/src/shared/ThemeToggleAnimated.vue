@@ -1,0 +1,508 @@
+<template>
+  <button
+    role="switch"
+    type="button"
+    :aria-checked="isDark"
+    :aria-label="isDark ? '切换至日间模式' : '切换至夜间模式'"
+    class="theme-toggle-animated"
+    :class="[
+      `size-${size}`,
+      { 'is-dark': isDark }
+    ]"
+    @click="$emit('toggle')"
+    @keydown.enter.prevent="$emit('toggle')"
+    @keydown.space.prevent="$emit('toggle')"
+  >
+    <!-- Sky Pill Outer Background -->
+    <div class="toggle-pill-sky">
+      <!-- DAY ATMOSPHERE: Sun Corona Rings -->
+      <div class="day-atmosphere" aria-hidden="true">
+        <div class="corona-ring ring-1" />
+        <div class="corona-ring ring-2" />
+        <div class="corona-ring ring-3" />
+      </div>
+
+      <!-- NIGHT ATMOSPHERE: Starfield & Twinkles -->
+      <div class="night-atmosphere" aria-hidden="true">
+        <!-- 4-point sparkle star 1 -->
+        <svg class="sparkle-star star-1" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C12 6.627 6.627 12 0 12C6.627 12 12 17.373 12 24C12 17.373 17.373 12 24 12C17.373 12 12 6.627 12 0Z" />
+        </svg>
+        <!-- 4-point sparkle star 2 -->
+        <svg class="sparkle-star star-2" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C12 6.627 6.627 12 0 12C6.627 12 12 17.373 12 24C12 17.373 17.373 12 24 12C17.373 12 12 6.627 12 0Z" />
+        </svg>
+        <!-- Twinkling dot stars -->
+        <span class="star-dot dot-1" />
+        <span class="star-dot dot-2" />
+        <span class="star-dot dot-3" />
+      </div>
+
+      <!-- DAY CLOUDS: Layered Puffy Cumulus -->
+      <div class="day-clouds" aria-hidden="true">
+        <div class="cloud-back" />
+        <div class="cloud-front">
+          <span class="cloud-puff puff-base" />
+          <span class="cloud-puff puff-1" />
+          <span class="cloud-puff puff-2" />
+          <span class="cloud-puff puff-3" />
+        </div>
+      </div>
+
+      <!-- THE SLIDING KNOB (Sun & Moon) -->
+      <div class="sliding-knob">
+        <!-- Sun Body -->
+        <div class="knob-sun" aria-hidden="true">
+          <div class="sun-glare" />
+        </div>
+
+        <!-- Moon Body with 3 Craters -->
+        <div class="knob-moon" aria-hidden="true">
+          <span class="crater crater-1" />
+          <span class="crater crater-2" />
+          <span class="crater crater-3" />
+          <span class="moon-glare" />
+        </div>
+      </div>
+    </div>
+  </button>
+</template>
+
+<script setup lang="ts">
+withDefaults(
+  defineProps<{
+    isDark: boolean
+    size?: 'xs' | 'sm' | 'md'
+  }>(),
+  {
+    size: 'sm'
+  }
+)
+
+defineEmits<{
+  (e: 'toggle'): void
+}>()
+</script>
+
+<style scoped>
+.theme-toggle-animated {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 9999px;
+  outline: none;
+  flex-shrink: 0;
+  vertical-align: middle;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-animated:hover {
+  transform: scale(1.04);
+}
+
+.theme-toggle-animated:active {
+  transform: scale(0.96);
+}
+
+.theme-toggle-animated:focus-visible {
+  outline: 2px solid var(--accent, #38bdf8);
+  outline-offset: 2px;
+}
+
+/* ========================================================= */
+/* SIZE PRESETS                                              */
+/* ========================================================= */
+.size-xs {
+  --toggle-w: 48px;
+  --toggle-h: 24px;
+  --knob-size: 18px;
+  --knob-pad: 3px;
+  --travel-x: 24px;
+  --cloud-scale: 0.45;
+}
+
+.size-sm {
+  --toggle-w: 54px;
+  --toggle-h: 26px;
+  --knob-size: 20px;
+  --knob-pad: 3px;
+  --travel-x: 28px;
+  --cloud-scale: 0.52;
+}
+
+.size-md {
+  --toggle-w: 66px;
+  --toggle-h: 32px;
+  --knob-size: 24px;
+  --knob-pad: 4px;
+  --travel-x: 34px;
+  --cloud-scale: 0.65;
+}
+
+/* ========================================================= */
+/* PILL CONTAINER                                            */
+/* ========================================================= */
+.toggle-pill-sky {
+  position: relative;
+  width: var(--toggle-w);
+  height: var(--toggle-h);
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  background: linear-gradient(180deg, #38bdf8 0%, #60a5fa 55%, #93c5fd 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.16),
+    inset 0 -2px 4px rgba(255, 255, 255, 0.6),
+    0 4px 12px -2px rgba(56, 189, 248, 0.35);
+  transition:
+    background 0.4s ease,
+    border-color 0.4s ease,
+    box-shadow 0.4s ease;
+}
+
+.is-dark .toggle-pill-sky {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(180deg, #090e1a 0%, #111a2e 45%, #1e1b4b 100%);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.55),
+    inset 0 -1.5px 3px rgba(255, 255, 255, 0.12),
+    0 4px 14px -2px rgba(15, 23, 42, 0.5);
+}
+
+/* ========================================================= */
+/* DAY ATMOSPHERE (CORONA RINGS)                             */
+/* ========================================================= */
+.day-atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.is-dark .day-atmosphere {
+  opacity: 0;
+  transform: scale(0.75);
+}
+
+.corona-ring {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.ring-1 {
+  width: calc(var(--knob-size) * 1.5);
+  height: calc(var(--knob-size) * 1.5);
+  left: calc(var(--knob-pad) - (var(--knob-size) * 0.5) / 2);
+  top: calc(var(--knob-pad) - (var(--knob-size) * 0.5) / 2);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ring-2 {
+  width: calc(var(--knob-size) * 2.1);
+  height: calc(var(--knob-size) * 2.1);
+  left: calc(var(--knob-pad) - (var(--knob-size) * 1.1) / 2);
+  top: calc(var(--knob-pad) - (var(--knob-size) * 1.1) / 2);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.ring-3 {
+  width: calc(var(--knob-size) * 2.7);
+  height: calc(var(--knob-size) * 2.7);
+  left: calc(var(--knob-pad) - (var(--knob-size) * 1.7) / 2);
+  top: calc(var(--knob-pad) - (var(--knob-size) * 1.7) / 2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ========================================================= */
+/* NIGHT ATMOSPHERE (STARS & TWINKLES)                       */
+/* ========================================================= */
+.night-atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.7);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.is-dark .night-atmosphere {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.sparkle-star {
+  position: absolute;
+  color: #fef08a;
+  animation: starTwinkle 2.2s infinite ease-in-out;
+}
+
+.star-1 {
+  width: 9px;
+  height: 9px;
+  top: 18%;
+  left: 14%;
+  color: #fffbeb;
+  animation-duration: 2s;
+}
+
+.star-2 {
+  width: 7px;
+  height: 7px;
+  top: 48%;
+  left: 32%;
+  color: #e0f2fe;
+  animation-duration: 2.6s;
+  animation-delay: 0.7s;
+}
+
+.star-dot {
+  position: absolute;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 0 3px #ffffff;
+  animation: dotTwinkle 1.9s infinite ease-in-out;
+}
+
+.dot-1 {
+  width: 2px;
+  height: 2px;
+  top: 24%;
+  left: 44%;
+  animation-delay: 0.3s;
+}
+
+.dot-2 {
+  width: 2px;
+  height: 2px;
+  top: 60%;
+  left: 18%;
+  background: #fde68a;
+  animation-delay: 1.1s;
+}
+
+.dot-3 {
+  width: 1.5px;
+  height: 1.5px;
+  top: 68%;
+  left: 48%;
+  animation-delay: 0.8s;
+}
+
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@keyframes dotTwinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+/* ========================================================= */
+/* DAY CLOUDS                                                */
+/* ========================================================= */
+.day-clouds {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  pointer-events: none;
+  transform-origin: bottom right;
+  transform: scale(var(--cloud-scale));
+  opacity: 1;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.is-dark .day-clouds {
+  transform: scale(calc(var(--cloud-scale) * 0.75)) translateY(32px) translateX(12px);
+  opacity: 0;
+}
+
+.cloud-back {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  width: 24px;
+  height: 14px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.cloud-front {
+  position: relative;
+  filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.12));
+}
+
+.cloud-puff {
+  position: absolute;
+  border-radius: 9999px;
+  background: #ffffff;
+}
+
+.puff-base {
+  right: 0;
+  bottom: 0;
+  width: 38px;
+  height: 15px;
+}
+
+.puff-1 {
+  right: 22px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+}
+
+.puff-2 {
+  right: 10px;
+  bottom: 5px;
+  width: 20px;
+  height: 20px;
+}
+
+.puff-3 {
+  right: 0;
+  bottom: 3px;
+  width: 14px;
+  height: 14px;
+}
+
+/* ========================================================= */
+/* THE SLIDING KNOB                                          */
+/* ========================================================= */
+.sliding-knob {
+  position: absolute;
+  top: var(--knob-pad);
+  left: var(--knob-pad);
+  width: var(--knob-size);
+  height: var(--knob-size);
+  border-radius: 9999px;
+  z-index: 2;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.is-dark .sliding-knob {
+  transform: translateX(var(--travel-x)) rotate(360deg);
+}
+
+/* ========================================================= */
+/* SUN KNOB                                                  */
+/* ========================================================= */
+.knob-sun {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, #fffde7 0%, #ffeb3b 35%, #f59e0b 75%, #d97706 100%);
+  box-shadow:
+    0 0 12px rgba(245, 158, 11, 0.7),
+    0 0 22px rgba(251, 191, 36, 0.4),
+    inset -1.5px -1.5px 3px rgba(180, 83, 9, 0.45),
+    inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.9);
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.is-dark .knob-sun {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+.sun-glare {
+  position: absolute;
+  top: 15%;
+  left: 20%;
+  width: 25%;
+  height: 25%;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.75);
+  filter: blur(0.5px);
+}
+
+/* ========================================================= */
+/* MOON KNOB & CRATERS                                       */
+/* ========================================================= */
+.knob-moon {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 40%, #cbd5e1 75%, #94a3b8 100%);
+  box-shadow:
+    0 0 12px rgba(186, 215, 255, 0.45),
+    0 0 20px rgba(147, 197, 253, 0.25),
+    inset -1.5px -1.5px 3px rgba(71, 85, 105, 0.4),
+    inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.is-dark .knob-moon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.crater {
+  position: absolute;
+  border-radius: 9999px;
+  background: #94a3b8;
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.25s ease 0.08s, opacity 0.25s ease 0.08s;
+}
+
+.is-dark .crater {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.crater-1 {
+  width: 26%;
+  height: 26%;
+  top: 20%;
+  right: 20%;
+  box-shadow:
+    inset 1px 1px 1.5px rgba(15, 23, 42, 0.6),
+    0 0.8px 0.8px rgba(255, 255, 255, 0.45);
+}
+
+.crater-2 {
+  width: 18%;
+  height: 18%;
+  bottom: 22%;
+  right: 32%;
+  box-shadow:
+    inset 0.8px 0.8px 1.2px rgba(15, 23, 42, 0.55),
+    0 0.6px 0.6px rgba(255, 255, 255, 0.4);
+}
+
+.crater-3 {
+  width: 14%;
+  height: 14%;
+  bottom: 34%;
+  left: 24%;
+  box-shadow:
+    inset 0.6px 0.6px 1px rgba(15, 23, 42, 0.55),
+    0 0.5px 0.5px rgba(255, 255, 255, 0.35);
+}
+
+.moon-glare {
+  position: absolute;
+  top: 12%;
+  left: 18%;
+  width: 20%;
+  height: 20%;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.85);
+  filter: blur(0.5px);
+}
+</style>

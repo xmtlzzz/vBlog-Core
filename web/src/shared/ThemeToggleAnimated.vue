@@ -15,11 +15,17 @@
   >
     <!-- Sky Pill Outer Background -->
     <div class="toggle-pill-sky">
-      <!-- DAY ATMOSPHERE: Sun Corona Rings -->
+      <!-- DAY ATMOSPHERE: Sun Corona Rings & Sun Glints -->
       <div class="day-atmosphere" aria-hidden="true">
         <div class="corona-ring ring-1" />
         <div class="corona-ring ring-2" />
         <div class="corona-ring ring-3" />
+        <!-- Daytime sun glint & shimmer dots -->
+        <svg class="sun-glint glint-1" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C12 6.627 6.627 12 0 12C6.627 12 12 17.373 12 24C12 17.373 17.373 12 24 12C17.373 12 12 6.627 12 0Z" />
+        </svg>
+        <span class="sun-dot dot-day-1" />
+        <span class="sun-dot dot-day-2" />
       </div>
 
       <!-- NIGHT ATMOSPHERE: Starfield & Twinkles -->
@@ -195,6 +201,7 @@ defineEmits<{
   position: absolute;
   border-radius: 9999px;
   pointer-events: none;
+  transform-origin: center;
 }
 
 .ring-1 {
@@ -202,8 +209,9 @@ defineEmits<{
   height: calc(var(--knob-size) * 1.5);
   left: calc(var(--knob-pad) - (var(--knob-size) * 0.5) / 2);
   top: calc(var(--knob-pad) - (var(--knob-size) * 0.5) / 2);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.08);
+  animation: coronaPulse1 3.2s infinite ease-in-out;
 }
 
 .ring-2 {
@@ -211,7 +219,8 @@ defineEmits<{
   height: calc(var(--knob-size) * 2.1);
   left: calc(var(--knob-pad) - (var(--knob-size) * 1.1) / 2);
   top: calc(var(--knob-pad) - (var(--knob-size) * 1.1) / 2);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  animation: coronaPulse2 4s infinite ease-in-out 0.6s;
 }
 
 .ring-3 {
@@ -219,7 +228,84 @@ defineEmits<{
   height: calc(var(--knob-size) * 2.7);
   left: calc(var(--knob-pad) - (var(--knob-size) * 1.7) / 2);
   top: calc(var(--knob-pad) - (var(--knob-size) * 1.7) / 2);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: coronaPulse3 4.8s infinite ease-in-out 1.2s;
+}
+
+.sun-glint {
+  position: absolute;
+  color: #fffde7;
+  pointer-events: none;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+  animation: sunGlintTwinkle 2.8s infinite ease-in-out;
+}
+
+.glint-1 {
+  width: 7px;
+  height: 7px;
+  top: 18%;
+  left: 44%;
+}
+
+.size-xs .glint-1 {
+  width: 5px;
+  height: 5px;
+}
+
+.size-md .glint-1 {
+  width: 9px;
+  height: 9px;
+}
+
+.sun-dot {
+  position: absolute;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 0 3px rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  animation: sunDotTwinkle 2.4s infinite ease-in-out;
+}
+
+.dot-day-1 {
+  width: 2px;
+  height: 2px;
+  top: 56%;
+  left: 36%;
+  background: #fef08a;
+  animation-delay: 0.5s;
+}
+
+.dot-day-2 {
+  width: 1.5px;
+  height: 1.5px;
+  top: 28%;
+  left: 32%;
+  animation-delay: 1.2s;
+}
+
+@keyframes coronaPulse1 {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes coronaPulse2 {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.85; }
+}
+
+@keyframes coronaPulse3 {
+  0%, 100% { transform: scale(1); opacity: 0.35; }
+  50% { transform: scale(1.12); opacity: 0.7; }
+}
+
+@keyframes sunGlintTwinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.8) rotate(0deg); }
+  50% { opacity: 0.95; transform: scale(1.15) rotate(45deg); }
+}
+
+@keyframes sunDotTwinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.85); }
+  50% { opacity: 0.85; transform: scale(1.15); }
 }
 
 /* ========================================================= */
@@ -334,11 +420,31 @@ defineEmits<{
   height: 14px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.65);
+  animation: cloudFloatBack 4.8s infinite ease-in-out;
 }
 
 .cloud-front {
   position: relative;
   filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.12));
+  animation: cloudFloatFront 3.6s infinite ease-in-out;
+}
+
+@keyframes cloudFloatFront {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-1.2px, -2px);
+  }
+}
+
+@keyframes cloudFloatBack {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(1.5px, -1px);
+  }
 }
 
 .cloud-puff {
@@ -409,11 +515,13 @@ defineEmits<{
   opacity: 1;
   transform: scale(1);
   transition: opacity 0.3s ease, transform 0.3s ease;
+  animation: sunRadiance 3.2s infinite ease-in-out;
 }
 
 .is-dark .knob-sun {
   opacity: 0;
   transform: scale(0.7);
+  animation: none;
 }
 
 .sun-glare {
@@ -425,6 +533,39 @@ defineEmits<{
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.75);
   filter: blur(0.5px);
+  animation: sunGlareShimmer 2.8s infinite ease-in-out;
+}
+
+.is-dark .sun-glare {
+  animation: none;
+}
+
+@keyframes sunRadiance {
+  0%, 100% {
+    box-shadow:
+      0 0 12px rgba(245, 158, 11, 0.7),
+      0 0 22px rgba(251, 191, 36, 0.4),
+      inset -1.5px -1.5px 3px rgba(180, 83, 9, 0.45),
+      inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.9);
+  }
+  50% {
+    box-shadow:
+      0 0 16px rgba(245, 158, 11, 0.85),
+      0 0 28px rgba(251, 191, 36, 0.6),
+      inset -1.5px -1.5px 3px rgba(180, 83, 9, 0.45),
+      inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.9);
+  }
+}
+
+@keyframes sunGlareShimmer {
+  0%, 100% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.12);
+  }
 }
 
 /* ========================================================= */
@@ -504,5 +645,33 @@ defineEmits<{
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.85);
   filter: blur(0.5px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-animated,
+  .sliding-knob,
+  .toggle-pill-sky,
+  .day-atmosphere,
+  .night-atmosphere,
+  .day-clouds,
+  .knob-sun,
+  .knob-moon,
+  .crater {
+    transition: none !important;
+  }
+
+  .ring-1,
+  .ring-2,
+  .ring-3,
+  .sun-glint,
+  .sun-dot,
+  .sparkle-star,
+  .star-dot,
+  .cloud-back,
+  .cloud-front,
+  .knob-sun,
+  .sun-glare {
+    animation: none !important;
+  }
 }
 </style>

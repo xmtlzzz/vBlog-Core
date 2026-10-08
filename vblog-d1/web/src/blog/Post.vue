@@ -36,7 +36,6 @@
           </button>
         </div>
         <h1 class="article-title">{{ post.title }}</h1>
-        <p class="article-deck" v-if="post.excerpt">{{ plainExcerpt(post.excerpt) }}</p>
       </header>
 
       <div class="article-author">
@@ -188,7 +187,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
-import { plainExcerpt, articleMarkdown } from '../utils/markdown'
+import { articleMarkdown } from '../utils/markdown'
 import { updateMetadata } from '../utils/metadata'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
@@ -439,12 +438,7 @@ onUnmounted(() => {
   letter-spacing: -0.03em;
   line-height: 1.15;
   color: var(--fg);
-  margin-bottom: 16px;
-}
-.article-deck {
-  font-size: 17px;
-  color: var(--muted);
-  line-height: 1.6;
+  margin-bottom: 0;
 }
 .article-author {
   display: flex;

@@ -28,18 +28,31 @@
       </div>
     </div>
   </nav>
+
+  <!-- 移动端抽屉遮罩 -->
+  <Teleport to="body">
+    <Transition name="fade">
+      <div v-if="menuOpen" class="mobile-nav-scrim" @click="menuOpen = false" />
+    </Transition>
+  </Teleport>
+
+  <!-- 全局原地 Command Palette 弹窗 -->
+  <SearchModal v-model="searchModalOpen" />
 </template>
 
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
+import SearchModal from './SearchModal.vue'
 
-const router = useRouter()
 const route = useRoute()
 const themeStore = useThemeStore()
 const menuOpen = ref(false)
+const searchModalOpen = ref(false)
+
 watch(() => route.fullPath, () => { menuOpen.value = false })
+
 function onGlobalKeydown(event) {
   if (event.key === 'Escape') menuOpen.value = false
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
@@ -47,16 +60,24 @@ function onGlobalKeydown(event) {
     handleSearch()
   }
 }
-onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onGlobalKeydown))
+
+function onOpenSearchEvent() {
+  searchModalOpen.value = true
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onGlobalKeydown)
+  window.addEventListener('vblog-open-search', onOpenSearchEvent)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('vblog-open-search', onOpenSearchEvent)
+})
 
 function handleSearch() {
   menuOpen.value = false
-  if (route.path === '/') {
-    window.dispatchEvent(new CustomEvent('vblog-open-search'))
-  } else {
-    router.push({ path: '/', query: { search: 'open' } })
-  }
+  searchModalOpen.value = true
 }
 </script>
 
@@ -229,5 +250,14 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
     padding: 6px 10px;
     font-size: 13px;
   }
+}
+
+.mobile-nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 </style>

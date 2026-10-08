@@ -1,4 +1,9 @@
 <template>
+  <div
+    class="reading-progress-bar"
+    :style="{ width: `${scrollProgress}%` }"
+    aria-hidden="true"
+  ></div>
   <BlogNav />
   <div :class="['post-layout', 'fade-in', { 'has-toc': tocItems.length }]" v-if="post">
     <!-- 宽屏对称占位：与右侧目录等宽，确保文章主体绝对居中 -->
@@ -14,8 +19,21 @@
             class="tag"
           >{{ tag.name || tag }}</span>
           <span>{{ formatDate(post.created_at) }}</span>
-          <span>{{ post.read_time || 0 }} min</span>
+          <span v-if="readingStats.words">{{ readingStats.words.toLocaleString() }} 字</span>
+          <span>约 {{ post.read_time || readingStats.minutes }} min</span>
           <span>{{ (post.views || 0).toLocaleString() }} views</span>
+          <button
+            type="button"
+            class="meta-action-btn"
+            @click="copyPostUrl"
+            :title="copied ? '已复制！' : '复制文章链接'"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>{{ copied ? '已复制' : '分享' }}</span>
+          </button>
         </div>
         <h1 class="article-title">{{ post.title }}</h1>
         <p class="article-deck" v-if="post.excerpt">{{ plainExcerpt(post.excerpt) }}</p>
@@ -29,7 +47,7 @@
         </div>
       </div>
 
-      <div class="article-body">
+      <div class="article-body" @click="handleBodyClick">
         <MdPreview
           :editorId="editorId"
           :modelValue="articleMarkdown(post.content || '')"
@@ -86,14 +104,83 @@
   <CustomWidgets />
   <BlogFooter />
 
-  <!-- Back to top -->
-  <Transition name="fade">
-    <button v-show="showTop" class="back-to-top" @click="scrollToTop" title="回到顶部">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M18 15l-6-6-6 6"/>
+  <!-- Floating Action Buttons -->
+  <div class="floating-actions" v-if="post">
+    <button
+      v-if="tocItems.length"
+      type="button"
+      class="floating-btn toc-trigger-btn"
+      @click="showMobileToc = true"
+      title="文章目录"
+      aria-label="文章目录"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="12" x2="15" y2="12"></line>
+        <line x1="3" y1="18" x2="18" y2="18"></line>
       </svg>
     </button>
-  </Transition>
+    <Transition name="fade">
+      <button
+        v-show="showTop"
+        type="button"
+        class="floating-btn back-to-top"
+        @click="scrollToTop"
+        title="回到顶部"
+        aria-label="回到顶部"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 15l-6-6-6 6"/>
+        </svg>
+      </button>
+    </Transition>
+  </div>
+
+  <!-- Mobile TOC Drawer -->
+  <Teleport to="body">
+    <Transition name="drawer-fade">
+      <div v-if="showMobileToc" class="mobile-toc-overlay" @click.self="showMobileToc = false">
+        <div class="mobile-toc-sheet">
+          <div class="mobile-toc-header">
+            <span class="mobile-toc-title">目录 Contents</span>
+            <button class="mobile-toc-close" @click="showMobileToc = false" aria-label="关闭" type="button">✕</button>
+          </div>
+          <div class="mobile-toc-content" @click="onMobileCatalogClick">
+            <MdCatalog
+              :editorId="editorId"
+              :theme="editorTheme"
+              :scrollElement="scrollElement"
+              :offsetTop="80"
+            />
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- Image Lightbox Modal -->
+  <Teleport to="body">
+    <Transition name="lightbox-fade">
+      <div
+        v-if="previewImage"
+        class="lightbox-overlay"
+        @click="previewImage = null"
+      >
+        <div class="lightbox-content">
+          <img :src="previewImage" :alt="previewImageAlt" class="lightbox-img" />
+          <div class="lightbox-caption" v-if="previewImageAlt">{{ previewImageAlt }}</div>
+        </div>
+        <button class="lightbox-close" aria-label="关闭" @click="previewImage = null" type="button">✕</button>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <!-- Copy Link Toast -->
+  <Teleport to="body">
+    <Transition name="toast-fade">
+      <div v-if="copied" class="copy-toast">已复制文章链接到剪贴板</div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
@@ -122,15 +209,78 @@ const tocItems = ref([])
 const prevPost = ref(null)
 const nextPost = ref(null)
 const showTop = ref(false)
+const scrollProgress = ref(0)
+const previewImage = ref(null)
+const previewImageAlt = ref('')
+const showMobileToc = ref(false)
+const copied = ref(false)
+let copyTimer = null
+
 const editorId = 'vblog-post-content'
 const scrollElement = ref(typeof document !== 'undefined' ? document.documentElement : null)
 const editorTheme = computed(() => themeStore.theme === 'dark' ? 'dark' : 'light')
 
+function calcReadingStats(raw) {
+  if (!raw) return { words: 0, minutes: 1 }
+  const clean = raw
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/!\[.*?\]\(.*?\)/g, '')
+    .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+    .replace(/<[^>]+>/g, '')
+  const cjkMatches = clean.match(/[\u4e00-\u9fa5]/g) || []
+  const nonCjk = clean.replace(/[\u4e00-\u9fa5]/g, ' ')
+  const wordMatches = nonCjk.match(/[a-zA-Z0-9_\u00C0-\u024F]+/g) || []
+  const total = cjkMatches.length + wordMatches.length
+  const minutes = Math.max(1, Math.ceil(total / 350))
+  return { words: total, minutes }
+}
+
+const readingStats = computed(() => calcReadingStats(post.value?.content || ''))
+
 function onScroll() {
+  const total = document.documentElement.scrollHeight - window.innerHeight
+  scrollProgress.value = total > 0 ? Math.min(100, Math.max(0, (window.scrollY / total) * 100)) : 0
   showTop.value = window.scrollY > 400
 }
+
 function scrollToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function copyPostUrl() {
+  try {
+    navigator.clipboard.writeText(window.location.href)
+    copied.value = true
+    clearTimeout(copyTimer)
+    copyTimer = setTimeout(() => {
+      copied.value = false
+    }, 2200)
+  } catch {
+    // clipboard api unavailable
+  }
+}
+
+function handleBodyClick(e) {
+  const img = e.target.closest('img')
+  if (img && img.src && !img.closest('.author-avatar')) {
+    previewImage.value = img.src
+    previewImageAlt.value = img.alt || ''
+  }
+}
+
+function onMobileCatalogClick(e) {
+  if (e.target.closest('.md-editor-catalog-link') || e.target.closest('span')) {
+    setTimeout(() => {
+      showMobileToc.value = false
+    }, 250)
+  }
+}
+
+function onKeydown(e) {
+  if (e.key === 'Escape') {
+    if (previewImage.value) previewImage.value = null
+    if (showMobileToc.value) showMobileToc.value = false
+  }
 }
 
 function onGetCatalog(list) {
@@ -176,6 +326,7 @@ async function loadPost(id) {
 
 onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true })
+  window.addEventListener('keydown', onKeydown)
   loadPost(route.params.id)
 })
 
@@ -189,10 +340,25 @@ watch(() => route.params.id, (newId) => {
 onUnmounted(() => {
   ++requestId
   window.removeEventListener('scroll', onScroll)
+  window.removeEventListener('keydown', onKeydown)
+  clearTimeout(copyTimer)
 })
 </script>
 
 <style scoped>
+/* Reading progress bar */
+.reading-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--accent);
+  z-index: 999;
+  transition: width 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  box-shadow: 0 0 8px var(--accent);
+}
+
 .post-layout {
   display: flex;
   justify-content: center;
@@ -248,6 +414,23 @@ onUnmounted(() => {
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
+}
+.meta-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.meta-action-btn:hover {
+  color: var(--fg);
+  border-color: var(--fg);
 }
 .article-title {
   font-family: var(--font-display);
@@ -344,7 +527,16 @@ onUnmounted(() => {
   line-height: 1.75;
   color: var(--fg);
 }
-.article-body :deep(img) { max-width: 100%; height: auto; }
+.article-body :deep(img) {
+  max-width: 100%;
+  height: auto;
+  cursor: zoom-in;
+  border-radius: 6px;
+  transition: opacity 0.2s ease;
+}
+.article-body :deep(img:hover) {
+  opacity: 0.94;
+}
 .article-body :deep(pre), .article-body :deep(.md-editor-code) { max-width: 100%; overflow-x: auto; }
 .article-body :deep(table) { display: block; max-width: 100%; overflow-x: auto; }
 .article-body :deep(.md-editor-previewOnly) {
@@ -423,13 +615,19 @@ onUnmounted(() => {
   margin-bottom: 24px;
 }
 
-/* Back to top button */
-.back-to-top {
+/* Floating Actions */
+.floating-actions {
   position: fixed;
   bottom: 32px;
   right: 32px;
-  width: 40px;
-  height: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 50;
+}
+.floating-btn {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -438,16 +636,175 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  transition: all 0.2s ease;
-  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.back-to-top:hover {
+.floating-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.14);
 }
+.toc-trigger-btn {
+  display: none;
+}
+@media (max-width: 1099px) {
+  .toc-trigger-btn {
+    display: flex;
+  }
+}
+
+/* Mobile TOC Drawer */
+.mobile-toc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+}
+.mobile-toc-sheet {
+  width: 100%;
+  max-height: 75vh;
+  background: var(--surface);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.25);
+  animation: slideUpSheet 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideUpSheet {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.mobile-toc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.mobile-toc-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.mobile-toc-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.mobile-toc-content {
+  padding: 16px 20px 32px;
+  overflow-y: auto;
+  max-height: calc(75vh - 60px);
+}
+.mobile-toc-content :deep(.md-editor-catalog-indicator) {
+  background-color: var(--accent);
+}
+.mobile-toc-content :deep(.md-editor-catalog-active > span) {
+  color: var(--accent);
+  font-weight: 600;
+}
+.drawer-fade-enter-active, .drawer-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.drawer-fade-enter-from, .drawer-fade-leave-to {
+  opacity: 0;
+}
+
+/* Lightbox Modal */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  padding: 24px;
+  box-sizing: border-box;
+}
+.lightbox-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.lightbox-img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.45);
+}
+.lightbox-caption {
+  margin-top: 12px;
+  color: #e5e5e5;
+  font-size: 13px;
+  text-align: center;
+}
+.lightbox-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.lightbox-close:hover {
+  background: rgba(255,255,255,0.3);
+}
+.lightbox-fade-enter-active, .lightbox-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.lightbox-fade-enter-from, .lightbox-fade-leave-to {
+  opacity: 0;
+}
+
+/* Copy Toast */
+.copy-toast {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--fg);
+  color: var(--bg);
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 1000;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  pointer-events: none;
+}
+.toast-fade-enter-active, .toast-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.toast-fade-enter-from, .toast-fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 8px);
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease;
@@ -463,6 +820,10 @@ onUnmounted(() => {
   }
   .post-nav {
     grid-template-columns: 1fr;
+  }
+  .floating-actions {
+    bottom: 24px;
+    right: 20px;
   }
 }
 </style>

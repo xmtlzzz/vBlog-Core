@@ -161,3 +161,20 @@ body, .top, .article-body, .post-card, .search-box, .sidebar, .admin-layout, .na
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Status badge interactive ── */
+.status-clickable {
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  user-select: none;
+}
+.status-clickable:hover {
+  opacity: 0.82;
+  transform: scale(1.05);
+}
+
+/* ── Markdown Editor & Code Block Stacking Fix ── */
+.md-editor-code-head {
+  z-index: 2 !important;
+}
+

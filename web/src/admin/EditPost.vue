@@ -70,7 +70,7 @@ const editorTheme = computed(() => themeStore.theme === 'dark' ? 'dark' : 'light
 const saving = ref(false)
 const saved = ref(false)
 const allTags = ref([])
-const form = reactive({ title: '', content: '', excerpt: '', status: 'draft', tagNames: [] })
+const form = reactive({ title: '', content: '', excerpt: '', status: 'published', tagNames: [] })
 
 const isDirty = computed(() => form.title.trim() || form.content.trim() || form.excerpt.trim())
 
@@ -109,7 +109,7 @@ async function fetchPost() {
     form.title = post.title || ''
     form.content = post.content || ''
     form.excerpt = post.excerpt || ''
-    form.status = post.status || 'draft'
+    form.status = post.status || 'published'
     form.tagNames = (post.tags || []).map(t => t.name)
   } catch {
     ElMessage.error('文章加载失败')
@@ -117,11 +117,12 @@ async function fetchPost() {
   }
 }
 
-async function handleSave(status) {
+async function handleSave(statusOverride) {
   if (!form.title.trim()) {
     ElMessage.warning('请输入标题')
     return
   }
+  const status = statusOverride || form.status || 'published'
   saving.value = true
   try {
     const payload = {
@@ -131,13 +132,14 @@ async function handleSave(status) {
       status,
       tags: form.tagNames.map(name => ({ name }))
     }
+    form.status = status
     if (isEdit.value) {
       await api.put(`/posts/${postId.value}`, payload)
       saved.value = true
-      ElMessage.success('文章已更新')
+      ElMessage.success(status === 'published' ? '文章已发布更新' : '草稿已保存')
     } else {
       await api.post('/posts', payload)
-      ElMessage.success('文章已创建')
+      ElMessage.success(status === 'published' ? '文章已创建并发布' : '草稿已保存')
       saved.value = true
       router.push('/admin/posts')
     }
@@ -235,8 +237,14 @@ onMounted(() => {
   overflow: hidden;
   height: calc(100vh - 240px);
   min-height: 520px;
+  position: relative;
+  isolation: isolate;
+  z-index: 1;
 }
 .vblog-md-editor {
   height: 100% !important;
+}
+.vblog-md-editor :deep(.md-editor-code-head) {
+  z-index: 2 !important;
 }
 </style>

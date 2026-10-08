@@ -47,20 +47,30 @@
             <span v-if="!row.tags?.length" style="color: var(--muted); font-size: 13px">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态 Status" width="100">
+        <el-table-column label="状态 Status" width="110">
           <template #default="{ row }">
-            <span :class="['status-badge', 'status-' + row.status]">{{ statusLabel(row.status) }}</span>
+            <el-tooltip :content="row.status === 'published' ? '点击快速转为草稿' : '点击快速发布'" placement="top">
+              <span
+                :class="['status-badge', 'status-' + row.status, 'status-clickable']"
+                @click="toggleStatus(row)"
+              >
+                {{ statusLabel(row.status) }}
+              </span>
+            </el-tooltip>
           </template>
         </el-table-column>
-        <el-table-column prop="views" label="阅读 Views" width="100" />
+        <el-table-column prop="views" label="阅读 Views" width="90" />
         <el-table-column label="日期 Date" width="120">
           <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作 Actions" width="140" fixed="right">
+        <el-table-column label="操作 Actions" min-width="260" fixed="right">
           <template #default="{ row }">
             <div class="action-btn-group">
               <button class="action-btn" @click="viewPost(row)">查看 View</button>
-              <button class="action-btn" @click="$router.push('/admin/posts')">编辑</button>
+              <button class="action-btn" @click="$router.push(`/admin/posts/${row.id}/edit`)">编辑</button>
+              <button v-if="row.status === 'published'" class="action-btn" @click="moveToDraft(row.id)">转为草稿</button>
+              <button v-else-if="row.status === 'draft'" class="action-btn" @click="publishPost(row.id)">发布</button>
+              <button class="action-btn action-danger" @click="deletePost(row.id)">删除</button>
             </div>
           </template>
         </el-table-column>
@@ -103,18 +113,68 @@ function statusLabel(s) {
   return { published: '已发布', draft: '草稿', archived: '已归档' }[s] || s
 }
 
-
 function viewPost(row) {
   window.open(`/post/${row.id}`, '_blank')
 }
 
+async function fetchPosts() {
+  const postsRes = await api.get('/posts', { params: { page: 1, per_page: 20 } }).catch(() => ({ data: [] }))
+  posts.value = postsRes.data || postsRes.posts || []
+}
+
+async function refreshStats() {
+  const statsRes = await api.get('/dashboard/stats').catch(() => ({}))
+  stats.value = {
+    total_posts: statsRes.total_posts || 0,
+    total_views: statsRes.total_views || 0,
+    total_comments: statsRes.total_comments || 0,
+    total_tags: statsRes.total_tags || 0
+  }
+}
+
+async function moveToDraft(id) {
+  try {
+    const post = await api.get(`/posts/${id}`)
+    await api.put(`/posts/${id}`, { ...post, status: 'draft' })
+    ElMessage.success('已转为草稿')
+    await fetchPosts()
+    await refreshStats()
+  } catch {
+    ElMessage.error('转为草稿失败，请重试')
+  }
+}
+
+async function publishPost(id) {
+  try {
+    const post = await api.get(`/posts/${id}`)
+    await api.put(`/posts/${id}`, { ...post, status: 'published' })
+    ElMessage.success('文章已发布')
+    await fetchPosts()
+    await refreshStats()
+  } catch {
+    ElMessage.error('发布失败，请重试')
+  }
+}
+
+async function toggleStatus(row) {
+  if (row.status === 'published') {
+    await moveToDraft(row.id)
+  } else {
+    await publishPost(row.id)
+  }
+}
+
 async function deletePost(id) {
   try {
-    await ElMessageBox.confirm('确定删除这篇文章？', '确认删除', { type: 'warning' })
+    await ElMessageBox.confirm('文章将移入回收站，可在回收站中恢复或彻底删除。', '移入回收站', {
+      type: 'warning',
+      confirmButtonText: '移入回收站',
+      cancelButtonText: '取消'
+    })
     await api.delete(`/posts/${id}`)
-    posts.value = posts.value.filter(p => p.id !== id)
-    stats.value.total_posts--
-    ElMessage.success('已删除')
+    ElMessage.success('已移入回收站')
+    await fetchPosts()
+    await refreshStats()
   } catch {}
 }
 
@@ -124,17 +184,7 @@ onMounted(async () => {
   if (cardRef2.value) commentsCount.mount(cardRef2.value)
   if (cardRef3.value) tagsCount.mount(cardRef3.value)
 
-  const [statsRes, postsRes] = await Promise.all([
-    api.get('/dashboard/stats').catch(() => ({})),
-    api.get('/posts', { params: { page: 1, per_page: 10 } }).catch(() => ({ data: [] }))
-  ])
-  stats.value = {
-    total_posts: statsRes.total_posts || 0,
-    total_views: statsRes.total_views || 0,
-    total_comments: statsRes.total_comments || 0,
-    total_tags: statsRes.total_tags || 0
-  }
-  posts.value = postsRes.data || postsRes.posts || []
+  await Promise.all([refreshStats(), fetchPosts()])
 
   postsCount.start()
   viewsCount.start()

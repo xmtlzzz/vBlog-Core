@@ -30,12 +30,19 @@
           <span v-if="!row.tags?.length" style="color: var(--muted); font-size: 13px">-</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态 Status" width="100">
+      <el-table-column label="状态 Status" width="110">
         <template #default="{ row }">
-          <span :class="['status-badge', 'status-' + row.status]">{{ statusLabel(row.status) }}</span>
+          <el-tooltip :content="row.status === 'published' ? '点击快速转为草稿' : '点击快速发布'" placement="top">
+            <span
+              :class="['status-badge', 'status-' + row.status, 'status-clickable']"
+              @click="toggleStatus(row)"
+            >
+              {{ statusLabel(row.status) }}
+            </span>
+          </el-tooltip>
         </template>
       </el-table-column>
-      <el-table-column prop="views" label="阅读 Views" width="100" />
+      <el-table-column prop="views" label="阅读 Views" width="90" />
       <el-table-column label="日期 Date" width="120">
         <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
       </el-table-column>
@@ -45,6 +52,7 @@
             <button class="action-btn" @click="viewPost(row)">查看 View</button>
             <button class="action-btn" @click="router.push(`/admin/posts/${row.id}/edit`)">编辑</button>
             <button v-if="row.status === 'published'" class="action-btn" @click="moveToDraft(row.id)">转为草稿</button>
+            <button v-else-if="row.status === 'draft'" class="action-btn" @click="publishPost(row.id)">发布</button>
             <button class="action-btn action-danger" @click="deletePost(row.id)">删除</button>
           </div>
         </template>
@@ -139,6 +147,23 @@ async function moveToDraft(id) {
     ElMessage.success('已转为草稿，可在编辑页重新发布')
     await fetchPosts()
   } catch { ElMessage.error('转为草稿失败，请重试') }
+}
+
+async function publishPost(id) {
+  try {
+    const post = await api.get(`/posts/${id}`)
+    await api.put(`/posts/${id}`, { ...post, status: 'published' })
+    ElMessage.success('文章已发布')
+    await fetchPosts()
+  } catch { ElMessage.error('发布失败，请重试') }
+}
+
+async function toggleStatus(row) {
+  if (row.status === 'published') {
+    await moveToDraft(row.id)
+  } else {
+    await publishPost(row.id)
+  }
 }
 
 function triggerUpload() {

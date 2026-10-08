@@ -1,6 +1,8 @@
 <template>
   <BlogNav />
-  <div class="post-layout fade-in" v-if="post">
+  <div :class="['post-layout', 'fade-in', { 'has-toc': tocItems.length }]" v-if="post">
+    <!-- 宽屏对称占位：与右侧目录等宽，确保文章主体绝对居中 -->
+    <div class="toc-spacer" v-if="tocItems.length" aria-hidden="true"></div>
     <article class="article">
       <router-link to="/" class="back-link">← 返回首页</router-link>
 
@@ -194,17 +196,20 @@ onUnmounted(() => {
 .post-layout {
   display: flex;
   justify-content: center;
-  gap: 48px;
-  max-width: 1080px;
+  align-items: flex-start;
+  gap: 40px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 64px 24px 80px;
+  box-sizing: border-box;
 }
 .article {
   overflow-wrap: break-word;
   word-break: normal;
-  max-width: 720px;
+  max-width: 820px;
   min-width: 0;
   flex: 1;
+  width: 100%;
 }
 .back-link {
   display: inline-flex;
@@ -287,6 +292,13 @@ onUnmounted(() => {
   font-size: 12px;
   color: var(--muted);
 }
+.toc-spacer {
+  display: none;
+  width: 240px;
+  flex-shrink: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
 .toc {
   display: none;
   width: 240px;
@@ -317,6 +329,11 @@ onUnmounted(() => {
 }
 @media (min-width: 1100px) {
   .toc {
+    display: block;
+  }
+}
+@media (min-width: 1360px) {
+  .toc-spacer {
     display: block;
   }
 }

@@ -376,6 +376,7 @@ async function postById(env, id) {
 }
 
 const POST_SELECT = `SELECT p.*, ${TAGS_JSON_SQL} FROM posts p`;
+const POST_LIST_SELECT = `SELECT p.id, p.title, p.excerpt, p.status, p.pinned, p.views, p.read_time, p.author_id, p.created_at, p.updated_at, ${TAGS_JSON_SQL} FROM posts p`;
 
 async function listPosts(env, url, authenticated = false) {
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10) || 1);
@@ -402,7 +403,7 @@ async function listPosts(env, url, authenticated = false) {
 
   const total = await env.DB.prepare(`SELECT COUNT(DISTINCT p.id) AS n FROM posts p ${join} ${whereSql}`).bind(...binds).first();
   const rows = await env.DB.prepare(
-    `${POST_SELECT} ${join} ${whereSql} ORDER BY p.pinned DESC, p.created_at DESC LIMIT ? OFFSET ?`
+    `${POST_LIST_SELECT} ${join} ${whereSql} ORDER BY p.pinned DESC, p.created_at DESC LIMIT ? OFFSET ?`
   ).bind(...binds, perPage, (page - 1) * perPage).all();
 
   const data = rows.results.map(toPostResp);

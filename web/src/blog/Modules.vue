@@ -90,7 +90,7 @@ onMounted(async () => {
         views: s.total_views || 0,
         comments: s.total_comments || 0,
         tags: s.total_tags || 0,
-        visitors: Math.floor(Math.random() * 9000) + 1000
+        visitors: s.total_views || 0
       }
     }
   } catch {}

@@ -13,11 +13,12 @@
 
       <header class="article-header">
         <div class="article-meta">
-          <span
+          <router-link
             v-for="tag in (post.tags || [])"
             :key="tag.id || tag.name || tag"
+            :to="`/tags?tag=${encodeURIComponent(tag.name || tag)}`"
             class="tag"
-          >{{ tag.name || tag }}</span>
+          >{{ tag.name || tag }}</router-link>
           <span>{{ formatDate(post.created_at) }}</span>
           <span v-if="readingStats.words">{{ readingStats.words.toLocaleString() }} 字</span>
           <span>约 {{ post.read_time || readingStats.minutes }} min</span>
@@ -64,11 +65,12 @@
 
       <footer class="article-footer">
         <div class="footer-tags">
-          <span
+          <router-link
             v-for="tag in (post.tags || [])"
             :key="tag.id || tag.name || tag"
+            :to="`/tags?tag=${encodeURIComponent(tag.name || tag)}`"
             class="tag"
-          >{{ tag.name || tag }}</span>
+          >{{ tag.name || tag }}</router-link>
         </div>
       </footer>
 
@@ -298,10 +300,17 @@ function calcReadingStats(raw) {
 
 const readingStats = computed(() => calcReadingStats(post.value?.content || ''))
 
+let scrollTicking = false
 function onScroll() {
-  const total = document.documentElement.scrollHeight - window.innerHeight
-  scrollProgress.value = total > 0 ? Math.min(100, Math.max(0, (window.scrollY / total) * 100)) : 0
-  showTop.value = window.scrollY > 400
+  if (!scrollTicking) {
+    scrollTicking = true
+    window.requestAnimationFrame(() => {
+      const total = document.documentElement.scrollHeight - window.innerHeight
+      scrollProgress.value = total > 0 ? Math.min(100, Math.max(0, (window.scrollY / total) * 100)) : 0
+      showTop.value = window.scrollY > 400
+      scrollTicking = false
+    })
+  }
 }
 
 function scrollToTop() {

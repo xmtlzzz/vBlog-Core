@@ -6,11 +6,13 @@
     <div class="post-card-body">
       <div v-if="post.pinned || post.is_pinned" class="pin-badge">置顶 Pinned</div>
       <div class="post-meta">
-        <span
+        <router-link
           v-for="tag in (post.tags || [])"
           :key="tag.id || tag.name || tag"
+          :to="`/tags?tag=${encodeURIComponent(tag.name || tag)}`"
           class="tag"
-        >{{ tag.name || tag }}</span>
+          @click.stop
+        >{{ tag.name || tag }}</router-link>
         <span class="meta-date">{{ formatDate(post.created_at) }}</span>
       </div>
       <div class="post-title">{{ post.title }}</div>

@@ -54,7 +54,6 @@ const comments = ref([])
 const submitting = ref(false)
 const form = ref({ author_name: '', author_email: '', body: '', 'cf-turnstile-response': '' })
 const turnstileEl = ref(null)
-let timer = null
 let turnstileWidgetId = null
 
 function loadTurnstileScript() {
@@ -112,6 +111,7 @@ async function submitComment() {
     await api.post(`/posts/${props.postId}/comments`, form.value)
     ElMessage.success('评论已提交，等待审核')
     form.value = { author_name: form.value.author_name, author_email: form.value.author_email, body: '' }
+    fetchComments()
   } catch (err) {
     const msg = err?.response?.data?.message || err?.message || '提交失败'
     ElMessage.error(msg)
@@ -121,44 +121,18 @@ async function submitComment() {
   }
 }
 
-function startPolling() {
-  if (!timer && enabled.value) {
-    timer = setInterval(fetchComments, 15000)
-  }
-}
-
-function stopPolling() {
-  if (timer) {
-    clearInterval(timer)
-    timer = null
-  }
-}
-
-function onVisibilityChange() {
-  if (document.hidden) {
-    stopPolling()
-  } else if (enabled.value) {
-    fetchComments()
-    startPolling()
-  }
-}
-
 onMounted(async () => {
-  document.addEventListener('visibilitychange', onVisibilityChange)
   try {
     const settings = await api.get('/settings')
     enabled.value = settings.enable_comments === 'true'
     if (enabled.value) {
       fetchComments()
       mountTurnstile()
-      startPolling()
     }
   } catch { enabled.value = false }
 })
 
 onUnmounted(() => {
-  stopPolling()
-  document.removeEventListener('visibilitychange', onVisibilityChange)
   if (turnstileWidgetId != null && window.turnstile) {
     try { window.turnstile.remove(turnstileWidgetId) } catch { /* noop */ }
   }

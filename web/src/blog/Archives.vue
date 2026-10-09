@@ -10,7 +10,7 @@
   <main class="archive-list">
     <div v-for="group in yearGroups" :key="group.year" class="year-group">
       <div class="year-label">
-        {{ group.year }} <span class="year-count">— {{ group.posts.length }} 篇</span>
+        {{ group.year }} <span class="year-count">({{ group.posts.length }} 篇)</span>
       </div>
       <div class="timeline">
         <router-link
@@ -70,8 +70,15 @@ import CustomWidgets from '../shared/CustomWidgets.vue'
 const allPosts = ref([])
 const showTop = ref(false)
 
+let scrollTicking = false
 function onScroll() {
-  showTop.value = window.scrollY > 400
+  if (!scrollTicking) {
+    scrollTicking = true
+    window.requestAnimationFrame(() => {
+      showTop.value = window.scrollY > 400
+      scrollTicking = false
+    })
+  }
 }
 function scrollToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -90,7 +97,7 @@ const yearGroups = computed(() => {
 })
 
 onMounted(async () => {
-  window.addEventListener('scroll', onScroll)
+  window.addEventListener('scroll', onScroll, { passive: true })
   const res = await api.get('/posts', { params: { per_page: 100, status: 'published' } }).catch(() => ({ data: [] }))
   allPosts.value = res.data || []
 })

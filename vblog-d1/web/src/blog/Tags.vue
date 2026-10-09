@@ -11,7 +11,7 @@
       v-for="tag in tags"
       :key="tag.id || tag.name"
       :class="['tag-chip', { active: activeTag === tag.name }]"
-      @click="activeTag = tag.name; fetchPosts()"
+      @click="selectTag(tag.name)"
     >
       {{ tag.name }}
       <span class="count">{{ tag.post_count || 0 }}</span>
@@ -35,12 +35,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import api from '../api/request'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
 import PostCard from '../shared/PostCard.vue'
+
+const route = useRoute()
+const router = useRouter()
 
 const tags = ref([])
 const activeTag = ref('')
@@ -57,9 +61,38 @@ async function fetchPosts() {
   filteredPosts.value = res.data || []
 }
 
+function selectTag(tagName) {
+  if (activeTag.value === tagName) {
+    activeTag.value = ''
+    filteredPosts.value = []
+    router.replace({ query: {} })
+  } else {
+    activeTag.value = tagName
+    router.replace({ query: { tag: tagName } })
+    fetchPosts()
+  }
+}
+
+watch(
+  () => route.query.tag,
+  (newTag) => {
+    if (newTag && newTag !== activeTag.value) {
+      activeTag.value = String(newTag)
+      fetchPosts()
+    } else if (!newTag && activeTag.value) {
+      activeTag.value = ''
+      filteredPosts.value = []
+    }
+  }
+)
+
 onMounted(async () => {
   const res = await api.get('/tags').catch(() => [])
   tags.value = Array.isArray(res) ? res : (res.data || [])
+  if (route.query.tag) {
+    activeTag.value = String(route.query.tag)
+    fetchPosts()
+  }
 })
 </script>
 

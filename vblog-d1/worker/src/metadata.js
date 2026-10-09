@@ -25,7 +25,7 @@ export async function pageMetadata(env, url) {
 }
 
 export function rewriteMetadata(response, page) {
-  if (!response.headers.get('content-type')?.includes('text/html') || response.status !== 200) return response;
+  if (!response.headers.get('content-type')?.includes('text/html') || response.status !== 200 || !response.body) return response;
   const title = page.title ? `${page.title} · ${page.site}` : page.site;
   const tags = `<title>${escape(title)}</title><meta name="description" content="${escape(page.description)}"><meta property="og:title" content="${escape(page.title || page.site)}"><meta property="og:description" content="${escape(page.description)}"><meta property="og:site_name" content="${escape(page.site)}"><meta property="og:type" content="${page.article ? 'article' : 'website'}"><meta property="og:url" content="${escape(page.url)}"><link rel="canonical" href="${escape(page.url)}">${page.missing ? '<meta name="robots" content="noindex">' : ''}`;
   const headers = new Headers(response.headers);

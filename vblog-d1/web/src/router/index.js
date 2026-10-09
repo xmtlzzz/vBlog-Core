@@ -26,7 +26,8 @@ const routes = [
       { path: 'trash', component: () => import('../admin/Trash.vue') },
       { path: 'settings', component: () => import('../admin/Settings.vue') },
     ]
-  }
+  },
+  { path: '/:pathMatch(.*)*', component: () => import('../blog/NotFound.vue') }
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })

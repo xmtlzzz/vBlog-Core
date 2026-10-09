@@ -28,18 +28,18 @@ export default {
     }
 
     // 静态资源走 ASSETS（SPA fallback 由 not_found_handling 处理）
-    if (path.startsWith('/uploads/') && method === 'GET') {
-      return serveImage(env, path);
+    if (path.startsWith('/uploads/') && (method === 'GET' || method === 'HEAD')) {
+      return serveImage(env, path, method);
     }
-    if ((path === '/sitemap.xml' || path === '/sitemap') && method === 'GET') {
+    if ((path === '/sitemap.xml' || path === '/sitemap') && (method === 'GET' || method === 'HEAD')) {
       return sitemapXml(request, env);
     }
-    if ((path === '/feed.xml' || path === '/rss.xml' || path === '/feed' || path === '/rss') && method === 'GET') {
+    if ((path === '/feed.xml' || path === '/rss.xml' || path === '/feed' || path === '/rss') && (method === 'GET' || method === 'HEAD')) {
       return rssFeed(request, env);
     }
-    if (path === '/robots.txt' && method === 'GET') {
+    if (path === '/robots.txt' && (method === 'GET' || method === 'HEAD')) {
       const baseUrl = `${url.protocol}//${url.host}`;
-      return new Response(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: ${baseUrl}/sitemap.xml\n`, {
+      return new Response(method === 'HEAD' ? null : `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: ${baseUrl}/sitemap.xml\n`, {
         headers: {
           'Content-Type': 'text/plain; charset=utf-8',
           'Cache-Control': 'public, max-age=86400',
@@ -167,8 +167,8 @@ async function route(request, env, url, path, method) {
     }
 
     // ── RSS & Sitemap ───────────────────────────────────────
-    if ((first === 'rss' || first === 'feed') && method === 'GET') return rssFeed(request, env);
-    if ((first === 'sitemap.xml' || first === 'sitemap') && method === 'GET') return sitemapXml(request, env);
+    if ((first === 'rss' || first === 'feed') && (method === 'GET' || method === 'HEAD')) return rssFeed(request, env);
+    if ((first === 'sitemap.xml' || first === 'sitemap') && (method === 'GET' || method === 'HEAD')) return sitemapXml(request, env);
 
     return fail('not found', 404);
   } catch (e) {
@@ -756,7 +756,7 @@ const IMAGE_MIME = {
   webp: 'image/webp', avif: 'image/avif', bmp: 'image/bmp',
 };
 
-async function serveImage(env, path) {
+async function serveImage(env, path, method = 'GET') {
   const key = path.replace(/^\//, '');
   if (!env.IMG) return fail('not found', 404);
   const obj = await env.IMG.get(key, { type: 'arrayBuffer', cacheTtl: 86400 });
@@ -764,7 +764,7 @@ async function serveImage(env, path) {
   // 兼容两种 KV 返回形态：有的运行时返回 {value,...} 包装，有的直接返回值
   const buf = obj.value !== undefined ? obj.value : obj;
   const ext = key.split('.').pop().toLowerCase();
-  return new Response(buf, {
+  return new Response(method === 'HEAD' ? null : buf, {
     headers: {
       'Content-Type': IMAGE_MIME[ext] || 'application/octet-stream',
       'Cache-Control': 'public, max-age=31536000, immutable',
@@ -775,6 +775,7 @@ async function serveImage(env, path) {
 
 // ══════════════════════════ RSS ══════════════════════════
 async function rssFeed(request, env) {
+  const method = request ? request.method.toUpperCase() : 'GET';
   const url = request ? new URL(request.url) : null;
   const baseUrl = url ? `${url.protocol}//${url.host}` : '';
   const setting = await env.DB.prepare("SELECT value FROM settings WHERE key = 'site_title'").first();
@@ -785,7 +786,7 @@ async function rssFeed(request, env) {
   ).all();
 
   const rfc1123 = (iso) => new Date(iso).toUTCString().replace('GMT', '+0000');
-  const items = rows.results.map((p) =>
+  const items = (rows.results || []).map((p) =>
     `      <item>\n` +
     `        <title>${escapeXml(p.title)}</title>\n` +
     `        <link>${baseUrl}/post/${p.id}</link>\n` +
@@ -797,10 +798,11 @@ async function rssFeed(request, env) {
 
   const xml =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<rss version="2.0">\n` +
+    `<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n` +
     `  <channel>\n` +
     `    <title>${escapeXml(siteTitle)}</title>\n` +
     `    <link>${baseUrl}/</link>\n` +
+    `    <atom:link href="${baseUrl}/feed.xml" rel="self" type="application/rss+xml" />\n` +
     `    <description>RSS Feed for ${escapeXml(siteTitle)}</description>\n` +
     `    <language>zh-CN</language>\n` +
     `    <lastBuildDate>${rfc1123(nowISO())}</lastBuildDate>\n` +
@@ -808,7 +810,7 @@ async function rssFeed(request, env) {
     `  </channel>\n` +
     `</rss>\n`;
 
-  return new Response(xml, {
+  return new Response(method === 'HEAD' ? null : xml, {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=600',
@@ -818,6 +820,7 @@ async function rssFeed(request, env) {
 }
 
 async function sitemapXml(request, env) {
+  const method = request ? request.method.toUpperCase() : 'GET';
   const url = new URL(request.url);
   const baseUrl = `${url.protocol}//${url.host}`;
   const today = new Date().toISOString().slice(0, 10);
@@ -859,7 +862,7 @@ async function sitemapXml(request, env) {
 
   xml += '</urlset>\n';
 
-  return new Response(xml, {
+  return new Response(method === 'HEAD' ? null : xml, {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=3600',

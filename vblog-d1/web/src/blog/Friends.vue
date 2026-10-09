@@ -118,7 +118,16 @@ const siteUrl = computed(() => {
 // 解析 settings.friends (每行：名称|链接|头像|简介)
 const friendsList = computed(() => {
   const raw = (settings.value.friends || '').trim()
-  if (!raw) return []
+  if (!raw) {
+    return [
+      {
+        name: 'vMaker',
+        link: 'https://vmaker.xmtlz.dev',
+        avatar: 'https://vmaker.xmtlz.dev/favicon.ico',
+        desc: '创意开发档案 · 现代化开源项目索引与作品集'
+      }
+    ]
+  }
   return raw
     .split('\n')
     .map(line => line.trim())

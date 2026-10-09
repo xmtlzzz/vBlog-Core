@@ -36,9 +36,9 @@
       </nav>
       <div class="sidebar-footer">
         <div class="sidebar-user">
-          <div class="user-avatar">A</div>
+          <div class="user-avatar">{{ (currentUser.username || 'A')[0].toUpperCase() }}</div>
           <div class="user-info">
-            <div class="user-name">Admin</div>
+            <div class="user-name">{{ currentUser.username }}</div>
             <div class="user-role">超级管理员</div>
           </div>
           <button class="logout-btn" @click="handleLogout" title="退出登录">⏻</button>
@@ -75,16 +75,31 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
 import ThemeToggleAnimated from '../shared/ThemeToggleAnimated.vue'
+import api from '../api/request'
+
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const sidebarOpen = ref(false)
+const currentUser = ref({ username: 'Admin' })
+
+onMounted(async () => {
+  try {
+    const me = await api.get('/auth/me')
+    if (me?.username) {
+      currentUser.value.username = me.username
+      authStore.setUser(me)
+    }
+  } catch {
+    // 401 is handled automatically by request interceptor
+  }
+})
 
 function handleLogout() {
   authStore.logout()

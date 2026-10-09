@@ -14,24 +14,30 @@
           登录
         </el-button>
       </el-form>
-      <div class="login-footer">
-        <router-link to="/admin/register">没有账号？去注册</router-link>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { reactive, ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '../stores/auth'
 import api from '../api/request'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const loading = ref(false)
 const form = reactive({ username: '', password: '' })
+
+onMounted(() => {
+  const expiredMsg = sessionStorage.getItem('vblog_auth_expired_msg')
+  if (expiredMsg) {
+    sessionStorage.removeItem('vblog_auth_expired_msg')
+    ElMessage.warning(expiredMsg)
+  }
+})
 
 async function handleLogin() {
   if (!form.username || !form.password) {
@@ -44,7 +50,8 @@ async function handleLogin() {
     if (res.access_token) {
       authStore.setToken(res.access_token)
       ElMessage.success('登录成功')
-      await router.push('/admin')
+      const redirect = route.query.redirect || '/admin'
+      await router.push(redirect)
     } else {
       ElMessage.error('登录失败：未收到令牌')
     }
@@ -85,17 +92,5 @@ async function handleLogin() {
   font-size: 14px;
   color: var(--muted);
   margin-bottom: 24px;
-}
-.login-footer {
-  text-align: center;
-  margin-top: 16px;
-  font-size: 13px;
-}
-.login-footer a {
-  color: var(--accent);
-  text-decoration: none;
-}
-.login-footer a:hover {
-  text-decoration: underline;
 }
 </style>

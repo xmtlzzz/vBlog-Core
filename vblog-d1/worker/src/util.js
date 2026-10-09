@@ -52,7 +52,7 @@ export async function verifyJWT(secret, token) {
     if (diff !== 0) return null;
     const claims = JSON.parse(dec.decode(b64urlToBytes(p)));
     const now = Math.floor(Date.now() / 1000);
-    if (!claims || !claims.exp || claims.exp < now) return null;
+    if (!claims || !claims.exp || claims.exp < now) return { expired: true };
     return claims;
   } catch {
     return null;

@@ -96,12 +96,16 @@ const selectedIndex = ref(0)
 const inputRef = ref(null)
 const listRef = ref(null)
 let searchTimer = null
+let searchRequestId = 0
 
 watch(() => props.modelValue, (val) => {
   isOpen.value = val
   if (val) {
+    searchRequestId++
+    clearTimeout(searchTimer)
     query.value = ''
     results.value = []
+    loading.value = false
     selectedIndex.value = 0
     nextTick(() => {
       inputRef.value?.focus()
@@ -121,6 +125,7 @@ function cleanExcerpt(text) {
 
 function onInput() {
   clearTimeout(searchTimer)
+  const reqId = ++searchRequestId
   const q = query.value.trim()
   if (!q) {
     results.value = []
@@ -133,12 +138,18 @@ function onInput() {
       const res = await api.get('/posts', {
         params: { page: 1, per_page: 20, search: q, status: 'published' }
       })
-      results.value = res.data || []
-      selectedIndex.value = 0
+      if (reqId === searchRequestId) {
+        results.value = res.data || []
+        selectedIndex.value = 0
+      }
     } catch {
-      results.value = []
+      if (reqId === searchRequestId) {
+        results.value = []
+      }
     } finally {
-      loading.value = false
+      if (reqId === searchRequestId) {
+        loading.value = false
+      }
     }
   }, 220)
 }

@@ -234,11 +234,11 @@ npm run build
 
 构建产物输出到 `web/dist/`。将 `dist/` 目录内容复制到 `server/static/`，Go 服务器会自动提供静态文件服务并处理 SPA 路由。
 
-### 6. 注册管理员
+### 6. 管理员登录
 
-首次使用需注册管理员账号：
+个人博客系统默认关闭公开注册以保障安全性，系统内置管理员账号或可通过 seed 脚本初始化：
 
-1. 访问 `/admin/register` 注册账号
+1. 访问 `/admin/login` 输入账号密码登录
 2. 登录后即可进入后台管理
 
 ### 7. 填充测试数据（可选）
@@ -248,7 +248,7 @@ cd server
 go run ./cmd/seed/
 ```
 
-自动创建 50 篇测试文章和 20 个标签。
+自动创建测试管理员账号、50 篇测试文章和 20 个标签。
 
 ## 运行测试
 
@@ -275,13 +275,13 @@ go test ./... -v
 | GET | `/api/settings` | 站点设置 |
 | GET | `/api/dashboard/stats` | 统计数据 |
 | POST | `/api/auth/login` | 用户登录 |
-| POST | `/api/auth/register` | 用户注册 |
 | GET | `/api/rss` | RSS Feed |
 
 ### 管理接口（需 JWT）
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
+| GET | `/api/auth/me` | 当前登录用户信息 |
 | POST | `/api/posts` | 创建文章 |
 | PUT | `/api/posts/{id}` | 更新文章 |
 | DELETE | `/api/posts/{id}` | 删除文章（移入回收站） |

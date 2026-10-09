@@ -3,12 +3,15 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	restful "github.com/emicklei/go-restful/v3"
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
+	"gorm.io/gorm"
 	"vblog-core/model"
 	"vblog-core/service"
 )
@@ -184,7 +187,35 @@ func (c *CommentResource) listByPost(req *restful.Request, resp *restful.Respons
 }
 
 func (c *CommentResource) createPublic(req *restful.Request, resp *restful.Response) {
-	postId, _ := strconv.ParseUint(req.PathParameter("postId"), 10, 32)
+	postId, err := strconv.ParseUint(req.PathParameter("postId"), 10, 32)
+	if err != nil || postId == 0 {
+		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "无效的文章ID"})
+		return
+	}
+
+	// 校验文章是否存在且为已发布状态
+	var post model.Post
+	if err := c.Service.DB.Select("id, status").First(&post, postId).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			resp.WriteHeaderAndEntity(http.StatusNotFound, map[string]string{"error": "文章不存在"})
+			return
+		}
+		resp.WriteError(http.StatusInternalServerError, err)
+		return
+	}
+	if post.Status != "published" {
+		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "该文章不允许评论"})
+		return
+	}
+
+	// 校验全站评论开关
+	var commentSetting model.Setting
+	if err := c.Service.DB.Where("key = ?", "enable_comments").First(&commentSetting).Error; err == nil {
+		if strings.TrimSpace(commentSetting.Value) == "false" {
+			resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "评论功能已关闭"})
+			return
+		}
+	}
 
 	// Cloudflare Turnstile 人机验证（gate 不 replace）：先取 body 里的 token 校验
 	raw, err := io.ReadAll(req.Request.Body)
@@ -209,6 +240,28 @@ func (c *CommentResource) createPublic(req *restful.Request, resp *restful.Respo
 		resp.WriteError(http.StatusBadRequest, err)
 		return
 	}
+
+	comment.Body = strings.TrimSpace(comment.Body)
+	comment.AuthorName = strings.TrimSpace(comment.AuthorName)
+	comment.AuthorEmail = strings.TrimSpace(comment.AuthorEmail)
+
+	if comment.Body == "" {
+		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "评论内容不能为空"})
+		return
+	}
+	if len([]rune(comment.Body)) > 1000 {
+		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "评论内容过长（最多1000字）"})
+		return
+	}
+	if len([]rune(comment.AuthorName)) > 50 {
+		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "昵称过长（最多50字）"})
+		return
+	}
+	if len(comment.AuthorEmail) > 100 {
+		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "邮箱格式过长"})
+		return
+	}
+
 	comment.PostID = uint(postId)
 	comment.Status = "pending"
 	if err := c.Service.Create(&comment); err != nil {

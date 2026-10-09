@@ -91,7 +91,7 @@ func (s *PostService) List(page, perPage int, tag, status, search string) ([]mod
 	}
 	q.Count(&total)
 
-	err := q.Preload("Tags").Order("pinned DESC, created_at DESC").
+	err := q.Omit("content").Preload("Tags").Order("pinned DESC, created_at DESC").
 		Offset((page - 1) * perPage).Limit(perPage).Find(&posts).Error
 	return posts, total, err
 }

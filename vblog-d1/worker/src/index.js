@@ -63,7 +63,9 @@ async function route(request, env, url, path, method) {
     // ── 认证 ────────────────────────────────────────────────
     if (first === 'auth') {
       if (method === 'POST' && second === 'login') return login(request, env);
-      if (method === 'POST' && second === 'register') return register(request, env);
+      if (method === 'GET' && second === 'me') {
+        return requireAuth(request, env, (claims) => json({ id: claims.user_id, username: claims.username }));
+      }
     }
 
     // ── 站点设置 ─────────────────────────────────────────────
@@ -191,12 +193,15 @@ async function requireAuth(request, env, handler) {
   if (!token) return fail('missing token', 401);
   const claims = await verifyJWT(env.JWT_SECRET || '', token);
   if (!claims) return fail('invalid token', 401);
+  if (claims.expired) return fail('token expired', 401);
   return handler(claims);
 }
 
 async function readerClaims(request, env) {
   const auth = request.headers.get('Authorization') || '';
-  return auth.startsWith('Bearer ') ? verifyJWT(env.JWT_SECRET || '', auth.slice(7)) : null;
+  if (!auth.startsWith('Bearer ')) return null;
+  const claims = await verifyJWT(env.JWT_SECRET || '', auth.slice(7));
+  return (claims && !claims.expired) ? claims : null;
 }
 
 async function issueTokens(env, user) {
@@ -215,26 +220,6 @@ async function login(request, env) {
     return fail('invalid credentials', 401);
   }
   return issueTokens(env, user);
-}
-
-async function register(request, env) {
-  if (!(await rateLimit(request, 60, 5))) return fail('请求过于频繁，请稍后再试', 429);
-  // 首号闸门：已存在用户则关闭公开注册（首个注册者即管理员）
-  const anyUser = await env.DB.prepare('SELECT id FROM users LIMIT 1').first();
-  if (anyUser) return fail('注册已关闭：管理员已存在', 403);
-  const body = await readJson(request);
-  const username = String((body && body.username) || '');
-  const password = String((body && body.password) || '');
-  const email = String((body && body.email) || '');
-  if (!username || !password) return fail('注册失败，用户名可能已存在');
-  const exists = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first();
-  if (exists) return fail('注册失败，用户名可能已存在');
-  const hash = await hashPassword(password);
-  const res = await env.DB.prepare(
-    'INSERT INTO users (username, password, email, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(username, hash, email, 'admin', nowISO(), nowISO()).run();
-  const id = res.meta.last_row_id;
-  return issueTokens(env, { id, username });
 }
 
 // ══════════════════════════ 设置 ══════════════════════════
@@ -421,7 +406,8 @@ async function listPosts(env, url, authenticated = false) {
   ).bind(...binds, perPage, (page - 1) * perPage).all();
 
   const data = rows.results.map(toPostResp);
-  return json({ data, total: total.n || 0, page }, 200, { cf: { cacheTtl: 30 } });
+  const cacheOpt = (!authenticated && (!status || status === 'published')) ? { cf: { cacheTtl: 30 } } : undefined;
+  return json({ data, total: total.n || 0, page }, 200, cacheOpt);
 }
 
 async function getPost(env, id, authenticated = false) {
@@ -429,9 +415,11 @@ async function getPost(env, id, authenticated = false) {
     `${POST_SELECT} WHERE p.id = ? AND p.deleted_at IS NULL${authenticated ? '' : " AND p.status = 'published'"}`
   ).bind(id).first();
   if (!row) return fail('not found', 404);
-  // 阅读量 +1（对齐 Go 端 GetByID；不缓存详情保证计数准确）
-  await env.DB.prepare('UPDATE posts SET views = views + 1 WHERE id = ?').bind(id).run();
-  row.views = (row.views || 0) + 1;
+  // 阅读量 +1（对齐 Go 端 GetByIDForReader；仅公开普通访客累加，管理员后台预览不刷量）
+  if (!authenticated) {
+    await env.DB.prepare('UPDATE posts SET views = views + 1 WHERE id = ?').bind(id).run();
+    row.views = (row.views || 0) + 1;
+  }
   return json(toPostResp(row));
 }
 
@@ -812,10 +800,15 @@ const escapeXml = (s) => String(s || '')
   .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
 // ══════════════════════════ 统计落库 ══════════════════════════
+const BOT_UA_REGEX = /bot|spider|crawl|slurp|bingpreview|facebookexternalhit|whatsapp|google-read-aloud/i;
+
 async function recordPageView(env, request, path) {
   try {
-    const ip = request.headers.get('CF-Connecting-IP') || '';
+    // 过滤后台路径与认证页面，避免自身访问统计虚高与 D1 写配额消耗
+    if (path.startsWith('/admin') || path.startsWith('/login')) return;
     const ua = (request.headers.get('User-Agent') || '').slice(0, 500);
+    if (BOT_UA_REGEX.test(ua)) return;
+    const ip = request.headers.get('CF-Connecting-IP') || '';
     await env.DB.prepare('INSERT INTO page_views (ip, path, user_agent, created_at) VALUES (?, ?, ?, ?)')
       .bind(ip, path.slice(0, 500), ua, nowISO()).run();
   } catch (e) {

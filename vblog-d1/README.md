@@ -18,7 +18,6 @@ vBlog Core 的「纯 Cloudflare 版」克隆：**同一个 Vue 3 前端 + 零依
 | 主域名 | https://vblog.xmtlz.dev |
 | 备用域名（workers.dev） | https://vblog-d1.xmtlzloveasuka.workers.dev（部分网络不可达） |
 | 后台入口 | https://vblog.xmtlz.dev/admin |
-| 注册管理员（首次） | https://vblog.xmtlz.dev/admin/register |
 | 数据库 | D1 `vblog-d1-db`（APAC 区域） |
 | 图片存储 | Workers KV（未启用 R2；启用后自动切换） |
 

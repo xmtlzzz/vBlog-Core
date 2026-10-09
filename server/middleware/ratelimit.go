@@ -67,8 +67,9 @@ func RateLimitFilter(window time.Duration, limit int) restful.FilterFunction {
 			if forwarded := req.Request.Header.Get("X-Forwarded-For"); forwarded != "" {
 				ip = strings.TrimSpace(strings.Split(forwarded, ",")[0])
 			}
-		} else if host, _, err := net.SplitHostPort(ip); err == nil {
-			ip = host // RemoteAddr is host:port; key on host so new connections share the bucket
+		}
+		if host, _, err := net.SplitHostPort(ip); err == nil {
+			ip = host // RemoteAddr or X-Forwarded-For may contain port; normalize to host IP
 		}
 		if !limiter.Allow(ip) {
 			resp.AddHeader("Retry-After", "60")

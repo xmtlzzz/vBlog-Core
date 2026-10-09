@@ -60,7 +60,7 @@ func main() {
 	(&api.TagResource{Service: tagSvc, Auth: jwtFilter}).Register(ws)
 	(&api.CommentResource{Service: commentSvc, Auth: jwtFilter, TurnstileSecret: cfg.Turnstile.Secret, TurnstileHostnames: cfg.Turnstile.Hostnames}).Register(ws)
 	(&api.SettingResource{Service: settingSvc, Auth: jwtFilter}).Register(ws)
-	(&api.AuthResource{Service: authSvc, Secret: cfg.JWT.Secret}).Register(ws)
+	(&api.AuthResource{Service: authSvc, Secret: cfg.JWT.Secret, Auth: jwtFilter}).Register(ws)
 	(&api.RSSResource{DB: db}).Register(ws)
 	// Public stats
 	ws.Route(ws.GET("/api/dashboard/stats").To((&api.DashboardResource{DB: db}).Stats).

@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	restful "github.com/emicklei/go-restful/v3"
@@ -36,5 +38,19 @@ func TestCommentResourceRegister(t *testing.T) {
 		if routes[i].Path != exp.path {
 			t.Errorf("route %d: expected path %s, got %s", i, exp.path, routes[i].Path)
 		}
+	}
+}
+
+func TestCommentCreatePublicInvalidPostID(t *testing.T) {
+	cr := &CommentResource{}
+	ws := new(restful.WebService).Path("/").Produces(restful.MIME_JSON)
+	cr.Register(ws)
+	container := restful.NewContainer()
+	container.Add(ws)
+
+	response := httptest.NewRecorder()
+	container.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/api/posts/not-an-id/comments", nil))
+	if response.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", response.Code)
 	}
 }

@@ -56,7 +56,11 @@ func JWTFilter(secret string) restful.FilterFunction {
 		tokenStr := strings.TrimPrefix(auth, "Bearer ")
 		claims, err := ValidateToken(tokenStr, secret)
 		if err != nil {
-			resp.WriteHeaderAndEntity(http.StatusUnauthorized, map[string]string{"error": "invalid token"})
+			msg := "invalid token"
+			if errors.Is(err, jwt.ErrTokenExpired) {
+				msg = "token expired"
+			}
+			resp.WriteHeaderAndEntity(http.StatusUnauthorized, map[string]string{"error": msg})
 			return
 		}
 		req.SetAttribute("claims", claims)

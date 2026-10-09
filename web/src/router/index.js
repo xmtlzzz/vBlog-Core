@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { isTokenExpired } from '../utils/auth'
 
 const routes = [
   { path: '/', component: () => import('../blog/Home.vue') },
@@ -8,7 +9,7 @@ const routes = [
   { path: '/tags', component: () => import('../blog/Tags.vue') },
   { path: '/about', component: () => import('../blog/About.vue') },
   { path: '/admin/login', component: () => import('../admin/Login.vue') },
-  { path: '/admin/register', component: () => import('../admin/Register.vue') },
+  { path: '/admin/register', redirect: '/admin/login' },
   {
     path: '/admin',
     component: () => import('../admin/Layout.vue'),
@@ -28,10 +29,25 @@ const routes = [
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })
+
 router.beforeEach((to, from, next) => {
   if (to.matched.some(r => r.meta.requiresAuth)) {
-    if (!localStorage.getItem('vblog-token')) next('/admin/login')
-    else next()
-  } else next()
+    const token = localStorage.getItem('vblog-token')
+    if (!token || isTokenExpired(token)) {
+      if (token) {
+        localStorage.removeItem('vblog-token')
+        sessionStorage.setItem('vblog_auth_expired_msg', '登录已过期，请重新登录')
+      }
+      next({
+        path: '/admin/login',
+        query: to.fullPath && to.fullPath !== '/admin' ? { redirect: to.fullPath } : {}
+      })
+      return
+    }
+    next()
+  } else {
+    next()
+  }
 })
+
 export default router

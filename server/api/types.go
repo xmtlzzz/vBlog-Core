@@ -42,6 +42,12 @@ type TokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+// UserInfoResponse represents current authenticated user information.
+type UserInfoResponse struct {
+	ID       uint   `json:"id"`
+	Username string `json:"username"`
+}
+
 // DashboardStatsResponse represents dashboard statistics.
 type DashboardStatsResponse struct {
 	TotalPosts    int64 `json:"total_posts"`

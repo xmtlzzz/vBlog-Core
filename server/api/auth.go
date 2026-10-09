@@ -14,12 +14,12 @@ import (
 type AuthResource struct {
 	Service *service.AuthService
 	Secret  string
+	Auth    restful.FilterFunction
 }
 
-// Rate limits: login is stricter (brute force), register looser.
+// Rate limits: login is stricter (brute force).
 var (
-	loginRateFilter    = middleware.RateLimitFilter(time.Minute, 10)
-	registerRateFilter = middleware.RateLimitFilter(time.Minute, 5)
+	loginRateFilter = middleware.RateLimitFilter(time.Minute, 10)
 )
 
 // Register adds auth routes to the given WebService.
@@ -35,27 +35,20 @@ func (a *AuthResource) Register(ws *restful.WebService) {
 		Returns(401, "Unauthorized", ErrorResponse{}).
 		Returns(429, "Too Many Requests", ErrorResponse{}))
 
-	ws.Route(ws.POST("/api/auth/register").Filter(registerRateFilter).To(a.register).
-		Doc("Register a new user").
-		Notes("Registers a new user account and returns JWT tokens. Only available before the first account exists. Rate limited to 5 requests/min per IP.").
-		Metadata(restfulspec.KeyOpenAPITags, []string{"auth"}).
-		Reads(registerRequest{}).
-		Writes(TokenResponse{}).
-		Returns(201, "Created", TokenResponse{}).
-		Returns(400, "Bad Request", ErrorResponse{}).
-		Returns(403, "Forbidden", ErrorResponse{}).
-		Returns(429, "Too Many Requests", ErrorResponse{}))
+	if a.Auth != nil {
+		ws.Route(ws.GET("/api/auth/me").Filter(a.Auth).To(a.me).
+			Doc("Get current user").
+			Notes("Returns the authenticated user info from the token.").
+			Metadata(restfulspec.KeyOpenAPITags, []string{"auth"}).
+			Writes(UserInfoResponse{}).
+			Returns(200, "OK", UserInfoResponse{}).
+			Returns(401, "Unauthorized", ErrorResponse{}))
+	}
 }
 
 type loginRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-}
-
-type registerRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Email    string `json:"email"`
 }
 
 func (a *AuthResource) login(req *restful.Request, resp *restful.Response) {
@@ -89,35 +82,14 @@ func (a *AuthResource) login(req *restful.Request, resp *restful.Response) {
 	})
 }
 
-func (a *AuthResource) register(req *restful.Request, resp *restful.Response) {
-	var body registerRequest
-	if err := req.ReadEntity(&body); err != nil {
-		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+func (a *AuthResource) me(req *restful.Request, resp *restful.Response) {
+	claims, ok := req.Attribute("claims").(*middleware.Claims)
+	if !ok || claims == nil {
+		resp.WriteHeaderAndEntity(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
-
-	// First-account gate: public registration closes once an account exists.
-	exists, err := a.Service.HasAnyUser()
-	if err != nil {
-		resp.WriteHeaderAndEntity(http.StatusInternalServerError, map[string]string{"error": "internal error"})
-		return
-	}
-	if exists {
-		resp.WriteHeaderAndEntity(http.StatusForbidden, map[string]string{"error": "注册已关闭：管理员已存在"})
-		return
-	}
-
-	user, err := a.Service.Register(body.Username, body.Password, body.Email)
-	if err != nil {
-		resp.WriteHeaderAndEntity(http.StatusBadRequest, map[string]string{"error": "注册失败，用户名可能已存在"})
-		return
-	}
-
-	accessToken, _ := middleware.GenerateToken(user.ID, user.Username, a.Secret, 24*time.Hour)
-	refreshToken, _ := middleware.GenerateToken(user.ID, user.Username, a.Secret, 7*24*time.Hour)
-
-	resp.WriteHeaderAndEntity(http.StatusCreated, map[string]string{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
+	resp.WriteEntity(UserInfoResponse{
+		ID:       claims.UserID,
+		Username: claims.Username,
 	})
 }

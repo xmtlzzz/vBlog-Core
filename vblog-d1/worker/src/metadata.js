@@ -1,6 +1,6 @@
 import { buildExcerpt } from './util.js';
 
-const titles = { '/archives': '归档', '/modules': '模块', '/tags': '标签', '/about': '关于' };
+const titles = { '/archives': '归档', '/modules': '模块', '/tags': '标签', '/friends': '友情链接', '/about': '关于' };
 const escape = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 
 export async function pageMetadata(env, url) {

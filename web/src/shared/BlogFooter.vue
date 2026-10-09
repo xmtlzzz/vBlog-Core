@@ -23,7 +23,7 @@
         </span>
         <a :href="settings.author_github" target="_blank" rel="noopener">GitHub</a>
       </template>
-      <a href="/api/rss" target="_blank">RSS</a>
+      <a href="/feed.xml" target="_blank" rel="alternate" type="application/rss+xml">RSS</a>
     </div>
   </footer>
 </template>

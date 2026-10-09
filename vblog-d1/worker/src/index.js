@@ -34,6 +34,18 @@ export default {
     if ((path === '/sitemap.xml' || path === '/sitemap') && method === 'GET') {
       return sitemapXml(request, env);
     }
+    if ((path === '/feed.xml' || path === '/rss.xml' || path === '/feed' || path === '/rss') && method === 'GET') {
+      return rssFeed(request, env);
+    }
+    if (path === '/robots.txt' && method === 'GET') {
+      const baseUrl = `${url.protocol}//${url.host}`;
+      return new Response(`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: ${baseUrl}/sitemap.xml\n`, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Cache-Control': 'public, max-age=86400',
+        },
+      });
+    }
     if (!path.startsWith('/api')) {
       // 仅记录页面导航（无扩展名或 .html），静态资源不计 PV，避免统计虚高与 D1 写配额浪费
       const isPage = ['GET', 'HEAD'].includes(method) && (!/\.[\w]+$/.test(path) || path.endsWith('.html'));
@@ -155,7 +167,7 @@ async function route(request, env, url, path, method) {
     }
 
     // ── RSS & Sitemap ───────────────────────────────────────
-    if (first === 'rss' && method === 'GET') return rssFeed(env);
+    if ((first === 'rss' || first === 'feed') && method === 'GET') return rssFeed(request, env);
     if ((first === 'sitemap.xml' || first === 'sitemap') && method === 'GET') return sitemapXml(request, env);
 
     return fail('not found', 404);
@@ -762,7 +774,9 @@ async function serveImage(env, path) {
 }
 
 // ══════════════════════════ RSS ══════════════════════════
-async function rssFeed(env) {
+async function rssFeed(request, env) {
+  const url = request ? new URL(request.url) : null;
+  const baseUrl = url ? `${url.protocol}//${url.host}` : '';
   const setting = await env.DB.prepare("SELECT value FROM settings WHERE key = 'site_title'").first();
   const siteTitle = (setting && setting.value) || 'vBlog';
   const rows = await env.DB.prepare(
@@ -774,10 +788,10 @@ async function rssFeed(env) {
   const items = rows.results.map((p) =>
     `      <item>\n` +
     `        <title>${escapeXml(p.title)}</title>\n` +
-    `        <link>/post/${p.id}</link>\n` +
+    `        <link>${baseUrl}/post/${p.id}</link>\n` +
     `        <description>${escapeXml(p.excerpt)}</description>\n` +
     `        <pubDate>${rfc1123(p.created_at)}</pubDate>\n` +
-    `        <guid>post-${p.id}</guid>\n` +
+    `        <guid isPermaLink="true">${baseUrl}/post/${p.id}</guid>\n` +
     `      </item>`
   ).join('\n');
 
@@ -786,7 +800,7 @@ async function rssFeed(env) {
     `<rss version="2.0">\n` +
     `  <channel>\n` +
     `    <title>${escapeXml(siteTitle)}</title>\n` +
-    `    <link>/</link>\n` +
+    `    <link>${baseUrl}/</link>\n` +
     `    <description>RSS Feed for ${escapeXml(siteTitle)}</description>\n` +
     `    <language>zh-CN</language>\n` +
     `    <lastBuildDate>${rfc1123(nowISO())}</lastBuildDate>\n` +
@@ -795,8 +809,11 @@ async function rssFeed(env) {
     `</rss>\n`;
 
   return new Response(xml, {
-    headers: { 'Content-Type': 'application/xml; charset=utf-8' },
-    cf: { cacheTtl: 300 },
+    headers: {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=600',
+    },
+    cf: { cacheTtl: 600 },
   });
 }
 

@@ -1,45 +1,56 @@
 :root {
-  --bg: #fafafa; --surface: #ffffff; --fg: #171717; --muted: #737373;
-  --border: #e5e5e5; --accent: #2563eb; --accent-soft: #eff6ff;
+  --bg: #faf9fc; --surface: #ffffff; --fg: #131316; --muted: #6e6e78;
+  --border: #e6e5ec; --accent: #2563eb; --accent-soft: #eff6ff;
   --success: #16a34a; --warning: #f59e0b; --error: #dc2626;
   --radius-sm: 6px; --radius: 8px; --radius-lg: 12px;
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  --nav-bg: rgba(250, 250, 250, 0.85);
-  --card-hover: #f5f5f5;
-  --tag-bg: #f0f0f0;
-  --tag-fg: #525252;
-  --code-bg: #f5f5f5;
-  --code-border: #e5e5e5;
-  --blockquote-border: #d4d4d4;
-  --sidebar-bg: #f5f5f5;
+  --nav-bg: rgba(250, 249, 252, 0.85);
+  --card-hover: #f5f4f8;
+  --tag-bg: #f0f0f4;
+  --tag-fg: #50505a;
+  --code-bg: #f4f3f8;
+  --code-border: #e4e3ec;
+  --blockquote-border: #d2d1dc;
+  --sidebar-bg: #f5f4f8;
   --success-soft: #f0fdf4;
   --warning-soft: #fffbeb;
   --error-soft: #fef2f2;
+  --ambient-glow-1: rgba(37, 99, 235, 0.05);
+  --ambient-glow-2: rgba(147, 51, 234, 0.03);
 }
 [data-theme="dark"] {
-  --bg: #0a0a0a; --surface: #141414; --fg: #ededed; --muted: #a3a3a3;
-  --border: #262626; --accent: #3b82f6; --accent-soft: #172554;
+  --bg: #050505; --surface: #0e0e12; --fg: #f4f4f6; --muted: #9e9ea8;
+  --border: rgba(255, 255, 255, 0.08); --accent: #3b82f6; --accent-soft: #172554;
   --success: #22c55e; --warning: #eab308; --error: #ef4444;
-  --nav-bg: rgba(10, 10, 10, 0.85);
-  --card-hover: #1a1a1a;
-  --tag-bg: #1f1f1f;
-  --tag-fg: #d4d4d4;
-  --code-bg: #1a1a1a;
-  --code-border: #2a2a2a;
-  --blockquote-border: #3a3a3a;
-  --sidebar-bg: #111111;
+  --nav-bg: rgba(5, 5, 5, 0.85);
+  --card-hover: #16161c;
+  --tag-bg: #141418;
+  --tag-fg: #d2d2d8;
+  --code-bg: #0c0c10;
+  --code-border: rgba(255, 255, 255, 0.09);
+  --blockquote-border: #2a2a34;
+  --sidebar-bg: #0a0a0d;
   --success-soft: #052e16;
   --warning-soft: #422006;
   --error-soft: #450a0a;
+  --ambient-glow-1: rgba(59, 130, 246, 0.12);
+  --ambient-glow-2: rgba(168, 85, 247, 0.08);
 }
 body {
   margin: 0;
   min-width: 320px;
-  background: var(--bg); color: var(--fg); font-family: var(--font-sans);
-  font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased;
-  transition: background 0.3s ease, color 0.3s ease;
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 50% 0%, var(--ambient-glow-1) 0%, transparent 600px),
+    radial-gradient(circle at 85% 140px, var(--ambient-glow-2) 0%, transparent 450px);
+  background-attachment: fixed;
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ── Box sizing & scoped smooth transitions for theme switching ── */
@@ -47,8 +58,33 @@ body {
   box-sizing: border-box;
 }
 
-body, .top, .article-body, .post-card, .search-box, .sidebar, .admin-layout, .nav-links a, .theme-toggle, .btn {
-  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+/* ── Synchronized 260ms smooth theme switch across all elements, exactly matching vMaker ── */
+body,
+#app,
+.top,
+.inner,
+.article-body,
+.post-card,
+.stats-bar,
+.stat-item,
+.search-box,
+.sidebar,
+.admin-layout,
+.nav-links a,
+.admin-btn,
+.nav-search-btn,
+.menu-toggle,
+.btn,
+.tag,
+.toc,
+.post-nav,
+.comment-section,
+.comment-item,
+.code-block,
+blockquote,
+footer,
+h1, h2, h3, h4, p, span, a, input, textarea, select {
+  transition: background-color 260ms ease, border-color 260ms ease, color 260ms ease, fill 260ms ease, stroke 260ms ease, box-shadow 260ms ease;
 }
 
 /* ── Fade in ── */

@@ -103,14 +103,11 @@ function handleSearch() {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(250, 250, 250, 0.85);
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
-  transition: background 0.3s ease, border-color 0.3s ease;
-}
-[data-theme="dark"] .top {
-  background: rgba(10, 10, 10, 0.85);
+  transition: background 260ms ease, border-color 260ms ease;
 }
 .inner {
   min-width: 0;

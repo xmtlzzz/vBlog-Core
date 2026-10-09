@@ -78,7 +78,7 @@
 withDefaults(
   defineProps<{
     isDark: boolean
-    size?: 'xs' | 'sm' | 'md'
+    size?: 'xs' | 'sm' | 'md' | 'lg'
   }>(),
   {
     size: 'sm'
@@ -148,6 +148,15 @@ defineEmits<{
   --knob-pad: 4px;
   --travel-x: 34px;
   --cloud-scale: 0.65;
+}
+
+.size-lg {
+  --toggle-w: 84px;
+  --toggle-h: 40px;
+  --knob-size: 32px;
+  --knob-pad: 4px;
+  --travel-x: 44px;
+  --cloud-scale: 0.82;
 }
 
 /* ========================================================= */
@@ -255,6 +264,11 @@ defineEmits<{
 .size-md .glint-1 {
   width: 9px;
   height: 9px;
+}
+
+.size-lg .glint-1 {
+  width: 11px;
+  height: 11px;
 }
 
 .sun-dot {
@@ -492,7 +506,7 @@ defineEmits<{
   height: var(--knob-size);
   border-radius: 9999px;
   z-index: 2;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
 .is-dark .sliding-knob {

@@ -10,11 +10,10 @@ export const useThemeStore = defineStore('theme', () => {
 
   function applyTheme(t) {
     document.documentElement.setAttribute('data-theme', t)
-    if (t === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+    const isDark = t === 'dark'
+    document.documentElement.classList.toggle('dark', isDark)
+    document.documentElement.classList.toggle('theme-dark', isDark)
+    document.documentElement.classList.toggle('theme-light', !isDark)
   }
 
   function toggle() {

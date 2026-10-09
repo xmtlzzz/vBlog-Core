@@ -22,10 +22,12 @@
           var isDark = t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
           if (isDark) {
             document.documentElement.setAttribute('data-theme', 'dark');
-            document.documentElement.classList.add('dark');
+            document.documentElement.classList.add('dark', 'theme-dark');
+            document.documentElement.classList.remove('theme-light');
           } else {
             document.documentElement.setAttribute('data-theme', 'light');
-            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.remove('dark', 'theme-dark');
+            document.documentElement.classList.add('theme-light');
           }
         } catch (e) {}
       })();

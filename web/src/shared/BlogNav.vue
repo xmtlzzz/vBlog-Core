@@ -5,12 +5,12 @@
         <img class="mascot" src="/nav-mascot.png" alt="vBlog" />vBlog
       </router-link>
       <div id="blog-navigation" :class="['nav-links', { 'is-open': menuOpen }]">
-        <router-link to="/">首页 Home</router-link>
-        <router-link to="/archives">归档 Archives</router-link>
-        <router-link to="/modules">模块 Modules</router-link>
-        <router-link to="/tags">标签 Tags</router-link>
-        <router-link to="/friends">友链 Friends</router-link>
-        <router-link to="/about">关于 About</router-link>
+        <router-link to="/" @click="menuOpen = false">首页 Home</router-link>
+        <router-link to="/archives" @click="menuOpen = false">归档 Archives</router-link>
+        <router-link to="/modules" @click="menuOpen = false">模块 Modules</router-link>
+        <router-link to="/tags" @click="menuOpen = false">标签 Tags</router-link>
+        <router-link to="/friends" @click="menuOpen = false">友链 Friends</router-link>
+        <router-link to="/about" @click="menuOpen = false">关于 About</router-link>
       </div>
       <div class="nav-right">
         <button class="nav-search-btn" @click="handleSearch" aria-label="搜索文章" title="搜索文章 (⌘K / Ctrl+K)">
@@ -24,8 +24,22 @@
           size="sm"
           @toggle="themeStore.toggle()"
         />
-        <button class="menu-toggle" :aria-expanded="menuOpen" aria-controls="blog-navigation" :aria-label="menuOpen ? '收起导航' : '展开导航'" @click="menuOpen = !menuOpen">
-          {{ menuOpen ? '关闭' : '菜单' }}
+        <button
+          class="menu-toggle"
+          :aria-expanded="menuOpen"
+          aria-controls="blog-navigation"
+          :aria-label="menuOpen ? '收起导航菜单' : '展开导航菜单'"
+          @click="menuOpen = !menuOpen"
+        >
+          <svg v-if="!menuOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="18" x2="20" y2="18"/>
+          </svg>
+          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
         </button>
       </div>
     </div>
@@ -201,7 +215,24 @@ function handleSearch() {
 .theme-toggle:hover {
   background: var(--card-hover);
 }
-.menu-toggle { display: none; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--fg); cursor: pointer; }
+.menu-toggle {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.menu-toggle:hover {
+  color: var(--fg);
+  border-color: var(--accent);
+  background: var(--card-hover);
+}
 button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 @media (max-width: 800px) {

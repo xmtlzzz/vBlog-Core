@@ -31,7 +31,7 @@
         @keyup.escape="closeSearch"
       />
       <button v-if="searchQuery" class="search-clear" @click="closeSearch" aria-label="清除搜索" title="清除">✕</button>
-      <span v-else class="search-kbd">⌘K</span>
+      <span v-else class="search-kbd" @click="triggerGlobalSearch" title="打开全站搜索 (⌘K)">⌘K</span>
     </div>
   </section>
 
@@ -177,11 +177,8 @@ function closeSearch() {
   }
 }
 
-function onKeydown(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-    e.preventDefault()
-    openSearch()
-  }
+function triggerGlobalSearch() {
+  window.dispatchEvent(new CustomEvent('vblog-open-search'))
 }
 
 function handlePageChange(p) {
@@ -191,8 +188,6 @@ function handlePageChange(p) {
 }
 
 onMounted(async () => {
-  window.addEventListener('keydown', onKeydown)
-  window.addEventListener('vblog-open-search', openSearch)
   if (route.query.search === 'open') {
     openSearch()
   }
@@ -218,8 +213,6 @@ onUnmounted(() => {
   clearTimeout(searchTimer)
   clearInterval(typingTimer)
   clearTimeout(cursorTimer)
-  window.removeEventListener('keydown', onKeydown)
-  window.removeEventListener('vblog-open-search', openSearch)
 })
 </script>
 

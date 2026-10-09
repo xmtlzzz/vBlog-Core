@@ -700,6 +700,13 @@ onUnmounted(() => {
   border-radius: var(--radius-sm, 6px);
   font-size: 12px;
   font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tag:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .meta-action-btn {
   display: inline-flex;

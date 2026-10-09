@@ -42,7 +42,7 @@ import CustomWidgets from '../shared/CustomWidgets.vue'
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.04em;
-  color: var(--primary, #3b82f6);
+  color: var(--accent);
   opacity: 0.9;
   margin-bottom: 1rem;
 }
@@ -51,13 +51,13 @@ import CustomWidgets from '../shared/CustomWidgets.vue'
   font-size: 1.6rem;
   font-weight: 700;
   margin: 0 0 0.75rem;
-  color: var(--text, #111827);
+  color: var(--fg);
 }
 
 .not-found-desc {
   font-size: 0.95rem;
   line-height: 1.6;
-  color: var(--text-muted, #6b7280);
+  color: var(--muted);
   margin: 0 0 2rem;
 }
 
@@ -73,8 +73,8 @@ import CustomWidgets from '../shared/CustomWidgets.vue'
   align-items: center;
   gap: 0.5rem;
   padding: 0.65rem 1.4rem;
-  border-radius: 8px;
-  background: var(--primary, #3b82f6);
+  border-radius: var(--radius, 8px);
+  background: var(--accent);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 500;
@@ -92,10 +92,10 @@ import CustomWidgets from '../shared/CustomWidgets.vue'
   align-items: center;
   gap: 0.5rem;
   padding: 0.65rem 1.4rem;
-  border-radius: 8px;
-  background: var(--bg-card, rgba(0, 0, 0, 0.04));
-  border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
-  color: var(--text, #111827);
+  border-radius: var(--radius, 8px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--fg);
   font-size: 0.9rem;
   font-weight: 500;
   text-decoration: none;
@@ -103,7 +103,7 @@ import CustomWidgets from '../shared/CustomWidgets.vue'
 }
 
 .btn-secondary:hover {
-  background: var(--bg-hover, rgba(0, 0, 0, 0.08));
+  background: var(--card-hover);
   transform: translateY(-1px);
 }
 </style>

@@ -2,7 +2,12 @@
   <div class="edit-post-page">
     <!-- Top bar -->
     <div class="editor-topbar">
-      <button class="back-btn" @click="router.push('/admin/posts')">← 返回文章列表</button>
+      <div class="topbar-left">
+        <button class="back-btn" @click="router.push('/admin/posts')">← 返回文章列表</button>
+        <span v-if="draftSavedTime" class="draft-indicator" :title="'草稿已保存在本地浏览器中'">
+          <span class="draft-dot"></span>已自动保存草稿 {{ draftSavedTime }}
+        </span>
+      </div>
       <div class="editor-actions">
         <el-button :loading="saving" @click="handleSave('draft')">保存草稿</el-button>
         <el-button type="primary" :loading="saving" @click="handleSave('published')">发布</el-button>
@@ -72,7 +77,73 @@ const saved = ref(false)
 const allTags = ref([])
 const form = reactive({ title: '', content: '', excerpt: '', status: 'published', tagNames: [] })
 
+// ── 本地草稿防丢（Auto-save draft）──
+const draftKey = computed(() => 'vblog_draft_' + (postId.value || 'new'))
+const draftSavedTime = ref('')
+let autoSaveTimer = null
+let isRestoring = false
+
 const isDirty = computed(() => form.title.trim() || form.content.trim() || form.excerpt.trim())
+
+watch(
+  () => [form.title, form.content, form.excerpt, form.tagNames],
+  () => {
+    if (saved.value || isRestoring) return
+    if (!form.title.trim() && !form.content.trim()) return
+    clearTimeout(autoSaveTimer)
+    autoSaveTimer = setTimeout(() => {
+      try {
+        const data = {
+          title: form.title,
+          content: form.content,
+          excerpt: form.excerpt,
+          tagNames: [...form.tagNames],
+          status: form.status,
+          savedAt: Date.now()
+        }
+        localStorage.setItem(draftKey.value, JSON.stringify(data))
+        const d = new Date()
+        draftSavedTime.value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
+      } catch {
+        // quota exceeded or storage disabled
+      }
+    }, 1500)
+  },
+  { deep: true }
+)
+
+function checkLocalDraft() {
+  try {
+    const raw = localStorage.getItem(draftKey.value)
+    if (!raw) return
+    const draft = JSON.parse(raw)
+    if (!draft || (!draft.title && !draft.content)) return
+
+    // 如果与当前内容一致则不提示
+    const isDifferent = draft.title !== form.title || draft.content !== form.content || draft.excerpt !== form.excerpt
+    if (!isDifferent) return
+
+    const timeStr = draft.savedAt ? new Date(draft.savedAt).toLocaleTimeString() : '之前'
+    ElMessageBox.confirm(`检测到本地浏览器保存有未发布的草稿（${timeStr}），是否恢复？`, '恢复草稿', {
+      confirmButtonText: '恢复草稿',
+      cancelButtonText: '放弃',
+      type: 'info'
+    }).then(() => {
+      isRestoring = true
+      form.title = draft.title || ''
+      form.content = draft.content || ''
+      form.excerpt = draft.excerpt || ''
+      if (Array.isArray(draft.tagNames)) form.tagNames = draft.tagNames
+      if (draft.status) form.status = draft.status
+      ElMessage.success('已恢复本地草稿')
+      setTimeout(() => { isRestoring = false }, 500)
+    }).catch(() => {
+      // 用户选择放弃，不覆盖
+    })
+  } catch {
+    // parse error
+  }
+}
 
 onBeforeRouteLeave(async () => {
   if (saved.value || !isDirty.value) return true
@@ -94,7 +165,10 @@ function onBeforeUnload(e) {
   e.returnValue = ''
 }
 window.addEventListener('beforeunload', onBeforeUnload)
-onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload))
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', onBeforeUnload)
+  clearTimeout(autoSaveTimer)
+})
 
 async function fetchTags() {
   const res = await api.get('/tags').catch(() => [])
@@ -111,6 +185,8 @@ async function fetchPost() {
     form.excerpt = post.excerpt || ''
     form.status = post.status || 'published'
     form.tagNames = (post.tags || []).map(t => t.name)
+    // 加载完已有文章后检查本地草稿
+    checkLocalDraft()
   } catch {
     ElMessage.error('文章加载失败')
     router.push('/admin/posts')
@@ -136,11 +212,15 @@ async function handleSave(statusOverride) {
     if (isEdit.value) {
       await api.put(`/posts/${postId.value}`, payload)
       saved.value = true
+      localStorage.removeItem(draftKey.value)
+      draftSavedTime.value = ''
       ElMessage.success(status === 'published' ? '文章已发布更新' : '草稿已保存')
     } else {
       await api.post('/posts', payload)
-      ElMessage.success(status === 'published' ? '文章已创建并发布' : '草稿已保存')
       saved.value = true
+      localStorage.removeItem(draftKey.value)
+      draftSavedTime.value = ''
+      ElMessage.success(status === 'published' ? '文章已创建并发布' : '草稿已保存')
       router.push('/admin/posts')
     }
   } catch {
@@ -150,11 +230,57 @@ async function handleSave(statusOverride) {
   }
 }
 
+// ── 图片上传前端 WebP 压缩转换 ──
+async function compressImageToWebP(file) {
+  // SVG, GIF（动图）或非图片文件直接返回原文件
+  if (!file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') {
+    return file
+  }
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let { width, height } = img
+      const maxDim = 2560 // 限制最大边长不超过 2560px
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width)
+          width = maxDim
+        } else {
+          width = Math.round((width * maxDim) / height)
+          height = maxDim
+        }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob((blob) => {
+        if (blob && blob.size < file.size) {
+          const newName = file.name.replace(/\.[^.]+$/, '') + '.webp'
+          const webpFile = new File([blob], newName, { type: 'image/webp' })
+          resolve(webpFile)
+        } else {
+          resolve(file)
+        }
+      }, 'image/webp', 0.85)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      resolve(file)
+    }
+    img.src = url
+  })
+}
+
 async function onUploadImg(files, callback) {
   const urls = []
   for (const file of files) {
+    const processedFile = await compressImageToWebP(file)
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', processedFile)
     try {
       const res = await api.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -177,6 +303,8 @@ onMounted(() => {
     if (uploadedTitle) form.title = uploadedTitle
     sessionStorage.removeItem('md-upload-content')
     sessionStorage.removeItem('md-upload-title')
+  } else if (!isEdit.value) {
+    checkLocalDraft()
   } else {
     fetchPost()
   }
@@ -193,6 +321,12 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
+  gap: 16px;
+}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 .back-btn {
   background: none;
@@ -205,6 +339,22 @@ onMounted(() => {
 }
 .back-btn:hover {
   color: var(--fg);
+}
+.draft-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--tag-bg);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.draft-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success, #16a34a);
 }
 .editor-actions {
   display: flex;

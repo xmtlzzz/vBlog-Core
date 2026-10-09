@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   vBlog D1 — 一键构建 + 部署到 Cloudflare
 
@@ -20,6 +20,19 @@ $Root   = $PSScriptRoot
 $Web    = Join-Path $Root 'web'
 $Worker = Join-Path $Root 'worker'
 $env:WRANGLER_HOME = Join-Path $Root '.wrangler'
+
+if (-not $env:HTTPS_PROXY) {
+  try {
+    $reg = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -ErrorAction SilentlyContinue
+    if ($reg.ProxyEnable -eq 1 -and $reg.ProxyServer) {
+      $proxyServer = $reg.ProxyServer
+      if ($proxyServer -notmatch '^https?://') { $proxyServer = "http://$proxyServer" }
+      $env:HTTPS_PROXY = $proxyServer
+      $env:HTTP_PROXY  = $proxyServer
+      Write-Host "[*] 检测到系统代理: $proxyServer，已注入环境变量" -ForegroundColor DarkGray
+    }
+  } catch {}
+}
 
 if (-not (Test-Path (Join-Path $Worker 'node_modules\wrangler'))) {
   Write-Host '[0/3] 安装 wrangler（本地依赖）…' -ForegroundColor Cyan

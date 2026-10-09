@@ -84,6 +84,22 @@
       </el-form>
     </div>
 
+    <!-- Friends -->
+    <div class="settings-section slide-up" style="animation-delay: 200ms">
+      <h2 class="section-title">友链设置</h2>
+      <el-form label-position="top">
+        <el-form-item label="友情链接列表">
+          <el-input
+            v-model="settings.friends"
+            type="textarea"
+            :rows="6"
+            placeholder="张三的博客|https://example.com|https://example.com/avatar.png|写代码与生活记录&#10;李四的前端小站|https://blog.example.org||热爱 Web 技术"
+          />
+          <div class="field-hint">每行一条友链：名称|链接|头像URL|简介（头像和简介可留空，如：网站名|https://url||描述）</div>
+        </el-form-item>
+      </el-form>
+    </div>
+
     <!-- QR badge -->
     <div class="settings-section slide-up" style="animation-delay: 250ms">
       <h2 class="section-title">页脚二维码徽章</h2>

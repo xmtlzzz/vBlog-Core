@@ -7,6 +7,7 @@ const routes = [
   { path: '/archives', component: () => import('../blog/Archives.vue') },
   { path: '/modules', component: () => import('../blog/Modules.vue') },
   { path: '/tags', component: () => import('../blog/Tags.vue') },
+  { path: '/friends', component: () => import('../blog/Friends.vue') },
   { path: '/about', component: () => import('../blog/About.vue') },
   { path: '/admin/login', component: () => import('../admin/Login.vue') },
   { path: '/admin/register', redirect: '/admin/login' },

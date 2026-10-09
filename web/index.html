@@ -11,7 +11,12 @@
     <script>
       (function() {
         try {
-          var t = localStorage.getItem('vblog-theme');
+          var params = new URLSearchParams(window.location.search);
+          var paramTheme = params.get('theme');
+          var t = (paramTheme === 'dark' || paramTheme === 'light') ? paramTheme : localStorage.getItem('vblog-theme');
+          if (paramTheme === 'dark' || paramTheme === 'light') {
+            localStorage.setItem('vblog-theme', paramTheme);
+          }
           var isDark = t === 'dark' || (!t && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
           if (isDark) {
             document.documentElement.setAttribute('data-theme', 'dark');

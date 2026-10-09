@@ -9,6 +9,7 @@
         <router-link to="/archives">归档 Archives</router-link>
         <router-link to="/modules">模块 Modules</router-link>
         <router-link to="/tags">标签 Tags</router-link>
+        <router-link to="/friends">友链 Friends</router-link>
         <router-link to="/about">关于 About</router-link>
       </div>
       <div class="nav-right">

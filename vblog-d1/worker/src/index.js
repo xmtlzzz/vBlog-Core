@@ -31,6 +31,9 @@ export default {
     if (path.startsWith('/uploads/') && method === 'GET') {
       return serveImage(env, path);
     }
+    if ((path === '/sitemap.xml' || path === '/sitemap') && method === 'GET') {
+      return sitemapXml(request, env);
+    }
     if (!path.startsWith('/api')) {
       // 仅记录页面导航（无扩展名或 .html），静态资源不计 PV，避免统计虚高与 D1 写配额浪费
       const isPage = ['GET', 'HEAD'].includes(method) && (!/\.[\w]+$/.test(path) || path.endsWith('.html'));
@@ -151,8 +154,9 @@ async function route(request, env, url, path, method) {
       return requireAuth(request, env, () => uploadImage(request, env));
     }
 
-    // ── RSS ──────────────────────────────────────────────────
+    // ── RSS & Sitemap ───────────────────────────────────────
     if (first === 'rss' && method === 'GET') return rssFeed(env);
+    if ((first === 'sitemap.xml' || first === 'sitemap') && method === 'GET') return sitemapXml(request, env);
 
     return fail('not found', 404);
   } catch (e) {
@@ -793,6 +797,57 @@ async function rssFeed(env) {
   return new Response(xml, {
     headers: { 'Content-Type': 'application/xml; charset=utf-8' },
     cf: { cacheTtl: 300 },
+  });
+}
+
+async function sitemapXml(request, env) {
+  const url = new URL(request.url);
+  const baseUrl = `${url.protocol}//${url.host}`;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const posts = await env.DB.prepare(
+    "SELECT id, updated_at, created_at FROM posts WHERE status = 'published' AND deleted_at IS NULL ORDER BY created_at DESC"
+  ).all();
+
+  const staticRoutes = [
+    { loc: '/', changefreq: 'daily', priority: '1.0' },
+    { loc: '/archives', changefreq: 'weekly', priority: '0.8' },
+    { loc: '/modules', changefreq: 'weekly', priority: '0.7' },
+    { loc: '/tags', changefreq: 'weekly', priority: '0.7' },
+    { loc: '/friends', changefreq: 'weekly', priority: '0.6' },
+    { loc: '/about', changefreq: 'monthly', priority: '0.6' },
+  ];
+
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+  for (const route of staticRoutes) {
+    xml += `  <url>\n` +
+      `    <loc>${baseUrl}${route.loc}</loc>\n` +
+      `    <lastmod>${today}</lastmod>\n` +
+      `    <changefreq>${route.changefreq}</changefreq>\n` +
+      `    <priority>${route.priority}</priority>\n` +
+      `  </url>\n`;
+  }
+
+  for (const post of (posts.results || [])) {
+    const postDate = (post.updated_at || post.created_at || today).slice(0, 10);
+    xml += `  <url>\n` +
+      `    <loc>${baseUrl}/post/${post.id}</loc>\n` +
+      `    <lastmod>${postDate}</lastmod>\n` +
+      `    <changefreq>weekly</changefreq>\n` +
+      `    <priority>0.8</priority>\n` +
+      `  </url>\n`;
+  }
+
+  xml += '</urlset>\n';
+
+  return new Response(xml, {
+    headers: {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    },
+    cf: { cacheTtl: 3600 },
   });
 }
 

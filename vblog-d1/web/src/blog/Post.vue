@@ -25,14 +25,17 @@
           <button
             type="button"
             class="meta-action-btn"
-            @click="copyPostUrl"
-            :title="copied ? '已复制！' : '复制文章链接'"
+            @click="openShareModal"
+            title="分享文章或生成海报卡片"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              <circle cx="18" cy="5" r="3"></circle>
+              <circle cx="6" cy="12" r="3"></circle>
+              <circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
             </svg>
-            <span>{{ copied ? '已复制' : '分享' }}</span>
+            <span>分享 / 海报</span>
           </button>
         </div>
         <h1 class="article-title">{{ post.title }}</h1>
@@ -180,11 +183,64 @@
       <div v-if="copied" class="copy-toast">已复制文章链接到剪贴板</div>
     </Transition>
   </Teleport>
+
+  <!-- Share & Poster Modal -->
+  <Teleport to="body">
+    <Transition name="lightbox-fade">
+      <div
+        v-if="showShareModal"
+        class="poster-overlay"
+        @click.self="showShareModal = false"
+      >
+        <div class="poster-modal-card">
+          <div class="poster-modal-header">
+            <h3>分享文章与海报</h3>
+            <button class="poster-close-btn" @click="showShareModal = false" type="button" aria-label="关闭">✕</button>
+          </div>
+          <div class="poster-preview-area">
+            <canvas ref="posterCanvasRef" class="poster-canvas"></canvas>
+            <div v-if="generatingPoster" class="poster-loading">
+              <div class="poster-spinner"></div>
+              <span>海报生成中...</span>
+            </div>
+          </div>
+          <div class="poster-modal-actions">
+            <button type="button" class="poster-btn poster-btn-primary" @click="downloadPoster">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>保存海报</span>
+            </button>
+            <button type="button" class="poster-btn" @click="copyPostUrl">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>{{ copied ? '已复制' : '复制链接' }}</span>
+            </button>
+            <button v-if="canNativeShare" type="button" class="poster-btn" @click="nativeShare">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+              <span>系统分享</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { createEveryQRCodeIdentity, createQRSvgPath } from '@every-qrcode/core'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
 import { articleMarkdown } from '../utils/markdown'
@@ -214,6 +270,12 @@ const previewImageAlt = ref('')
 const showMobileToc = ref(false)
 const copied = ref(false)
 let copyTimer = null
+
+// ── 分享与海报状态 ──
+const showShareModal = ref(false)
+const generatingPoster = ref(false)
+const posterCanvasRef = ref(null)
+const canNativeShare = computed(() => typeof navigator !== 'undefined' && !!navigator.share)
 
 const editorId = 'vblog-post-content'
 const scrollElement = ref(typeof document !== 'undefined' ? document.documentElement : null)
@@ -259,6 +321,221 @@ function copyPostUrl() {
   }
 }
 
+async function openShareModal() {
+  showShareModal.value = true
+  await nextTick()
+  generatePoster()
+}
+
+function nativeShare() {
+  if (navigator.share) {
+    navigator.share({
+      title: post.value?.title || 'vBlog',
+      text: post.value?.excerpt || post.value?.title || '',
+      url: window.location.href
+    }).catch(() => {})
+  }
+}
+
+function downloadPoster() {
+  const canvas = posterCanvasRef.value
+  if (!canvas) return
+  const link = document.createElement('a')
+  link.download = `${post.value?.title || 'post'}-poster.png`
+  link.href = canvas.toDataURL('image/png')
+  link.click()
+}
+
+function fillRoundRect(ctx, x, y, width, height, radius, fillStyle) {
+  ctx.save()
+  ctx.fillStyle = fillStyle
+  if (ctx.roundRect) {
+    ctx.beginPath()
+    ctx.roundRect(x, y, width, height, radius)
+    ctx.fill()
+  } else {
+    ctx.fillRect(x, y, width, height)
+  }
+  ctx.restore()
+}
+
+function strokeRoundRect(ctx, x, y, width, height, radius, strokeStyle, lineWidth = 1) {
+  ctx.save()
+  ctx.strokeStyle = strokeStyle
+  ctx.lineWidth = lineWidth
+  if (ctx.roundRect) {
+    ctx.beginPath()
+    ctx.roundRect(x, y, width, height, radius)
+    ctx.stroke()
+  } else {
+    ctx.strokeRect(x, y, width, height)
+  }
+  ctx.restore()
+}
+
+function wrapPosterText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 4) {
+  const chars = String(text || '').trim().split('')
+  let line = ''
+  let currentY = y
+  let linesCount = 0
+
+  for (let n = 0; n < chars.length; n++) {
+    const testLine = line + chars[n]
+    const metrics = ctx.measureText(testLine)
+    if (metrics.width > maxWidth && n > 0) {
+      linesCount++
+      if (linesCount >= maxLines) {
+        ctx.fillText(line + '...', x, currentY)
+        return currentY + lineHeight
+      }
+      ctx.fillText(line, x, currentY)
+      line = chars[n]
+      currentY += lineHeight
+    } else {
+      line = testLine
+    }
+  }
+  if (line) {
+    ctx.fillText(line, x, currentY)
+    currentY += lineHeight
+  }
+  return currentY
+}
+
+async function generatePoster() {
+  const canvas = posterCanvasRef.value
+  if (!canvas || !post.value) return
+  generatingPoster.value = true
+
+  try {
+    const width = 640
+    const height = 860
+    canvas.width = width * 2
+    canvas.height = height * 2
+
+    const ctx = canvas.getContext('2d')
+    ctx.scale(2, 2)
+
+    const isDark = themeStore.theme === 'dark'
+    const bgGradient = ctx.createLinearGradient(0, 0, width, height)
+    if (isDark) {
+      bgGradient.addColorStop(0, '#1c1f26')
+      bgGradient.addColorStop(1, '#0e1014')
+    } else {
+      bgGradient.addColorStop(0, '#ffffff')
+      bgGradient.addColorStop(1, '#f1f5f9')
+    }
+
+    fillRoundRect(ctx, 0, 0, width, height, 20, bgGradient)
+    strokeRoundRect(ctx, 0, 0, width, height, 20, isDark ? '#2d3342' : '#e2e8f0', 1.5)
+
+    const siteTitle = settings.value.site_title || 'vBlog'
+    ctx.fillStyle = isDark ? '#60a5fa' : '#2563eb'
+    ctx.beginPath()
+    ctx.arc(42, 46, 6, 0, Math.PI * 2)
+    ctx.fill()
+
+    ctx.fillStyle = isDark ? '#f3f4f6' : '#1e293b'
+    ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+    ctx.fillText(siteTitle, 56, 52)
+
+    const tag = post.value.tags?.[0]?.name || post.value.tags?.[0] || 'Article'
+    const tagText = '#' + tag
+    ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif'
+    const tagWidth = ctx.measureText(tagText).width + 20
+    fillRoundRect(ctx, width - 36 - tagWidth, 34, tagWidth, 26, 6, isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(37, 99, 235, 0.08)')
+    ctx.fillStyle = isDark ? '#93c5fd' : '#2563eb'
+    ctx.fillText(tagText, width - 36 - tagWidth + 10, 51)
+
+    ctx.strokeStyle = isDark ? '#262b37' : '#e2e8f0'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(36, 76)
+    ctx.lineTo(width - 36, 76)
+    ctx.stroke()
+
+    ctx.fillStyle = isDark ? '#ffffff' : '#0f172a'
+    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif'
+    let currentY = 120
+    currentY = wrapPosterText(ctx, post.value.title, 36, currentY, width - 72, 38, 3)
+
+    currentY += 12
+    ctx.fillStyle = isDark ? '#9ca3af' : '#64748b'
+    ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif'
+    const dateStr = formatDate(post.value.created_at)
+    const readMin = post.value.read_time || readingStats.value.minutes || 1
+    const words = readingStats.value.words || 0
+    const metaStr = `${dateStr}  ·  约 ${readMin} 分钟阅读  ·  ${words.toLocaleString()} 字`
+    ctx.fillText(metaStr, 36, currentY)
+
+    currentY += 28
+    const rawExcerpt = (post.value.excerpt || post.value.content || '')
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/!\[.*?\]\(.*?\)/g, '')
+      .replace(/[#*`>~_-]/g, '')
+      .trim()
+    const boxHeight = 240
+    fillRoundRect(ctx, 36, currentY, width - 72, boxHeight, 12, isDark ? '#14171e' : '#f8fafc')
+    strokeRoundRect(ctx, 36, currentY, width - 72, boxHeight, 12, isDark ? '#232834' : '#e5e7eb', 1)
+    fillRoundRect(ctx, 36, currentY, 4, boxHeight, 2, isDark ? '#3b82f6' : '#2563eb')
+
+    ctx.fillStyle = isDark ? '#d1d5db' : '#334155'
+    ctx.font = '15px -apple-system, BlinkMacSystemFont, sans-serif'
+    wrapPosterText(ctx, rawExcerpt, 54, currentY + 36, width - 108, 28, 6)
+
+    const footerY = height - 120
+    ctx.strokeStyle = isDark ? '#262b37' : '#e2e8f0'
+    ctx.beginPath()
+    ctx.moveTo(36, footerY - 20)
+    ctx.lineTo(width - 36, footerY - 20)
+    ctx.stroke()
+
+    ctx.fillStyle = isDark ? '#ffffff' : '#0f172a'
+    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, sans-serif'
+    ctx.fillText(authorName.value, 36, footerY + 16)
+
+    ctx.fillStyle = isDark ? '#9ca3af' : '#64748b'
+    ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif'
+    const bioText = settings.value.description || settings.value.subtitle || '长按或扫描二维码阅读全文'
+    ctx.fillText(bioText.slice(0, 24), 36, footerY + 40)
+
+    ctx.fillStyle = isDark ? '#60a5fa' : '#2563eb'
+    ctx.font = '12px "JetBrains Mono", monospace'
+    const domain = typeof window !== 'undefined' ? window.location.hostname : 'vblog.xmtlz.dev'
+    ctx.fillText(domain, 36, footerY + 62)
+
+    const qrSize = 96
+    const qrX = width - 36 - qrSize
+    const qrY = footerY - 5
+
+    try {
+      const url = window.location.href
+      const identity = await createEveryQRCodeIdentity(url, { identityScope: 'url' }).catch(() => null)
+      if (identity) {
+        const qr = createQRSvgPath(identity.qr)
+        if (qr && qr.path) {
+          fillRoundRect(ctx, qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 10, '#ffffff')
+          strokeRoundRect(ctx, qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 10, '#e2e8f0', 1)
+          ctx.save()
+          ctx.translate(qrX, qrY)
+          const scale = qrSize / qr.size
+          ctx.scale(scale, scale)
+          ctx.fillStyle = '#0f172a'
+          ctx.fill(new Path2D(qr.path))
+          ctx.restore()
+        }
+      }
+    } catch {
+      fillRoundRect(ctx, qrX, qrY, qrSize, qrSize, 8, isDark ? '#1e2430' : '#e2e8f0')
+      ctx.fillStyle = isDark ? '#9ca3af' : '#475569'
+      ctx.font = '12px sans-serif'
+      ctx.fillText('vBlog', qrX + 28, qrY + 52)
+    }
+  } finally {
+    generatingPoster.value = false
+  }
+}
+
 function handleBodyClick(e) {
   const img = e.target.closest('img')
   if (img && img.src && !img.closest('.author-avatar')) {
@@ -279,6 +556,7 @@ function onKeydown(e) {
   if (e.key === 'Escape') {
     if (previewImage.value) previewImage.value = null
     if (showMobileToc.value) showMobileToc.value = false
+    if (showShareModal.value) showShareModal.value = false
   }
 }
 
@@ -806,6 +1084,156 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* ── Poster Modal ── */
+.poster-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.poster-modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  max-width: 400px;
+  width: 100%;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
+  animation: posterPop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes posterPop {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.poster-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.poster-modal-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.poster-close-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius);
+  transition: color 0.15s ease;
+}
+
+.poster-close-btn:hover {
+  color: var(--fg);
+}
+
+.poster-preview-area {
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow-y: auto;
+  max-height: calc(90vh - 120px);
+  background: var(--bg);
+}
+
+.poster-canvas {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  display: block;
+}
+
+.poster-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.poster-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.poster-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.poster-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.poster-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.poster-btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.poster-btn-primary:hover {
+  filter: brightness(1.1);
+  color: #ffffff;
 }
 
 @media (max-width: 640px) {

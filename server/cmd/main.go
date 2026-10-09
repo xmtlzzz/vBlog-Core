@@ -62,6 +62,7 @@ func main() {
 	(&api.SettingResource{Service: settingSvc, Auth: jwtFilter}).Register(ws)
 	(&api.AuthResource{Service: authSvc, Secret: cfg.JWT.Secret, Auth: jwtFilter}).Register(ws)
 	(&api.RSSResource{DB: db}).Register(ws)
+	(&api.SitemapResource{DB: db}).Register(ws)
 	// Public stats
 	ws.Route(ws.GET("/api/dashboard/stats").To((&api.DashboardResource{DB: db}).Stats).
 		Doc("Get dashboard statistics").

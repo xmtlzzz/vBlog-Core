@@ -2,7 +2,7 @@
   --bg: #fafafa; --surface: #ffffff; --fg: #171717; --muted: #737373;
   --border: #e5e5e5; --accent: #2563eb; --accent-soft: #eff6ff;
   --success: #16a34a; --warning: #f59e0b; --error: #dc2626;
-  --radius: 8px; --radius-lg: 12px;
+  --radius-sm: 6px; --radius: 8px; --radius-lg: 12px;
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;

@@ -84,7 +84,7 @@ defineProps({
   background: var(--tag-bg);
   color: var(--tag-fg);
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 6px);
   font-size: 12px;
   font-weight: 500;
 }

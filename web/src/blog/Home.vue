@@ -97,11 +97,11 @@ let requestId = 0
 const loading = ref(true)
 const error = ref(false)
 
-const DEFAULT_HERO_TITLE = '写代码的人，\n也写点别的。'
-const typedText = ref('')
-const typing = ref(true)
-
 const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+const DEFAULT_HERO_TITLE = '写代码的人，\n也写点别的。'
+const typedText = ref(escapeHtml(DEFAULT_HERO_TITLE).replace(/\n/g, '<br/>'))
+const typing = ref(true)
 
 function startTypewriter(text) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -109,6 +109,11 @@ function startTypewriter(text) {
     typing.value = false
     return
   }
+  if (text === DEFAULT_HERO_TITLE) {
+    cursorTimer = setTimeout(() => { typing.value = false }, 2000)
+    return
+  }
+  typedText.value = ''
   let i = 0
   typingTimer = setInterval(() => {
     if (i < text.length) {
@@ -119,7 +124,7 @@ function startTypewriter(text) {
       clearInterval(typingTimer)
       cursorTimer = setTimeout(() => { typing.value = false }, 1500)
     }
-  }, 100)
+  }, 90)
 }
 
 const statItems = computed(() => [
@@ -240,12 +245,15 @@ onUnmounted(() => {
   line-height: 1.6;
 }
 .cursor {
+  display: inline-block;
+  margin-left: 2px;
   font-weight: 300;
   color: var(--accent);
-  animation: blink 0.8s step-end infinite;
+  animation: blink 1.1s ease-in-out infinite;
 }
 @keyframes blink {
-  50% { opacity: 0; }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
 }
 .stats-bar {
   flex-wrap: wrap;
@@ -285,7 +293,7 @@ onUnmounted(() => {
   max-width: 520px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg, 12px);
   padding: 0 16px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -321,7 +329,7 @@ onUnmounted(() => {
   font-size: 14px;
   cursor: pointer;
   padding: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 6px);
   line-height: 1;
   transition: all 0.15s;
 }
@@ -336,7 +344,7 @@ onUnmounted(() => {
   background: var(--surface-hover, var(--border));
   color: var(--muted);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm, 6px);
   border: 1px solid var(--border);
   user-select: none;
   pointer-events: none;

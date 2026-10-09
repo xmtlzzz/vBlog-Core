@@ -33,7 +33,10 @@
             </div>
             <div class="friend-info">
               <div class="friend-header">
-                <span class="friend-name">{{ item.name }}</span>
+                <div class="friend-title-wrap">
+                  <span class="friend-name">{{ item.name }}</span>
+                  <span v-if="item.badge" class="friend-badge">{{ item.badge }}</span>
+                </div>
                 <svg class="external-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                   <polyline points="15 3 21 3 21 9"></polyline>
@@ -115,33 +118,45 @@ const siteUrl = computed(() => {
   return 'https://vblog.xmtlz.dev'
 })
 
-// 解析 settings.friends (每行：名称|链接|头像|简介)
+// 解析 settings.friends (每行：名称|链接|头像|简介|角标)
 const friendsList = computed(() => {
   const raw = (settings.value.friends || '').trim()
-  if (!raw) {
-    return [
-      {
-        name: 'vMaker',
-        link: 'https://vmaker.xmtlz.dev',
-        avatar: 'https://vmaker.xmtlz.dev/favicon.ico',
-        desc: '创意开发档案 · 现代化开源项目索引与作品集'
-      }
-    ]
+  let list = []
+  if (raw) {
+    list = raw
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const parts = line.split('|').map(s => s.trim())
+        return {
+          name: parts[0] || '',
+          link: parts[1] || '#',
+          avatar: parts[2] || '',
+          desc: parts[3] || '',
+          badge: parts[4] || ''
+        }
+      })
+      .filter(item => item.name && item.link && item.link !== '#')
   }
-  return raw
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => {
-      const parts = line.split('|').map(s => s.trim())
-      return {
-        name: parts[0] || '',
-        link: parts[1] || '#',
-        avatar: parts[2] || '',
-        desc: parts[3] || ''
-      }
+
+  // 跨站生态闭环：确保站长作品集 vMaker 始终作为精选友链置顶展示
+  const vmakerIdx = list.findIndex(item => item.link.includes('vmaker.xmtlz.dev'))
+  if (vmakerIdx >= 0) {
+    if (!list[vmakerIdx].badge) {
+      list[vmakerIdx].badge = '站长作品集'
+    }
+  } else {
+    list.unshift({
+      name: 'vMaker',
+      link: 'https://vmaker.xmtlz.dev',
+      avatar: 'https://vmaker.xmtlz.dev/favicon.ico',
+      desc: '创意开发档案 · 现代化开源项目索引与作品集',
+      badge: '站长作品集'
     })
-    .filter(item => item.name && item.link && item.link !== '#')
+  }
+
+  return list
 })
 
 function copySiteInfo() {
@@ -257,6 +272,14 @@ onMounted(async () => {
   margin-bottom: 4px;
 }
 
+.friend-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .friend-name {
   font-size: 15px;
   font-weight: 600;
@@ -264,6 +287,19 @@ onMounted(async () => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.friend-badge {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent, #3b82f6);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .external-icon {

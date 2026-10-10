@@ -178,10 +178,14 @@ function copySiteInfo() {
   }
 }
 
+import { updateMetadata } from '../utils/metadata'
+
 onMounted(async () => {
+  updateMetadata({}, { title: '友链', description: '优秀博主与技术伙伴的友情链接。', path: '/friends' })
   try {
     const res = await api.get('/settings').catch(() => ({}))
     settings.value = Array.isArray(res) ? Object.fromEntries(res.map(s => [s.key, s.value])) : (res || {})
+    updateMetadata(settings.value, { title: '友链', description: '优秀博主与技术伙伴的友情链接。', path: '/friends' })
   } finally {
     loaded.value = true
   }

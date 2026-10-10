@@ -38,6 +38,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api/request'
+import { updateMetadata } from '../utils/metadata'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
@@ -49,6 +50,11 @@ const router = useRouter()
 const tags = ref([])
 const activeTag = ref('')
 const filteredPosts = ref([])
+
+function updateTagMeta() {
+  const tagTitle = activeTag.value ? `标签: ${activeTag.value}` : '标签'
+  updateMetadata({}, { title: tagTitle, description: '按主题标签浏览所有文章。', path: '/tags' })
+}
 
 async function fetchPosts() {
   if (!activeTag.value) {
@@ -71,6 +77,7 @@ function selectTag(tagName) {
     router.replace({ query: { tag: tagName } })
     fetchPosts()
   }
+  updateTagMeta()
 }
 
 watch(
@@ -83,14 +90,18 @@ watch(
       activeTag.value = ''
       filteredPosts.value = []
     }
+    updateTagMeta()
   }
 )
 
 onMounted(async () => {
-  const res = await api.get('/tags').catch(() => [])
-  tags.value = Array.isArray(res) ? res : (res.data || [])
   if (route.query.tag) {
     activeTag.value = String(route.query.tag)
+  }
+  updateTagMeta()
+  const res = await api.get('/tags').catch(() => [])
+  tags.value = Array.isArray(res) ? res : (res.data || [])
+  if (activeTag.value) {
     fetchPosts()
   }
 })

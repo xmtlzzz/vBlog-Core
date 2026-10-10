@@ -50,6 +50,10 @@ func main() {
 
 	wsContainer := restful.NewContainer()
 	wsContainer.EnableContentEncoding(true)
+	wsContainer.Filter(func(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+		resp.AddHeader("X-Content-Type-Options", "nosniff")
+		chain.ProcessFilter(req, resp)
+	})
 
 	jwtFilter := middleware.JWTFilter(cfg.JWT.Secret)
 
@@ -176,6 +180,10 @@ func main() {
 			// Try to serve static file directly
 			path := filepath.Join(staticDir, r.URL.Path)
 			if info, err := os.Stat(path); err == nil && !info.IsDir() && r.URL.Path != "/index.html" {
+				if strings.HasPrefix(r.URL.Path, "/assets/") {
+					w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+				}
+				w.Header().Set("X-Content-Type-Options", "nosniff")
 				fs.ServeHTTP(w, r)
 				return
 			}
@@ -207,6 +215,9 @@ func main() {
 			}
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.Header().Set("Cache-Control", "no-cache")
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 			if page.Missing {
 				w.WriteHeader(http.StatusNotFound)
 			}

@@ -60,6 +60,7 @@
 
 <script setup>
 import { plainExcerpt } from '../utils/markdown'
+import { updateMetadata } from '../utils/metadata'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '../api/request'
 import { formatDay } from '../utils/format'
@@ -97,6 +98,7 @@ const yearGroups = computed(() => {
 })
 
 onMounted(async () => {
+  updateMetadata({}, { title: '归档', description: '按时间线浏览所有文章。', path: '/archives' })
   window.addEventListener('scroll', onScroll, { passive: true })
   const res = await api.get('/posts', { params: { per_page: 100, status: 'published' } }).catch(() => ({ data: [] }))
   allPosts.value = res.data || []

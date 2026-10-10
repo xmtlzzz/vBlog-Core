@@ -57,6 +57,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '../api/request'
+import { updateMetadata } from '../utils/metadata'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import QrLinksSection from '../shared/QrLinksSection.vue'
@@ -75,6 +76,7 @@ function srcdoc(code) {
 }
 
 onMounted(async () => {
+  updateMetadata({}, { title: '模块', description: '通过组件定制上传的功能模块，每个模块独立运行。', path: '/modules' })
   try {
     const [compRes, statsRes, settingsRes] = await Promise.all([
       api.get('/components/active'),
@@ -83,6 +85,7 @@ onMounted(async () => {
     ])
     modules.value = Array.isArray(compRes) ? compRes : (compRes.data || [])
     settings.value = settingsRes || {}
+    updateMetadata(settings.value, { title: '模块', description: '通过组件定制上传的功能模块，每个模块独立运行。', path: '/modules' })
     if (statsRes) {
       var s = statsRes.data || statsRes
       blogData.value = {

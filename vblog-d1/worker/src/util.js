@@ -93,7 +93,10 @@ export async function checkPassword(hash, password) {
 // opts 可传 ResponseInit 扩展字段，如 { cf: { cacheTtl: 60 } } 做边缘缓存
 export function json(data, status = 200, opts = {}) {
   const headers = Object.assign(
-    { 'Content-Type': 'application/json; charset=utf-8' },
+    {
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Content-Type-Options': 'nosniff',
+    },
     opts.headers || {}
   );
   const cacheTtl = opts.cf?.cacheTtl || opts.cacheTtl;

@@ -105,9 +105,13 @@ const techStack = computed(() => {
   return list.length ? list : DEFAULT_TECH_STACK
 })
 
+import { updateMetadata } from '../utils/metadata'
+
 onMounted(async () => {
+  updateMetadata({}, { title: '关于', description: '关于博主与本站技术架构。', path: '/about' })
   const res = await api.get('/settings').catch(() => ({}))
   settings.value = res || {}
+  updateMetadata(settings.value, { title: '关于', description: settings.value.author_bio || '关于博主与本站技术架构。', path: '/about' })
 })
 </script>
 

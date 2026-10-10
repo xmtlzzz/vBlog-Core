@@ -32,6 +32,9 @@ export function rewriteMetadata(response, page) {
   headers.delete('etag');
   headers.delete('content-length');
   headers.set('cache-control', 'no-cache');
+  headers.set('x-content-type-options', 'nosniff');
+  headers.set('x-frame-options', 'SAMEORIGIN');
+  headers.set('referrer-policy', 'strict-origin-when-cross-origin');
   const rewritten = new Response(response.body, { status: page.missing ? 404 : response.status, headers });
   return new HTMLRewriter()
     .on('title, meta[name="description"], meta[property^="og:"], link[rel="canonical"]', { element(element) { element.remove(); } })

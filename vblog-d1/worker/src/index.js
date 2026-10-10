@@ -75,6 +75,48 @@ async function route(request, env, url, path, method) {
   const [, first, second, third, fourth] = seg;
 
   try {
+    // ── 健康与存储深度探针 (vPulse / Synthetic Deep Health Check) ─────
+    if (first === 'health' && method === 'GET') {
+      const t0 = performance.now();
+      let d1Status = 'UP';
+      let d1Latency = 0;
+      let d1Error = null;
+      if (env.DB) {
+        try {
+          const d0 = performance.now();
+          await env.DB.prepare('SELECT 1').run();
+          d1Latency = Math.round(performance.now() - d0);
+        } catch (err) {
+          d1Status = 'DOWN';
+          d1Error = err.message;
+        }
+      }
+
+      let kvStatus = 'UP';
+      let kvLatency = 0;
+      if (env.IMG) {
+        try {
+          const k0 = performance.now();
+          await env.IMG.get('__probe__');
+          kvLatency = Math.round(performance.now() - k0);
+        } catch {
+          kvStatus = 'DOWN';
+        }
+      }
+
+      const totalLatency = Math.round(performance.now() - t0);
+      return json({
+        status: d1Status === 'UP' ? 'UP' : 'DEGRADED',
+        service: 'vBlog D1 API & Storage',
+        colo: request.cf?.colo || 'EDGE',
+        timestamp: Math.floor(Date.now() / 1000),
+        components: {
+          d1: { status: d1Status, latency_ms: d1Latency, error: d1Error },
+          kv: { status: kvStatus, latency_ms: kvLatency },
+        },
+      });
+    }
+
     // ── 认证 ────────────────────────────────────────────────
     if (first === 'auth') {
       if (method === 'POST' && second === 'login') return login(request, env);

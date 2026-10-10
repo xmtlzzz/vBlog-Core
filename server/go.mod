@@ -1,6 +1,6 @@
 module vblog-core
 
-go 1.24.0
+go 1.26.1
 
 require (
 	github.com/emicklei/go-restful-openapi/v2 v2.12.0

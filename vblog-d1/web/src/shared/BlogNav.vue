@@ -19,7 +19,7 @@
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
           </svg>
         </button>
-        <router-link to="/admin" class="admin-btn">后台 Admin</router-link>
+        <router-link to="/admin" class="admin-btn">后台<span class="admin-en"> Admin</span></router-link>
         <ThemeToggleAnimated
           :is-dark="themeStore.theme === 'dark'"
           size="sm"
@@ -288,6 +288,29 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
     flex-shrink: 0;
     padding: 6px 10px;
     font-size: 13px;
+  }
+}
+
+@media (max-width: 380px) {
+  .admin-en {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .inner {
+    padding: 8px 10px;
+  }
+  .nav-brand {
+    font-size: 15px;
+    gap: 6px;
+  }
+  .nav-right {
+    gap: 4px;
+  }
+  .admin-btn {
+    padding: 4px 6px;
+    font-size: 11px;
   }
 }
 

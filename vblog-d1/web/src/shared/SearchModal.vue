@@ -11,6 +11,12 @@
               ref="inputRef"
               v-model="query"
               class="search-modal-input"
+              type="search"
+              role="combobox"
+              aria-autocomplete="list"
+              :aria-expanded="results.length > 0"
+              aria-controls="search-results-list"
+              :aria-activedescendant="results.length > 0 && selectedIndex >= 0 ? `search-result-${results[selectedIndex]?.id}` : undefined"
               placeholder="搜索文章标题、内容或标签…"
               aria-label="搜索文章"
               @input="onInput"
@@ -28,10 +34,11 @@
             <div v-if="loading" class="search-modal-status">
               正在搜索…
             </div>
-            <div v-else-if="results.length > 0" class="search-modal-list" role="listbox">
+            <div v-else-if="results.length > 0" id="search-results-list" class="search-modal-list" role="listbox" aria-label="搜索结果">
               <div
                 v-for="(item, idx) in results"
                 :key="item.id"
+                :id="`search-result-${item.id}`"
                 role="option"
                 :aria-selected="idx === selectedIndex"
                 :class="['search-modal-item', { 'is-active': idx === selectedIndex }]"

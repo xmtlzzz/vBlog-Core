@@ -97,6 +97,69 @@ const inputRef = ref(null)
 const listRef = ref(null)
 let searchTimer = null
 let searchRequestId = 0
+let cachedPosts = null
+let fetchPostsPromise = null
+
+async function getCachedPosts() {
+  if (cachedPosts) return cachedPosts
+  if (!fetchPostsPromise) {
+    fetchPostsPromise = api.get('/posts', {
+      params: { page: 1, per_page: 100, status: 'published' }
+    }).then(res => {
+      cachedPosts = res.data || []
+      return cachedPosts
+    }).catch(() => {
+      fetchPostsPromise = null
+      return []
+    })
+  }
+  return fetchPostsPromise
+}
+
+function scoreAndFilter(posts, q) {
+  const queryLower = q.toLowerCase().trim()
+  const tokens = queryLower.split(/\s+/).filter(Boolean)
+  if (!tokens.length) return []
+
+  const scored = []
+  for (const post of posts) {
+    const title = (post.title || '').toLowerCase()
+    const excerpt = (post.excerpt || '').toLowerCase()
+    const tags = Array.isArray(post.tags)
+      ? post.tags.map(t => (typeof t === 'string' ? t : t.name || '').toLowerCase())
+      : []
+
+    let totalScore = 0
+    let allTokensMatch = true
+
+    for (const token of tokens) {
+      let tokenScore = 0
+      if (title.includes(token)) {
+        tokenScore += 10
+        if (title.startsWith(token)) tokenScore += 5
+      }
+      if (tags.some(t => t.includes(token))) {
+        tokenScore += 6
+      }
+      if (excerpt.includes(token)) {
+        tokenScore += 2
+      }
+
+      if (tokenScore === 0) {
+        allTokensMatch = false
+        break
+      }
+      totalScore += tokenScore
+    }
+
+    if (allTokensMatch) {
+      scored.push({ post, score: totalScore })
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score)
+  return scored.slice(0, 20).map(s => s.post)
+}
 
 watch(() => props.modelValue, (val) => {
   isOpen.value = val
@@ -107,6 +170,7 @@ watch(() => props.modelValue, (val) => {
     results.value = []
     loading.value = false
     selectedIndex.value = 0
+    getCachedPosts()
     nextTick(() => {
       inputRef.value?.focus()
     })
@@ -132,18 +196,34 @@ function onInput() {
     loading.value = false
     return
   }
-  loading.value = true
+
+  // Instant local filtering with 0ms delay if cache is ready
+  if (cachedPosts && cachedPosts.length > 0) {
+    const instantResults = scoreAndFilter(cachedPosts, q)
+    results.value = instantResults
+    selectedIndex.value = 0
+    loading.value = false
+  } else {
+    loading.value = true
+  }
+
+  // Debounced API query to ensure server-side fallback & full-text match
   searchTimer = setTimeout(async () => {
     try {
       const res = await api.get('/posts', {
         params: { page: 1, per_page: 20, search: q, status: 'published' }
       })
       if (reqId === searchRequestId) {
-        results.value = res.data || []
+        const serverResults = res.data || []
+        if (serverResults.length > 0) {
+          results.value = serverResults
+        } else if (!cachedPosts || cachedPosts.length === 0) {
+          results.value = []
+        }
         selectedIndex.value = 0
       }
     } catch {
-      if (reqId === searchRequestId) {
+      if (reqId === searchRequestId && (!cachedPosts || results.value.length === 0)) {
         results.value = []
       }
     } finally {

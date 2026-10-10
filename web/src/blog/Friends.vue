@@ -106,7 +106,10 @@ import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
 
+import { useThemeStore } from '../stores/theme'
+
 const settings = ref({})
+const themeStore = useThemeStore()
 const loaded = ref(false)
 const copiedInfo = ref(false)
 const avatarErrors = reactive({})
@@ -140,16 +143,19 @@ const friendsList = computed(() => {
       .filter(item => item.name && item.link && item.link !== '#')
   }
 
-  // 跨站生态闭环：确保站长作品集 vMaker 始终作为精选友链置顶展示
+  // 跨站生态闭环：确保站长作品集 vMaker 始终作为精选友链置顶展示，并双向携带当前主题
+  const currentTheme = themeStore.theme === 'dark' ? 'dark' : 'light'
+  const vmakerUrl = `https://vmaker.xmtlz.dev?theme=${currentTheme}`
   const vmakerIdx = list.findIndex(item => item.link.includes('vmaker.xmtlz.dev'))
   if (vmakerIdx >= 0) {
     if (!list[vmakerIdx].badge) {
       list[vmakerIdx].badge = '站长作品集'
     }
+    list[vmakerIdx].link = vmakerUrl
   } else {
     list.unshift({
       name: 'vMaker',
-      link: 'https://vmaker.xmtlz.dev',
+      link: vmakerUrl,
       avatar: 'https://vmaker.xmtlz.dev/favicon.ico',
       desc: '创意开发档案 · 现代化开源项目索引与作品集',
       badge: '站长作品集'

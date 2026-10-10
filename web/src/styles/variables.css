@@ -87,6 +87,12 @@ h1, h2, h3, h4, p, span, a, input, textarea, select {
   transition: background-color 260ms ease, border-color 260ms ease, color 260ms ease, fill 260ms ease, stroke 260ms ease, box-shadow 260ms ease;
 }
 
+/* ── Shield animated theme toggle from blanket transitions to keep its physics and particle animations unhindered ── */
+.theme-toggle-animated,
+.theme-toggle-animated * {
+  transition: none;
+}
+
 /* ── Fade in ── */
 .fade-in {
   animation: fadeIn 0.4s ease both;

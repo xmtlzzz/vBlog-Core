@@ -167,6 +167,12 @@ func main() {
 				wsContainer.ServeHTTP(w, r)
 				return
 			}
+			if r.URL.Path == "/sitemap.xml" || r.URL.Path == "/sitemap" ||
+				r.URL.Path == "/feed.xml" || r.URL.Path == "/rss.xml" ||
+				r.URL.Path == "/feed" || r.URL.Path == "/rss" {
+				wsContainer.ServeHTTP(w, r)
+				return
+			}
 			// Try to serve static file directly
 			path := filepath.Join(staticDir, r.URL.Path)
 			if info, err := os.Stat(path); err == nil && !info.IsDir() && r.URL.Path != "/index.html" {

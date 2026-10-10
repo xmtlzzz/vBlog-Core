@@ -95,7 +95,10 @@ export function json(data, status = 200, opts = {}) {
   const headers = Object.assign(
     {
       'Content-Type': 'application/json; charset=utf-8',
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
       'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'SAMEORIGIN',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
     },
     opts.headers || {}
   );

@@ -19,18 +19,26 @@
       <div class="post-excerpt">{{ plainExcerpt(post.excerpt || post.content) }}</div>
     </div>
     <div class="post-stats">
-      <span class="read-time">{{ post.read_time || 0 }} min</span>
+      <span class="read-time">{{ displayReadTime }} min</span>
       <span class="views">{{ (post.views || 0).toLocaleString() }} views</span>
     </div>
   </router-link>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { formatDate } from '../utils/format'
 import { plainExcerpt } from '../utils/markdown'
 
-defineProps({
+const props = defineProps({
   post: { type: Object, required: true }
+})
+
+const displayReadTime = computed(() => {
+  if (props.post.read_time) return props.post.read_time
+  const text = props.post.content || props.post.excerpt || ''
+  const words = text.replace(/\s+/g, '').length
+  return Math.max(1, Math.ceil(words / 350))
 })
 </script>
 

@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  backend-go:
+    name: Backend Go (Test & Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: server/go.sum
+
+      - name: Run Go Unit Tests
+        run: |
+          cd server
+          go test -v ./api ./webmeta
+
+      - name: Build Go Server
+        run: |
+          cd server
+          go build -v -o /dev/null ./cmd/main.go
+
+  frontend-web:
+    name: Frontend Web (Test & Build)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd web
+          npm ci
+
+      - name: Run Vitest
+        run: |
+          cd web
+          npm test
+
+      - name: Build Web
+        run: |
+          cd web
+          npm run build
+
+  d1-worker:
+    name: D1 Worker & Web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: vblog-d1/worker/package-lock.json
+
+      - name: Install Worker Dependencies & Test
+        run: |
+          cd vblog-d1/worker
+          npm ci
+          npm test
+
+      - name: Build D1 Web
+        run: |
+          cd vblog-d1/web
+          npm ci
+          npm run build

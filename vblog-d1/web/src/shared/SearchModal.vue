@@ -116,6 +116,33 @@ async function getCachedPosts() {
   return fetchPostsPromise
 }
 
+const PINYIN_BOUNDARIES = [
+  ['a', '啊'], ['b', '芭'], ['c', '擦'], ['d', '搭'], ['e', '蛾'], ['f', '发'],
+  ['g', '噶'], ['h', '哈'], ['j', '击'], ['k', '喀'], ['l', '垃'], ['m', '妈'],
+  ['n', '拿'], ['o', '哦'], ['p', '啪'], ['q', '期'], ['r', '然'], ['s', '撒'],
+  ['t', '塌'], ['w', '挖'], ['x', '昔'], ['y', '压'], ['z', '匝']
+]
+
+function toPinyinInitials(str) {
+  if (!str) return ''
+  let res = ''
+  for (const ch of str) {
+    if (/[\u4e00-\u9fa5]/.test(ch)) {
+      let found = ''
+      for (let i = PINYIN_BOUNDARIES.length - 1; i >= 0; i--) {
+        if (ch.localeCompare(PINYIN_BOUNDARIES[i][1], 'zh-CN') >= 0) {
+          found = PINYIN_BOUNDARIES[i][0]
+          break
+        }
+      }
+      res += found
+    } else if (/[a-zA-Z0-9]/.test(ch)) {
+      res += ch.toLowerCase()
+    }
+  }
+  return res
+}
+
 function scoreAndFilter(posts, q) {
   const queryLower = q.toLowerCase().trim()
   const tokens = queryLower.split(/\s+/).filter(Boolean)
@@ -129,20 +156,37 @@ function scoreAndFilter(posts, q) {
       ? post.tags.map(t => (typeof t === 'string' ? t : t.name || '').toLowerCase())
       : []
 
+    const titleInitials = toPinyinInitials(title)
+    const tagInitials = tags.map(toPinyinInitials)
+    const excerptInitials = toPinyinInitials(excerpt)
+
     let totalScore = 0
     let allTokensMatch = true
 
     for (const token of tokens) {
       let tokenScore = 0
+
+      // 标题匹配：直接包含（10分）、开头匹配（+5分）、拼音简拼包含（8分）、拼音简拼开头（+4分）
       if (title.includes(token)) {
         tokenScore += 10
         if (title.startsWith(token)) tokenScore += 5
+      } else if (titleInitials.includes(token)) {
+        tokenScore += 8
+        if (titleInitials.startsWith(token)) tokenScore += 4
       }
+
+      // 标签匹配：直接包含（6分）、拼音简拼包含（5分）
       if (tags.some(t => t.includes(token))) {
         tokenScore += 6
+      } else if (tagInitials.some(ti => ti.includes(token))) {
+        tokenScore += 5
       }
+
+      // 摘要匹配：直接包含（2分）、拼音简拼包含（1分）
       if (excerpt.includes(token)) {
         tokenScore += 2
+      } else if (excerptInitials.includes(token)) {
+        tokenScore += 1
       }
 
       if (tokenScore === 0) {
@@ -493,5 +537,25 @@ onUnmounted(() => {
 .search-modal-leave-to .search-modal-panel {
   transform: translateY(-8px) scale(0.99);
   opacity: 0;
+}
+
+@media (max-width: 640px) {
+  .search-modal-backdrop {
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    align-items: flex-start;
+  }
+  .search-modal-panel {
+    max-height: calc(100vh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+  .search-modal-header {
+    padding: 12px 14px;
+  }
+  .search-modal-keys {
+    display: none;
+  }
+  .search-modal-item {
+    padding: 12px 14px;
+    min-height: 48px;
+  }
 }
 </style>

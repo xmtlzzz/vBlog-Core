@@ -9,11 +9,12 @@
         <router-link to="/archives" @click="menuOpen = false">归档 Archives</router-link>
         <router-link to="/modules" @click="menuOpen = false">模块 Modules</router-link>
         <router-link to="/tags" @click="menuOpen = false">标签 Tags</router-link>
+        <a :href="`https://vmaker.xmtlz.dev?theme=${themeStore.theme}`" target="_blank" rel="noopener" class="nav-external" @click="menuOpen = false">作品 Projects</a>
         <router-link to="/friends" @click="menuOpen = false">友链 Friends</router-link>
         <router-link to="/about" @click="menuOpen = false">关于 About</router-link>
       </div>
       <div class="nav-right">
-        <button class="nav-search-btn" @click="handleSearch" aria-label="搜索文章" title="搜索文章 (⌘K / Ctrl+K)">
+        <button class="nav-search-btn" @click="handleSearch" aria-label="搜索文章" title="搜索文章 (⌘K / /)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
           </svg>
@@ -72,9 +73,16 @@ watch(() => route.fullPath, () => { menuOpen.value = false })
 
 function onGlobalKeydown(event) {
   if (event.key === 'Escape') menuOpen.value = false
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-    event.preventDefault()
-    handleSearch()
+  const isCmdK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k'
+  const isSlash = event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey
+  if (isCmdK || isSlash) {
+    const active = document.activeElement
+    const tag = active?.tagName?.toLowerCase()
+    const isInput = tag === 'input' || tag === 'textarea' || active?.isContentEditable
+    if (!isInput) {
+      event.preventDefault()
+      handleSearch()
+    }
   }
 }
 

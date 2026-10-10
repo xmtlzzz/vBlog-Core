@@ -23,6 +23,7 @@
         </span>
         <a :href="settings.author_github" target="_blank" rel="noopener">GitHub</a>
       </template>
+      <a :href="`https://vmaker.xmtlz.dev?theme=${themeStore.theme}`" target="_blank" rel="noopener">作品 Projects</a>
       <a href="/feed.xml" target="_blank" rel="alternate" type="application/rss+xml">RSS</a>
     </div>
   </footer>
@@ -31,8 +32,10 @@
 <script setup>
 import { ref, computed, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
 import api from '../api/request'
+import { useThemeStore } from '../stores/theme'
 
 const EveryQrBadge = defineAsyncComponent(() => import('./EveryQrBadge.vue'))
+const themeStore = useThemeStore()
 
 const settings = ref({})
 const footerRef = ref(null)

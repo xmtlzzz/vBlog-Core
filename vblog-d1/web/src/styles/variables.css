@@ -19,6 +19,8 @@
   --error-soft: #fef2f2;
   --ambient-glow-1: rgba(37, 99, 235, 0.05);
   --ambient-glow-2: rgba(147, 51, 234, 0.03);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
 }
 [data-theme="dark"] {
   --bg: #050505; --surface: #0e0e12; --fg: #f4f4f6; --muted: #9e9ea8;

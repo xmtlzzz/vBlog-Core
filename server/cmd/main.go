@@ -183,8 +183,15 @@ func main() {
 				if strings.HasPrefix(r.URL.Path, "/assets/") {
 					w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 				}
+				w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 				w.Header().Set("X-Content-Type-Options", "nosniff")
 				fs.ServeHTTP(w, r)
+				return
+			}
+			// If asset under /assets/ is not found on disk, return 404 immediately to avoid caching HTML as JS/CSS
+			if strings.HasPrefix(r.URL.Path, "/assets/") {
+				w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+				http.NotFound(w, r)
 				return
 			}
 			// SPA fallback

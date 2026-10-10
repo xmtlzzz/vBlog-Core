@@ -59,6 +59,7 @@
           :previewTheme="'github'"
           :codeTheme="'atom'"
           :showCodeRowNumber="true"
+          :sanitize="sanitizeHtml"
           @onGetCatalog="onGetCatalog"
         />
       </div>
@@ -254,6 +255,18 @@ import CommentSection from '../shared/CommentSection.vue'
 import { useThemeStore } from '../stores/theme'
 import { MdPreview, MdCatalog } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
+
+function sanitizeHtml(html) {
+  if (!html) return ''
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/<embed\b[^>]*>/gi, '')
+    .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+    .replace(/href\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, 'href="#"')
+}
 
 const route = useRoute()
 const themeStore = useThemeStore()
@@ -990,7 +1003,7 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 .mobile-toc-content {
-  padding: 16px 20px 32px;
+  padding: 16px 20px calc(32px + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   max-height: calc(75vh - 60px);
 }
@@ -1260,8 +1273,8 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
   .floating-actions {
-    bottom: 24px;
-    right: 20px;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    right: calc(20px + env(safe-area-inset-right, 0px));
   }
 }
 </style>

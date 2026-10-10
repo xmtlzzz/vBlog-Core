@@ -23,8 +23,32 @@ export default {
     const path = url.pathname;
     const method = request.method.toUpperCase();
 
+    // 1. 强制 HTTP -> HTTPS 301 重定向
+    const proto = request.headers.get('x-forwarded-proto');
+    if (url.protocol === 'http:' || proto === 'http') {
+      url.protocol = 'https:';
+      return Response.redirect(url.toString(), 301);
+    }
+
     if (method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type,Authorization' } });
+    }
+
+    // 2. 静态资源 /assets/* 防死锁守卫：
+    // SPA fallback 会把不存在的 /assets/* 回退到 index.html，并被打上 1 年 immutable 强缓存。
+    // 若 /assets/* 请求未命中静态文件（返回了 text/html 或 404），必须直接返回 404 且 no-store！
+    if (path.startsWith('/assets/')) {
+      const response = await env.ASSETS.fetch(request);
+      if (response.headers.get('content-type')?.includes('text/html') || response.status === 404) {
+        return new Response('Asset not found', {
+          status: 404,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+          },
+        });
+      }
+      return attachHsts(response);
     }
 
     // 静态资源走 ASSETS（SPA fallback 由 not_found_handling 处理）
@@ -55,7 +79,7 @@ export default {
         try { return rewriteMetadata(response, await pageMetadata(env, url)); }
         catch (error) { console.error('Page metadata unavailable:', error.message); }
       }
-      return response;
+      return attachHsts(response);
     }
 
     // API 请求不记 page_view（减少 D1 写入压力）
@@ -936,4 +960,17 @@ async function readJson(request) {
   } catch {
     return null;
   }
+}
+
+function attachHsts(response) {
+  const h = new Headers(response.headers);
+  h.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  h.set('X-Content-Type-Options', 'nosniff');
+  h.set('X-Frame-Options', 'SAMEORIGIN');
+  h.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: h,
+  });
 }

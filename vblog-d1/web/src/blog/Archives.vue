@@ -34,7 +34,7 @@
           </div>
           <div class="archive-stats">
             <span>{{ (post.views || 0).toLocaleString() }} views</span>
-            <span>{{ post.read_time || 0 }} min</span>
+            <span>{{ calcReadTime(post) }} min</span>
           </div>
         </router-link>
       </div>
@@ -70,6 +70,13 @@ import CustomWidgets from '../shared/CustomWidgets.vue'
 
 const allPosts = ref([])
 const showTop = ref(false)
+
+function calcReadTime(post) {
+  if (post.read_time) return post.read_time
+  const text = post.content || post.excerpt || ''
+  const words = text.replace(/\s+/g, '').length
+  return Math.max(1, Math.ceil(words / 350))
+}
 
 let scrollTicking = false
 function onScroll() {
@@ -297,6 +304,10 @@ onUnmounted(() => {
   }
   .archive-stats {
     display: none;
+  }
+  .back-to-top {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    right: 20px;
   }
 }
 </style>

@@ -54,6 +54,10 @@
           <span class="link-label">GitHub</span>
           <a :href="settings.author_github" target="_blank">{{ settings.author_github }}</a>
         </li>
+        <li>
+          <span class="link-label">作品集</span>
+          <a :href="`https://vmaker.xmtlz.dev?theme=${themeStore.theme}`" target="_blank">vMaker 作品导航平台</a>
+        </li>
         <li v-if="settings.author_email">
           <span class="link-label">Email</span>
           <a :href="`mailto:${settings.author_email}`">{{ settings.author_email }}</a>
@@ -69,11 +73,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '../api/request'
+import { useThemeStore } from '../stores/theme'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
 
 const settings = ref({})
+const themeStore = useThemeStore()
 
 const initial = computed(() => {
   const name = settings.value.author_name || 'V'

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" />
     <title>vBlog</title>
     <meta name="description" content="记录开发、技术与日常。" />
     <meta property="og:title" content="vBlog" />
@@ -28,6 +29,10 @@
             document.documentElement.setAttribute('data-theme', 'light');
             document.documentElement.classList.remove('dark', 'theme-dark');
             document.documentElement.classList.add('theme-light');
+          }
+          var metaTheme = document.querySelector('meta[name="theme-color"]');
+          if (metaTheme) {
+            metaTheme.setAttribute('content', isDark ? '#111827' : '#ffffff');
           }
         } catch (e) {}
       })();

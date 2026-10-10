@@ -1,6 +1,6 @@
 <template>
   <BlogNav />
-  <div class="page-enter">
+  <div id="main-content" class="page-enter">
   <header class="page-header">
     <h1>功能模块 Modules</h1>
     <p>通过组件定制上传的功能模块，每个模块独立运行。</p>

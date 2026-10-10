@@ -1,4 +1,5 @@
 <template>
+  <a href="#main-content" class="skip-link">跳至主要内容 Skip to Content</a>
   <nav class="top">
     <div class="inner">
       <router-link class="nav-brand" to="/">
@@ -238,6 +239,29 @@ function handleSearch() {
   border-color: var(--accent);
   background: var(--card-hover);
 }
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 9999;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--accent);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: top 0.2s ease;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 16px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 @media (max-width: 800px) {

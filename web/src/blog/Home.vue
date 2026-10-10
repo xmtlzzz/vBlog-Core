@@ -1,6 +1,6 @@
 <template>
   <BlogNav />
-  <div class="page-enter">
+  <div id="main-content" class="page-enter">
   <!-- Hero -->
   <header class="hero fade-in">
     <h1><span v-html="typedText"></span><span class="cursor" v-if="typing">|</span></h1>

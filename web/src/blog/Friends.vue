@@ -1,6 +1,6 @@
 <template>
   <BlogNav />
-  <div class="page-enter">
+  <div id="main-content" class="page-enter">
     <div class="friends-container">
       <header class="page-header">
         <h1 class="page-title">友情链接 Friends</h1>

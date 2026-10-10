@@ -14,6 +14,10 @@ export const useThemeStore = defineStore('theme', () => {
     document.documentElement.classList.toggle('dark', isDark)
     document.documentElement.classList.toggle('theme-dark', isDark)
     document.documentElement.classList.toggle('theme-light', !isDark)
+    const metaTheme = document.querySelector('meta[name="theme-color"]')
+    if (metaTheme) {
+      metaTheme.setAttribute('content', isDark ? '#111827' : '#ffffff')
+    }
   }
 
   function toggle() {

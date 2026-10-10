@@ -1,6 +1,6 @@
 <template>
   <BlogNav />
-  <div class="page-enter">
+  <div id="main-content" class="page-enter">
   <header class="page-header">
     <h1>标签 Tags</h1>
     <p>按标签浏览文章。</p>

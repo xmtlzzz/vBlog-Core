@@ -17,6 +17,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
+          check-latest: true
           cache-dependency-path: server/go.sum
 
       - name: Run Go Unit Tests
@@ -40,13 +41,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
         run: |
           cd web
-          npm ci
+          npm ci || npm install --no-audit --no-fund
 
       - name: Run Vitest
         run: |
@@ -69,17 +68,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: vblog-d1/worker/package-lock.json
 
       - name: Install Worker Dependencies & Test
         run: |
           cd vblog-d1/worker
-          npm ci
+          npm ci || npm install --no-audit --no-fund
           npm test
 
       - name: Build D1 Web
         run: |
           cd vblog-d1/web
-          npm ci
+          npm ci || npm install --no-audit --no-fund
           npm run build

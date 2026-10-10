@@ -6,13 +6,7 @@ dist/
 *.log
 .dev.vars
 
-# 吉祥物品牌图片（AI 生成资源，不入库）
-web/public/favicon.png
-web/public/avatar.png
-web/public/nav-mascot.png
 pict/
-
-# 整库备份导出产物（含全部数据，严禁入库）
 backup/
 
 .dev.vars*

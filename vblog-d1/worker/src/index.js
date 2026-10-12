@@ -92,6 +92,25 @@ export default {
   },
 };
 
+// 只读探针：不写入 KV，不产生页面统计，也不暴露依赖错误详情。
+async function health(env) {
+  const components = {};
+  await Promise.all([
+    ['d1', () => env.DB.prepare('SELECT 1').first()],
+    ['kv', () => env.IMG.get('__vpulse_health__')],
+  ].map(async ([name, check]) => {
+    const start = performance.now();
+    let status = 'UP';
+    try { await check(); }
+    catch { status = 'DOWN'; }
+    components[name] = { status, latency_ms: Math.round(performance.now() - start) };
+  }));
+  const ok = Object.values(components).every(component => component.status === 'UP');
+  const response = json({ status: ok ? 'UP' : 'DOWN', components }, ok ? 200 : 503);
+  response.headers.set('Cache-Control', 'no-store');
+  return response;
+}
+
 // ══════════════════════════ 路由分发 ══════════════════════════
 async function route(request, env, url, path, method) {
   // 路径形如 /api/settings → ['api','settings']，跳过首段 'api'
@@ -99,6 +118,8 @@ async function route(request, env, url, path, method) {
   const [, first, second, third, fourth] = seg;
 
   try {
+    if (path === '/api/health' && method === 'GET') return health(env);
+
     // ── 认证 ────────────────────────────────────────────────
     if (first === 'auth') {
       if (method === 'POST' && second === 'login') return login(request, env);

@@ -60,6 +60,7 @@ func main() {
 	// All API routes in one WebService
 	ws := new(restful.WebService).Path("/").Produces(restful.MIME_JSON)
 	// Public routes (admin write routes get jwtFilter via each resource's Auth field)
+	(&api.HealthResource{DB: db}).Register(ws)
 	(&api.PostResource{Service: postSvc, Auth: jwtFilter, ReadAuth: middleware.OptionalJWTFilter(cfg.JWT.Secret)}).Register(ws)
 	(&api.TagResource{Service: tagSvc, Auth: jwtFilter}).Register(ws)
 	(&api.CommentResource{Service: commentSvc, Auth: jwtFilter, TurnstileSecret: cfg.Turnstile.Secret, TurnstileHostnames: cfg.Turnstile.Hostnames}).Register(ws)

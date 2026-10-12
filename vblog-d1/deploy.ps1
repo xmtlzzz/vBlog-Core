@@ -25,8 +25,8 @@ if (-not $env:HTTPS_PROXY) {
   } catch {}
 }
 
-if (-not (Test-Path (Join-Path $Worker 'node_modules\wrangler'))) {
-  Write-Host '[0/3] Installing wrangler locally...' -ForegroundColor Cyan
+if (-not (Test-Path (Join-Path $Worker 'node_modules\wrangler')) -or -not (Test-Path (Join-Path $Worker 'node_modules\markdown-it'))) {
+  Write-Host '[0/3] Installing worker dependencies locally...' -ForegroundColor Cyan
   Push-Location $Worker
   npm install --no-audit --no-fund
   Pop-Location

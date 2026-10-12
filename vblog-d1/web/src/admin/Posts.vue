@@ -22,7 +22,7 @@
     </div>
 
     <div class="slide-up">
-    <el-table :data="posts" stripe>
+    <el-table ref="tableRef" :data="posts" stripe>
       <el-table-column prop="title" label="标题 Title" min-width="200" show-overflow-tooltip />
       <el-table-column label="标签 Tags" width="180">
         <template #default="{ row }">
@@ -42,7 +42,7 @@
           </el-tooltip>
         </template>
       </el-table-column>
-      <el-table-column prop="views" label="阅读 Views" width="90" />
+      <el-table-column prop="views" label="阅读 Views" width="100" />
       <el-table-column label="日期 Date" width="120">
         <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
       </el-table-column>
@@ -80,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
@@ -88,6 +88,7 @@ import { formatDate } from '../utils/format'
 
 const router = useRouter()
 const fileInput = ref(null)
+const tableRef = ref(null)
 
 const posts = ref([])
 const allTags = ref([])
@@ -124,6 +125,9 @@ async function fetchPosts() {
   const res = await api.get('/posts', { params }).catch(() => ({ data: [], total: 0 }))
   posts.value = res.data || res.posts || []
   total.value = res.total || 0
+  nextTick(() => {
+    tableRef.value?.doLayout()
+  })
 }
 
 async function fetchTags() {

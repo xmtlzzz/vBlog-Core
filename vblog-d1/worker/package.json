@@ -9,7 +9,7 @@
   },
   "type": "module",
   "scripts": {
-    "test": "node src/experience.test.js",
+    "test": "node src/experience.test.js && node --test tests/health.test.js",
     "test:runtime": "node tests/runtime.test.js"
   }
 }

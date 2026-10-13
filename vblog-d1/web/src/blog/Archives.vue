@@ -1,6 +1,6 @@
 <template>
   <BlogNav />
-  <div class="page-enter">
+  <div id="main-content" class="page-enter">
   <header class="page-header">
     <h1>归档 Archives</h1>
     <p>按时间线浏览所有文章。</p>
@@ -34,7 +34,7 @@
           </div>
           <div class="archive-stats">
             <span>{{ (post.views || 0).toLocaleString() }} views</span>
-            <span>{{ post.read_time || 0 }} min</span>
+            <span>{{ calcReadTime(post) }} min</span>
           </div>
         </router-link>
       </div>
@@ -60,6 +60,7 @@
 
 <script setup>
 import { plainExcerpt } from '../utils/markdown'
+import { updateMetadata } from '../utils/metadata'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '../api/request'
 import { formatDay } from '../utils/format'
@@ -69,6 +70,13 @@ import CustomWidgets from '../shared/CustomWidgets.vue'
 
 const allPosts = ref([])
 const showTop = ref(false)
+
+function calcReadTime(post) {
+  if (post.read_time) return post.read_time
+  const text = post.content || post.excerpt || ''
+  const words = text.replace(/\s+/g, '').length
+  return Math.max(1, Math.ceil(words / 350))
+}
 
 let scrollTicking = false
 function onScroll() {
@@ -97,6 +105,7 @@ const yearGroups = computed(() => {
 })
 
 onMounted(async () => {
+  updateMetadata({}, { title: '归档', description: '按时间线浏览所有文章。', path: '/archives' })
   window.addEventListener('scroll', onScroll, { passive: true })
   const res = await api.get('/posts', { params: { per_page: 100, status: 'published' } }).catch(() => ({ data: [] }))
   allPosts.value = res.data || []
@@ -295,6 +304,10 @@ onUnmounted(() => {
   }
   .archive-stats {
     display: none;
+  }
+  .back-to-top {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    right: 20px;
   }
 }
 </style>

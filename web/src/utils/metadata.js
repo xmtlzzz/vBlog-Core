@@ -1,5 +1,7 @@
 import { plainExcerpt } from './markdown'
 
+let cachedSettings = null
+
 function meta(attribute, key, content) {
   let element = document.head.querySelector(`meta[${attribute}="${key}"]`)
   if (!element) {
@@ -11,8 +13,12 @@ function meta(attribute, key, content) {
 }
 
 export function updateMetadata(settings = {}, { title, description, article = false, path = window.location.pathname } = {}) {
-  const site = settings.site_title || 'vBlog'
-  const summary = plainExcerpt(description || settings.description || settings.site_description || '记录开发、技术与日常。', 160)
+  if (settings && Object.keys(settings).length > 0) {
+    cachedSettings = settings
+  }
+  const effectiveSettings = cachedSettings || settings || {}
+  const site = effectiveSettings.site_title || 'vBlog'
+  const summary = plainExcerpt(description || effectiveSettings.description || effectiveSettings.site_description || '记录开发、技术与日常。', 160)
   document.title = title ? `${title} · ${site}` : site
   meta('name', 'description', summary)
   meta('property', 'og:title', title || site)

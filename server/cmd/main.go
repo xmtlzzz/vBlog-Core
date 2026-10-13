@@ -50,12 +50,17 @@ func main() {
 
 	wsContainer := restful.NewContainer()
 	wsContainer.EnableContentEncoding(true)
+	wsContainer.Filter(func(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+		resp.AddHeader("X-Content-Type-Options", "nosniff")
+		chain.ProcessFilter(req, resp)
+	})
 
 	jwtFilter := middleware.JWTFilter(cfg.JWT.Secret)
 
 	// All API routes in one WebService
 	ws := new(restful.WebService).Path("/").Produces(restful.MIME_JSON)
 	// Public routes (admin write routes get jwtFilter via each resource's Auth field)
+	(&api.HealthResource{DB: db}).Register(ws)
 	(&api.PostResource{Service: postSvc, Auth: jwtFilter, ReadAuth: middleware.OptionalJWTFilter(cfg.JWT.Secret)}).Register(ws)
 	(&api.TagResource{Service: tagSvc, Auth: jwtFilter}).Register(ws)
 	(&api.CommentResource{Service: commentSvc, Auth: jwtFilter, TurnstileSecret: cfg.Turnstile.Secret, TurnstileHostnames: cfg.Turnstile.Hostnames}).Register(ws)
@@ -167,10 +172,27 @@ func main() {
 				wsContainer.ServeHTTP(w, r)
 				return
 			}
+			if r.URL.Path == "/sitemap.xml" || r.URL.Path == "/sitemap" ||
+				r.URL.Path == "/feed.xml" || r.URL.Path == "/rss.xml" ||
+				r.URL.Path == "/feed" || r.URL.Path == "/rss" {
+				wsContainer.ServeHTTP(w, r)
+				return
+			}
 			// Try to serve static file directly
 			path := filepath.Join(staticDir, r.URL.Path)
 			if info, err := os.Stat(path); err == nil && !info.IsDir() && r.URL.Path != "/index.html" {
+				if strings.HasPrefix(r.URL.Path, "/assets/") {
+					w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+				}
+				w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+				w.Header().Set("X-Content-Type-Options", "nosniff")
 				fs.ServeHTTP(w, r)
+				return
+			}
+			// If asset under /assets/ is not found on disk, return 404 immediately to avoid caching HTML as JS/CSS
+			if strings.HasPrefix(r.URL.Path, "/assets/") {
+				w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+				http.NotFound(w, r)
 				return
 			}
 			// SPA fallback
@@ -201,6 +223,9 @@ func main() {
 			}
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.Header().Set("Cache-Control", "no-cache")
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+			w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 			if page.Missing {
 				w.WriteHeader(http.StatusNotFound)
 			}

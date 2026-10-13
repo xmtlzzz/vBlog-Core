@@ -23,8 +23,32 @@ export default {
     const path = url.pathname;
     const method = request.method.toUpperCase();
 
+    // 1. 强制 HTTP -> HTTPS 301 重定向
+    const proto = request.headers.get('x-forwarded-proto');
+    if (url.protocol === 'http:' || proto === 'http') {
+      url.protocol = 'https:';
+      return Response.redirect(url.toString(), 301);
+    }
+
     if (method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type,Authorization' } });
+    }
+
+    // 2. 静态资源 /assets/* 防死锁守卫：
+    // SPA fallback 会把不存在的 /assets/* 回退到 index.html，并被打上 1 年 immutable 强缓存。
+    // 若 /assets/* 请求未命中静态文件（返回了 text/html 或 404），必须直接返回 404 且 no-store！
+    if (path.startsWith('/assets/')) {
+      const response = await env.ASSETS.fetch(request);
+      if (response.headers.get('content-type')?.includes('text/html') || response.status === 404) {
+        return new Response('Asset not found', {
+          status: 404,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+          },
+        });
+      }
+      return attachHsts(response);
     }
 
     // 静态资源走 ASSETS（SPA fallback 由 not_found_handling 处理）
@@ -55,7 +79,7 @@ export default {
         try { return rewriteMetadata(response, await pageMetadata(env, url)); }
         catch (error) { console.error('Page metadata unavailable:', error.message); }
       }
-      return response;
+      return attachHsts(response);
     }
 
     // API 请求不记 page_view（减少 D1 写入压力）
@@ -68,6 +92,25 @@ export default {
   },
 };
 
+// 只读探针：不写入 KV，不产生页面统计，也不暴露依赖错误详情。
+async function health(env) {
+  const components = {};
+  await Promise.all([
+    ['d1', () => env.DB.prepare('SELECT 1').first()],
+    ['kv', () => env.IMG.get('__vpulse_health__')],
+  ].map(async ([name, check]) => {
+    const start = performance.now();
+    let status = 'UP';
+    try { await check(); }
+    catch { status = 'DOWN'; }
+    components[name] = { status, latency_ms: Math.round(performance.now() - start) };
+  }));
+  const ok = Object.values(components).every(component => component.status === 'UP');
+  const response = json({ status: ok ? 'UP' : 'DOWN', components }, ok ? 200 : 503);
+  response.headers.set('Cache-Control', 'no-store');
+  return response;
+}
+
 // ══════════════════════════ 路由分发 ══════════════════════════
 async function route(request, env, url, path, method) {
   // 路径形如 /api/settings → ['api','settings']，跳过首段 'api'
@@ -75,47 +118,7 @@ async function route(request, env, url, path, method) {
   const [, first, second, third, fourth] = seg;
 
   try {
-    // ── 健康与存储深度探针 (vPulse / Synthetic Deep Health Check) ─────
-    if (first === 'health' && method === 'GET') {
-      const t0 = performance.now();
-      let d1Status = 'UP';
-      let d1Latency = 0;
-      let d1Error = null;
-      if (env.DB) {
-        try {
-          const d0 = performance.now();
-          await env.DB.prepare('SELECT 1').run();
-          d1Latency = Math.round(performance.now() - d0);
-        } catch (err) {
-          d1Status = 'DOWN';
-          d1Error = err.message;
-        }
-      }
-
-      let kvStatus = 'UP';
-      let kvLatency = 0;
-      if (env.IMG) {
-        try {
-          const k0 = performance.now();
-          await env.IMG.get('__probe__');
-          kvLatency = Math.round(performance.now() - k0);
-        } catch {
-          kvStatus = 'DOWN';
-        }
-      }
-
-      const totalLatency = Math.round(performance.now() - t0);
-      return json({
-        status: d1Status === 'UP' ? 'UP' : 'DEGRADED',
-        service: 'vBlog D1 API & Storage',
-        colo: request.cf?.colo || 'EDGE',
-        timestamp: Math.floor(Date.now() / 1000),
-        components: {
-          d1: { status: d1Status, latency_ms: d1Latency, error: d1Error },
-          kv: { status: kvStatus, latency_ms: kvLatency },
-        },
-      });
-    }
+    if (path === '/api/health' && method === 'GET') return health(env);
 
     // ── 认证 ────────────────────────────────────────────────
     if (first === 'auth') {
@@ -978,4 +981,17 @@ async function readJson(request) {
   } catch {
     return null;
   }
+}
+
+function attachHsts(response) {
+  const h = new Headers(response.headers);
+  h.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  h.set('X-Content-Type-Options', 'nosniff');
+  h.set('X-Frame-Options', 'SAMEORIGIN');
+  h.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: h,
+  });
 }

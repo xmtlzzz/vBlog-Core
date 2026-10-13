@@ -25,10 +25,18 @@ export async function pageMetadata(env, url) {
 }
 
 export function rewriteMetadata(response, page) {
-  if (!response.headers.get('content-type')?.includes('text/html') || response.status !== 200 || !response.body) return response;
+  const headers = new Headers(response.headers);
+  headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains; preload');
+  headers.set('x-content-type-options', 'nosniff');
+  headers.set('x-frame-options', 'SAMEORIGIN');
+  headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+
+  if (!response.headers.get('content-type')?.includes('text/html') || response.status !== 200 || !response.body) {
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  }
+
   const title = page.title ? `${page.title} · ${page.site}` : page.site;
   const tags = `<title>${escape(title)}</title><meta name="description" content="${escape(page.description)}"><meta property="og:title" content="${escape(page.title || page.site)}"><meta property="og:description" content="${escape(page.description)}"><meta property="og:site_name" content="${escape(page.site)}"><meta property="og:type" content="${page.article ? 'article' : 'website'}"><meta property="og:url" content="${escape(page.url)}"><link rel="canonical" href="${escape(page.url)}">${page.missing ? '<meta name="robots" content="noindex">' : ''}`;
-  const headers = new Headers(response.headers);
   headers.delete('etag');
   headers.delete('content-length');
   headers.set('cache-control', 'no-cache');

@@ -8,7 +8,7 @@
   <div :class="['post-layout', 'fade-in', { 'has-toc': tocItems.length }]" v-if="post">
     <!-- 宽屏对称占位：与右侧目录等宽，确保文章主体绝对居中 -->
     <div class="toc-spacer" v-if="tocItems.length" aria-hidden="true"></div>
-    <article class="article">
+    <article id="main-content" class="article" :data-print-url="currentUrl">
       <router-link to="/" class="back-link">← 返回首页</router-link>
 
       <header class="article-header">
@@ -59,6 +59,7 @@
           :previewTheme="'github'"
           :codeTheme="'atom'"
           :showCodeRowNumber="true"
+          :sanitize="sanitizeHtml"
           @onGetCatalog="onGetCatalog"
         />
       </div>
@@ -255,6 +256,18 @@ import { useThemeStore } from '../stores/theme'
 import { MdPreview, MdCatalog } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
 
+function sanitizeHtml(html) {
+  if (!html) return ''
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/<embed\b[^>]*>/gi, '')
+    .replace(/\son\w+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\son\w+\s*=\s*[^\s>]+/gi, '')
+    .replace(/href\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, 'href="#"')
+}
+
 const route = useRoute()
 const themeStore = useThemeStore()
 const post = ref(null)
@@ -278,6 +291,7 @@ const showShareModal = ref(false)
 const generatingPoster = ref(false)
 const posterCanvasRef = ref(null)
 const canNativeShare = computed(() => typeof navigator !== 'undefined' && !!navigator.share)
+const currentUrl = computed(() => typeof window !== 'undefined' ? window.location.href : '')
 
 const editorId = 'vblog-post-content'
 const scrollElement = ref(typeof document !== 'undefined' ? document.documentElement : null)
@@ -550,6 +564,12 @@ function handleBodyClick(e) {
   if (img && img.src && !img.closest('.author-avatar')) {
     previewImage.value = img.src
     previewImageAlt.value = img.alt || ''
+    return
+  }
+  const link = e.target.closest('a')
+  if (link && link.href && /^https?:\/\//i.test(link.href) && !link.href.startsWith(window.location.origin)) {
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
   }
 }
 
@@ -990,7 +1010,7 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 .mobile-toc-content {
-  padding: 16px 20px 32px;
+  padding: 16px 20px calc(32px + env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   max-height: calc(75vh - 60px);
 }
@@ -1260,8 +1280,90 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
   }
   .floating-actions {
-    bottom: 24px;
-    right: 20px;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    right: calc(20px + env(safe-area-inset-right, 0px));
+  }
+}
+
+@media print {
+  .reading-progress-bar,
+  :deep(.top),
+  nav.top,
+  .back-link,
+  .meta-action-btn,
+  .article-footer,
+  .post-nav,
+  .comment-section,
+  .floating-actions,
+  .mobile-toc-fab,
+  .mobile-toc-drawer,
+  .mobile-toc-backdrop,
+  .poster-overlay,
+  .image-preview-overlay,
+  aside.toc,
+  .toc-spacer,
+  :deep(footer),
+  footer {
+    display: none !important;
+  }
+
+  body,
+  .post-layout,
+  .article {
+    background: #ffffff !important;
+    color: #111827 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .post-layout {
+    display: block !important;
+  }
+
+  .article-title {
+    color: #000000 !important;
+    font-size: 26pt !important;
+    margin-bottom: 8pt !important;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .article-meta {
+    color: #6b7280 !important;
+    font-size: 10pt !important;
+    margin-bottom: 16pt !important;
+  }
+
+  :deep(h1), :deep(h2), :deep(h3), :deep(h4) {
+    color: #111827 !important;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  :deep(pre),
+  :deep(blockquote),
+  :deep(table) {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  :deep(pre) {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+
+  .article::after {
+    content: "本文链接: " attr(data-print-url);
+    display: block;
+    margin-top: 24pt;
+    padding-top: 12pt;
+    border-top: 1px solid #e5e7eb;
+    font-size: 9pt;
+    color: #6b7280;
   }
 }
 </style>

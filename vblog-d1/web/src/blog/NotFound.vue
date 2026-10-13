@@ -16,9 +16,15 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
+import { updateMetadata } from '../utils/metadata'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
+
+onMounted(() => {
+  updateMetadata({}, { title: '404 页面未找到', description: '您访问的页面不存在，或者已经被移动或删除。' })
+})
 </script>
 
 <style scoped>

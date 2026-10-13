@@ -35,7 +35,7 @@
           </el-select>
         </div>
       </div>
-      <el-table :data="filteredPosts" stripe style="width: 100%">
+      <el-table ref="tableRef" :data="filteredPosts" stripe style="width: 100%">
         <el-table-column prop="title" label="标题 Title" min-width="200" show-overflow-tooltip />
         <el-table-column label="标签 Tags" width="180">
           <template #default="{ row }">
@@ -59,11 +59,11 @@
             </el-tooltip>
           </template>
         </el-table-column>
-        <el-table-column prop="views" label="阅读 Views" width="90" />
+        <el-table-column prop="views" label="阅读 Views" width="100" />
         <el-table-column label="日期 Date" width="120">
           <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作 Actions" min-width="260" fixed="right">
+        <el-table-column label="操作 Actions" width="280" fixed="right">
           <template #default="{ row }">
             <div class="action-btn-group">
               <button class="action-btn" @click="viewPost(row)">查看 View</button>
@@ -80,7 +80,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
@@ -97,6 +97,7 @@ const cardRef0 = ref(null)
 const cardRef1 = ref(null)
 const cardRef2 = ref(null)
 const cardRef3 = ref(null)
+const tableRef = ref(null)
 const posts = ref([])
 const search = ref('')
 const statusFilter = ref('')
@@ -120,6 +121,9 @@ function viewPost(row) {
 async function fetchPosts() {
   const postsRes = await api.get('/posts', { params: { page: 1, per_page: 20 } }).catch(() => ({ data: [] }))
   posts.value = postsRes.data || postsRes.posts || []
+  nextTick(() => {
+    tableRef.value?.doLayout()
+  })
 }
 
 async function refreshStats() {
@@ -190,6 +194,9 @@ onMounted(async () => {
   viewsCount.start()
   commentsCount.start()
   tagsCount.start()
+  nextTick(() => {
+    tableRef.value?.doLayout()
+  })
 })
 </script>
 

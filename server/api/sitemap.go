@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/xml"
 	"fmt"
+	"net/http"
 	"time"
 
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
@@ -27,16 +28,18 @@ type SitemapURL struct {
 }
 
 func (s *SitemapResource) Register(ws *restful.WebService) {
-	ws.Route(ws.GET("/sitemap.xml").To(s.sitemap).
-		Doc("Get Sitemap XML of the site").
-		Notes("Returns sitemap.xml for search engine indexing.").
-		Metadata(restfulspec.KeyOpenAPITags, []string{"sitemap"}).
-		Produces("application/xml"))
-
-	ws.Route(ws.GET("/api/sitemap.xml").To(s.sitemap).
-		Doc("Get Sitemap XML of the site (API path)").
-		Metadata(restfulspec.KeyOpenAPITags, []string{"sitemap"}).
-		Produces("application/xml"))
+	paths := []string{"/sitemap.xml", "/sitemap", "/api/sitemap.xml", "/api/sitemap"}
+	for _, p := range paths {
+		ws.Route(ws.GET(p).To(s.sitemap).
+			Doc("Get Sitemap XML of the site").
+			Notes("Returns sitemap.xml for search engine indexing.").
+			Metadata(restfulspec.KeyOpenAPITags, []string{"sitemap"}).
+			Produces("application/xml"))
+		ws.Route(ws.HEAD(p).To(s.sitemap).
+			Doc("Get Sitemap XML headers").
+			Metadata(restfulspec.KeyOpenAPITags, []string{"sitemap"}).
+			Produces("application/xml"))
+	}
 }
 
 func (s *SitemapResource) sitemap(req *restful.Request, resp *restful.Response) {
@@ -76,18 +79,20 @@ func (s *SitemapResource) sitemap(req *restful.Request, resp *restful.Response) 
 	}
 
 	var posts []model.Post
-	if err := s.DB.Where("status = ?", "published").Order("created_at DESC").Find(&posts).Error; err == nil {
-		for _, p := range posts {
-			lastMod := p.UpdatedAt.Format("2006-01-02")
-			if p.UpdatedAt.IsZero() {
-				lastMod = p.CreatedAt.Format("2006-01-02")
+	if s.DB != nil {
+		if err := s.DB.Where("status = ?", "published").Order("created_at DESC").Find(&posts).Error; err == nil {
+			for _, p := range posts {
+				lastMod := p.UpdatedAt.Format("2006-01-02")
+				if p.UpdatedAt.IsZero() {
+					lastMod = p.CreatedAt.Format("2006-01-02")
+				}
+				urls = append(urls, SitemapURL{
+					Loc:        fmt.Sprintf("%s/post/%d", baseURL, p.ID),
+					LastMod:    lastMod,
+					ChangeFreq: "weekly",
+					Priority:   0.8,
+				})
 			}
-			urls = append(urls, SitemapURL{
-				Loc:        fmt.Sprintf("%s/post/%d", baseURL, p.ID),
-				LastMod:    lastMod,
-				ChangeFreq: "weekly",
-				Priority:   0.8,
-			})
 		}
 	}
 
@@ -98,6 +103,11 @@ func (s *SitemapResource) sitemap(req *restful.Request, resp *restful.Response) 
 
 	resp.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	resp.Header().Set("Cache-Control", "public, max-age=3600")
+	if req.Request.Method == http.MethodHead {
+		resp.WriteHeader(http.StatusOK)
+		return
+	}
+
 	resp.Write([]byte(xml.Header))
 	encoder := xml.NewEncoder(resp)
 	encoder.Indent("", "  ")

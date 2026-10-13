@@ -1,6 +1,6 @@
 <template>
   <BlogNav />
-  <div class="page-enter">
+  <div id="main-content" class="page-enter">
   <div class="about-container">
     <div class="about-hero">
       <img class="about-avatar" src="/avatar.png" alt="avatar" />
@@ -54,6 +54,10 @@
           <span class="link-label">GitHub</span>
           <a :href="settings.author_github" target="_blank">{{ settings.author_github }}</a>
         </li>
+        <li>
+          <span class="link-label">作品集</span>
+          <a :href="`https://vmaker.xmtlz.dev?theme=${themeStore.theme}`" target="_blank">vMaker 作品导航平台</a>
+        </li>
         <li v-if="settings.author_email">
           <span class="link-label">Email</span>
           <a :href="`mailto:${settings.author_email}`">{{ settings.author_email }}</a>
@@ -69,11 +73,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import api from '../api/request'
+import { useThemeStore } from '../stores/theme'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
 
 const settings = ref({})
+const themeStore = useThemeStore()
 
 const initial = computed(() => {
   const name = settings.value.author_name || 'V'
@@ -105,9 +111,13 @@ const techStack = computed(() => {
   return list.length ? list : DEFAULT_TECH_STACK
 })
 
+import { updateMetadata } from '../utils/metadata'
+
 onMounted(async () => {
+  updateMetadata({}, { title: '关于', description: '关于博主与本站技术架构。', path: '/about' })
   const res = await api.get('/settings').catch(() => ({}))
   settings.value = res || {}
+  updateMetadata(settings.value, { title: '关于', description: settings.value.author_bio || '关于博主与本站技术架构。', path: '/about' })
 })
 </script>
 

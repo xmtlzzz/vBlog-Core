@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -15,7 +16,16 @@ func (d DBConfig) DSN() string {
 	)
 }
 
-// Connect opens a database connection using GORM.
+// Connect opens a database connection using GORM and configures connection pool parameters.
 func (d DBConfig) Connect() (*gorm.DB, error) {
-	return gorm.Open(postgres.Open(d.DSN()), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(d.DSN()), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+	if sqlDB, err := db.DB(); err == nil {
+		sqlDB.SetMaxIdleConns(10)
+		sqlDB.SetMaxOpenConns(100)
+		sqlDB.SetConnMaxLifetime(time.Hour)
+	}
+	return db, nil
 }

@@ -1,4 +1,5 @@
 <template>
+  <a href="#main-content" class="skip-link">跳至主要内容 Skip to Content</a>
   <nav class="top">
     <div class="inner">
       <router-link class="nav-brand" to="/">
@@ -9,16 +10,17 @@
         <router-link to="/archives" @click="menuOpen = false">归档 Archives</router-link>
         <router-link to="/modules" @click="menuOpen = false">模块 Modules</router-link>
         <router-link to="/tags" @click="menuOpen = false">标签 Tags</router-link>
+        <a :href="`https://vmaker.xmtlz.dev?theme=${themeStore.theme}`" target="_blank" rel="noopener" class="nav-external" @click="menuOpen = false">作品 Projects</a>
         <router-link to="/friends" @click="menuOpen = false">友链 Friends</router-link>
         <router-link to="/about" @click="menuOpen = false">关于 About</router-link>
       </div>
       <div class="nav-right">
-        <button class="nav-search-btn" @click="handleSearch" aria-label="搜索文章" title="搜索文章 (⌘K / Ctrl+K)">
+        <button class="nav-search-btn" @click="handleSearch" aria-label="搜索文章" title="搜索文章 (⌘K / /)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
           </svg>
         </button>
-        <router-link to="/admin" class="admin-btn">后台 Admin</router-link>
+        <router-link to="/admin" class="admin-btn">后台<span class="admin-en"> Admin</span></router-link>
         <ThemeToggleAnimated
           :is-dark="themeStore.theme === 'dark'"
           size="sm"
@@ -72,9 +74,16 @@ watch(() => route.fullPath, () => { menuOpen.value = false })
 
 function onGlobalKeydown(event) {
   if (event.key === 'Escape') menuOpen.value = false
-  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-    event.preventDefault()
-    handleSearch()
+  const isCmdK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k'
+  const isSlash = event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey
+  if (isCmdK || isSlash) {
+    const active = document.activeElement
+    const tag = active?.tagName?.toLowerCase()
+    const isInput = tag === 'input' || tag === 'textarea' || active?.isContentEditable
+    if (!isInput) {
+      event.preventDefault()
+      handleSearch()
+    }
   }
 }
 
@@ -230,6 +239,29 @@ function handleSearch() {
   border-color: var(--accent);
   background: var(--card-hover);
 }
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 9999;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--accent);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: top 0.2s ease;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 16px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 @media (max-width: 800px) {
@@ -280,6 +312,29 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
     flex-shrink: 0;
     padding: 6px 10px;
     font-size: 13px;
+  }
+}
+
+@media (max-width: 380px) {
+  .admin-en {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .inner {
+    padding: 8px 10px;
+  }
+  .nav-brand {
+    font-size: 15px;
+    gap: 6px;
+  }
+  .nav-right {
+    gap: 4px;
+  }
+  .admin-btn {
+    padding: 4px 6px;
+    font-size: 11px;
   }
 }
 

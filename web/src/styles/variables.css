@@ -19,6 +19,8 @@
   --error-soft: #fef2f2;
   --ambient-glow-1: rgba(37, 99, 235, 0.05);
   --ambient-glow-2: rgba(147, 51, 234, 0.03);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
 }
 [data-theme="dark"] {
   --bg: #050505; --surface: #0e0e12; --fg: #f4f4f6; --muted: #9e9ea8;
@@ -85,6 +87,12 @@ blockquote,
 footer,
 h1, h2, h3, h4, p, span, a, input, textarea, select {
   transition: background-color 260ms ease, border-color 260ms ease, color 260ms ease, fill 260ms ease, stroke 260ms ease, box-shadow 260ms ease;
+}
+
+/* ── Shield animated theme toggle from blanket transitions to keep its physics and particle animations unhindered ── */
+.theme-toggle-animated,
+.theme-toggle-animated * {
+  transition: none;
 }
 
 /* ── Fade in ── */

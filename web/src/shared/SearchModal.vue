@@ -11,6 +11,12 @@
               ref="inputRef"
               v-model="query"
               class="search-modal-input"
+              type="search"
+              role="combobox"
+              aria-autocomplete="list"
+              :aria-expanded="results.length > 0"
+              aria-controls="search-results-list"
+              :aria-activedescendant="results.length > 0 && selectedIndex >= 0 ? `search-result-${results[selectedIndex]?.id}` : undefined"
               placeholder="搜索文章标题、内容或标签…"
               aria-label="搜索文章"
               @input="onInput"
@@ -28,10 +34,11 @@
             <div v-if="loading" class="search-modal-status">
               正在搜索…
             </div>
-            <div v-else-if="results.length > 0" class="search-modal-list" role="listbox">
+            <div v-else-if="results.length > 0" id="search-results-list" class="search-modal-list" role="listbox" aria-label="搜索结果">
               <div
                 v-for="(item, idx) in results"
                 :key="item.id"
+                :id="`search-result-${item.id}`"
                 role="option"
                 :aria-selected="idx === selectedIndex"
                 :class="['search-modal-item', { 'is-active': idx === selectedIndex }]"
@@ -97,6 +104,113 @@ const inputRef = ref(null)
 const listRef = ref(null)
 let searchTimer = null
 let searchRequestId = 0
+let cachedPosts = null
+let fetchPostsPromise = null
+
+async function getCachedPosts() {
+  if (cachedPosts) return cachedPosts
+  if (!fetchPostsPromise) {
+    fetchPostsPromise = api.get('/posts', {
+      params: { page: 1, per_page: 100, status: 'published' }
+    }).then(res => {
+      cachedPosts = res.data || []
+      return cachedPosts
+    }).catch(() => {
+      fetchPostsPromise = null
+      return []
+    })
+  }
+  return fetchPostsPromise
+}
+
+const PINYIN_BOUNDARIES = [
+  ['a', '啊'], ['b', '芭'], ['c', '擦'], ['d', '搭'], ['e', '蛾'], ['f', '发'],
+  ['g', '噶'], ['h', '哈'], ['j', '击'], ['k', '喀'], ['l', '垃'], ['m', '妈'],
+  ['n', '拿'], ['o', '哦'], ['p', '啪'], ['q', '期'], ['r', '然'], ['s', '撒'],
+  ['t', '塌'], ['w', '挖'], ['x', '昔'], ['y', '压'], ['z', '匝']
+]
+
+function toPinyinInitials(str) {
+  if (!str) return ''
+  let res = ''
+  for (const ch of str) {
+    if (/[\u4e00-\u9fa5]/.test(ch)) {
+      let found = ''
+      for (let i = PINYIN_BOUNDARIES.length - 1; i >= 0; i--) {
+        if (ch.localeCompare(PINYIN_BOUNDARIES[i][1], 'zh-CN') >= 0) {
+          found = PINYIN_BOUNDARIES[i][0]
+          break
+        }
+      }
+      res += found
+    } else if (/[a-zA-Z0-9]/.test(ch)) {
+      res += ch.toLowerCase()
+    }
+  }
+  return res
+}
+
+function scoreAndFilter(posts, q) {
+  const queryLower = q.toLowerCase().trim()
+  const tokens = queryLower.split(/\s+/).filter(Boolean)
+  if (!tokens.length) return []
+
+  const scored = []
+  for (const post of posts) {
+    const title = (post.title || '').toLowerCase()
+    const excerpt = (post.excerpt || '').toLowerCase()
+    const tags = Array.isArray(post.tags)
+      ? post.tags.map(t => (typeof t === 'string' ? t : t.name || '').toLowerCase())
+      : []
+
+    const titleInitials = toPinyinInitials(title)
+    const tagInitials = tags.map(toPinyinInitials)
+    const excerptInitials = toPinyinInitials(excerpt)
+
+    let totalScore = 0
+    let allTokensMatch = true
+
+    for (const token of tokens) {
+      let tokenScore = 0
+
+      // 标题匹配：直接包含（10分）、开头匹配（+5分）、拼音简拼包含（8分）、拼音简拼开头（+4分）
+      if (title.includes(token)) {
+        tokenScore += 10
+        if (title.startsWith(token)) tokenScore += 5
+      } else if (titleInitials.includes(token)) {
+        tokenScore += 8
+        if (titleInitials.startsWith(token)) tokenScore += 4
+      }
+
+      // 标签匹配：直接包含（6分）、拼音简拼包含（5分）
+      if (tags.some(t => t.includes(token))) {
+        tokenScore += 6
+      } else if (tagInitials.some(ti => ti.includes(token))) {
+        tokenScore += 5
+      }
+
+      // 摘要匹配：直接包含（2分）、拼音简拼包含（1分）
+      if (excerpt.includes(token)) {
+        tokenScore += 2
+      } else if (excerptInitials.includes(token)) {
+        tokenScore += 1
+      }
+
+      if (tokenScore === 0) {
+        allTokensMatch = false
+        break
+      }
+      totalScore += tokenScore
+    }
+
+    if (allTokensMatch) {
+      scored.push({ post, score: totalScore })
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score)
+  return scored.slice(0, 20).map(s => s.post)
+}
 
 watch(() => props.modelValue, (val) => {
   isOpen.value = val
@@ -107,6 +221,7 @@ watch(() => props.modelValue, (val) => {
     results.value = []
     loading.value = false
     selectedIndex.value = 0
+    getCachedPosts()
     nextTick(() => {
       inputRef.value?.focus()
     })
@@ -132,18 +247,34 @@ function onInput() {
     loading.value = false
     return
   }
-  loading.value = true
+
+  // Instant local filtering with 0ms delay if cache is ready
+  if (cachedPosts && cachedPosts.length > 0) {
+    const instantResults = scoreAndFilter(cachedPosts, q)
+    results.value = instantResults
+    selectedIndex.value = 0
+    loading.value = false
+  } else {
+    loading.value = true
+  }
+
+  // Debounced API query to ensure server-side fallback & full-text match
   searchTimer = setTimeout(async () => {
     try {
       const res = await api.get('/posts', {
         params: { page: 1, per_page: 20, search: q, status: 'published' }
       })
       if (reqId === searchRequestId) {
-        results.value = res.data || []
+        const serverResults = res.data || []
+        if (serverResults.length > 0) {
+          results.value = serverResults
+        } else if (!cachedPosts || cachedPosts.length === 0) {
+          results.value = []
+        }
         selectedIndex.value = 0
       }
     } catch {
-      if (reqId === searchRequestId) {
+      if (reqId === searchRequestId && (!cachedPosts || results.value.length === 0)) {
         results.value = []
       }
     } finally {
@@ -413,5 +544,25 @@ onUnmounted(() => {
 .search-modal-leave-to .search-modal-panel {
   transform: translateY(-8px) scale(0.99);
   opacity: 0;
+}
+
+@media (max-width: 640px) {
+  .search-modal-backdrop {
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 12px calc(16px + env(safe-area-inset-bottom, 0px));
+    align-items: flex-start;
+  }
+  .search-modal-panel {
+    max-height: calc(100vh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+  .search-modal-header {
+    padding: 12px 14px;
+  }
+  .search-modal-keys {
+    display: none;
+  }
+  .search-modal-item {
+    padding: 12px 14px;
+    min-height: 48px;
+  }
 }
 </style>

@@ -4,6 +4,7 @@ import { pageMetadata } from './metadata.js';
 
 assert.equal(buildExcerpt('# 项目\n\n[导航](https://example.com) **介绍**'), '项目 导航 介绍');
 assert.equal(buildExcerpt(':::info\n提示内容\n:::\n\nSee [this commit](https://example.com/trun'), '提示内容 See this commit');
+assert.equal(buildExcerpt('whatis&whereis :::info 查看命令帮助 ::: whereis'), 'whatis&whereis 查看命令帮助 whereis');
 assert.equal(buildExcerpt('简介\n\n```js\nconst secret = 1;\n```\n\n更多内容'), '简介 更多内容');
 assert.equal(buildExcerpt('**你好世界**', 3), '你好世...');
 assert.equal(buildExcerpt('😀音乐🎸', 2), '😀音...');

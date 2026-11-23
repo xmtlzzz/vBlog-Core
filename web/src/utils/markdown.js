@@ -7,7 +7,9 @@ export function cleanTitle(title = '') {
 }
 
 function stripContainerFences(source = '') {
-  return String(source || '').replace(/^[ \t]*:::[ \t]*[a-zA-Z0-9_-]*[^\n]*$/gm, '')
+  return String(source || '')
+    .replace(/^[ \t]*:::[ \t]*[a-zA-Z0-9_-]*[^\n]*$/gm, '')
+    .replace(/(?:^|\s):::(?:[a-zA-Z0-9_-]+)?(?=\s|$)/g, ' ')
 }
 
 function stripTruncatedLinks(text = '') {

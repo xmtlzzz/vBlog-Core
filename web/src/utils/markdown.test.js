@@ -17,6 +17,7 @@ describe('article Markdown', () => {
   it('uses readable prose and Unicode character boundaries for excerpts', () => {
     expect(plainExcerpt('## [音乐](https://example.com) **练习**\n\n```js\nignore()\n```')).toBe('音乐 练习')
     expect(plainExcerpt(':::info\n提示内容\n:::\n\nSee [this commit](https://example.com/trun')).toBe('提示内容 See this commit')
+    expect(plainExcerpt('whatis&whereis :::info 查看命令帮助 ::: whereis')).toBe('whatis&whereis 查看命令帮助 whereis')
     expect(plainExcerpt('😀音乐🎸', 2)).toBe('😀音...')
   })
 })

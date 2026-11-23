@@ -149,7 +149,7 @@ func (r *RSSResource) feed(req *restful.Request, resp *restful.Response) {
 
 var (
 	rssEscapePunctRe  = regexp.MustCompile(`\\([&_*~\[\]()!#])`)
-	rssContainerRe    = regexp.MustCompile(`(?m)^[ \t]*:::[ \t]*[a-zA-Z0-9_-]*[^\n]*$`)
+	rssContainerRe    = regexp.MustCompile(`(?m)^[ \t]*:::[ \t]*[a-zA-Z0-9_-]*[^\n]*$|:::[a-zA-Z0-9_-]*`)
 	rssCodeFenceRe    = regexp.MustCompile("(?s)```.*?```")
 	rssHeadingRe      = regexp.MustCompile(`(?m)^[ \t]*#{1,6}[ \t]+`)
 	rssImageRe        = regexp.MustCompile(`!\[([^\]]*)\]\([^)]*\)`)

@@ -2,7 +2,13 @@
   <Teleport to="body">
     <Transition name="search-modal">
       <div v-if="isOpen" class="search-modal-backdrop" @click="close">
-        <div class="search-modal-panel" @click.stop>
+        <div
+          class="search-modal-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="站内搜索"
+          @click.stop
+        >
           <div class="search-modal-header">
             <svg class="search-modal-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
@@ -46,13 +52,13 @@
                 @click="goToPost(item.id)"
               >
                 <div class="search-item-header">
-                  <span class="search-item-title">{{ item.title }}</span>
+                  <span class="search-item-title">{{ cleanTitle(item.title) }}</span>
                   <span v-if="item.tags && item.tags.length" class="search-item-tag">
                     {{ item.tags[0].name || item.tags[0] }}
                   </span>
                 </div>
-                <div v-if="item.excerpt" class="search-item-excerpt">
-                  {{ cleanExcerpt(item.excerpt) }}
+                <div v-if="item.excerpt || item.content" class="search-item-excerpt">
+                  {{ cleanExcerpt(item.excerpt || item.content) }}
                 </div>
               </div>
             </div>
@@ -83,6 +89,7 @@
 <script setup>
 import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { cleanTitle, plainExcerpt } from '../utils/markdown'
 import api from '../api/request'
 
 const props = defineProps({
@@ -234,8 +241,7 @@ function close() {
 }
 
 function cleanExcerpt(text) {
-  if (!text) return ''
-  return text.replace(/^[#\s*`>_-]+/gm, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim()
+  return plainExcerpt(text, 140)
 }
 
 function onInput() {

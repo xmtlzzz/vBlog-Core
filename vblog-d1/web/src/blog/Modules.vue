@@ -1,6 +1,6 @@
 <template>
   <BlogNav />
-  <div id="main-content" class="page-enter">
+  <main id="main-content" class="page-enter">
   <header class="page-header">
     <h1>功能模块 Modules</h1>
     <p>通过组件定制上传的功能模块，每个模块独立运行。</p>
@@ -8,7 +8,7 @@
 
   <QrLinksSection />
 
-  <main class="modules-grid" v-if="modules.length">
+  <section class="modules-grid" v-if="modules.length">
     <div v-for="mod in modules" :key="mod.id" class="module-card fade-in">
       <div class="module-card-top">
         <div class="module-icon">
@@ -26,21 +26,21 @@
       <div class="module-name">{{ mod.name }}</div>
       <div class="module-desc">{{ mod.description || '自定义功能模块' }}</div>
       <div class="module-preview">
-        <iframe
-          :srcdoc="srcdoc(mod.code)"
+        <ThemedFrame
+          :code="mod.code"
+          :data="blogData"
           class="module-iframe"
-          sandbox="allow-scripts"
           :title="mod.name"
-        ></iframe>
+        />
       </div>
       <div class="module-footer">
         <span class="module-meta">v{{ mod.version || '1.0' }}</span>
         <span class="module-meta">{{ mod.origin || 'custom' }}</span>
       </div>
     </div>
-  </main>
+  </section>
 
-  <div v-else-if="!qrProjects.length" class="empty-state fade-in">
+  <div v-else-if="loaded && !qrProjects.length" class="empty-state fade-in">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)">
       <rect x="3" y="3" width="18" height="18" rx="2"/>
       <path d="M3 9h18"/>
@@ -50,7 +50,7 @@
     <span>前往后台 → 组件定制上传模块</span>
   </div>
 
-  </div>
+  </main>
   <BlogFooter />
 </template>
 
@@ -61,19 +61,16 @@ import { updateMetadata } from '../utils/metadata'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
 import QrLinksSection from '../shared/QrLinksSection.vue'
-import { buildSrcdoc } from '../utils/component'
+import ThemedFrame from '../shared/ThemedFrame.vue'
 import { parseQrLinks } from '../utils/qrLinks'
 
 const modules = ref([])
 const blogData = ref(null)
 const settings = ref({})
+const loaded = ref(false)
 
 // 有项目二维码时页面并不算空，不显示「暂无功能模块」
 const qrProjects = computed(() => parseQrLinks(settings.value.qr_links))
-
-function srcdoc(code) {
-  return buildSrcdoc(code, { data: blogData.value })
-}
 
 onMounted(async () => {
   updateMetadata({}, { title: '模块', description: '通过组件定制上传的功能模块，每个模块独立运行。', path: '/modules' })
@@ -96,7 +93,9 @@ onMounted(async () => {
         visitors: s.total_views || 0
       }
     }
-  } catch {}
+  } catch {} finally {
+    loaded.value = true
+  }
 })
 </script>
 

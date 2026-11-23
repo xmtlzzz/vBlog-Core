@@ -43,12 +43,12 @@
     <!-- Markdown Editor -->
     <div class="editor-wrap">
       <MdEditor
+        ref="markdownEditor"
         v-model="form.content"
         :theme="editorTheme"
         language="zh-CN"
         class="vblog-md-editor"
-        :preview="true"
-        :htmlPreview="true"
+        :preview="initialPreview"
         @onUploadImg="onUploadImg"
       />
     </div>
@@ -61,8 +61,11 @@ import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
+import '../utils/editorTheme'
 import api from '../api/request'
+import { uploadImageFile } from '../utils/imageUpload'
 import { useThemeStore } from '../stores/theme'
+import { useMediaQuery } from '../composables/useMediaQuery'
 
 const route = useRoute()
 const router = useRouter()
@@ -71,6 +74,10 @@ const themeStore = useThemeStore()
 const isEdit = computed(() => !!route.params.id)
 const postId = computed(() => route.params.id)
 const editorTheme = computed(() => themeStore.theme === 'dark' ? 'dark' : 'light')
+const markdownEditor = ref(null)
+const wideEditor = useMediaQuery('(min-width: 768px)')
+const initialPreview = wideEditor.value
+watch(wideEditor, matches => markdownEditor.value?.togglePreview(matches))
 
 const saving = ref(false)
 const saved = ref(false)
@@ -230,69 +237,14 @@ async function handleSave(statusOverride) {
   }
 }
 
-// ── 图片上传前端 WebP 压缩转换 ──
-async function compressImageToWebP(file) {
-  // SVG, GIF（动图）或非图片文件直接返回原文件
-  if (!file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') {
-    return file
-  }
-  return new Promise((resolve) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      let { width, height } = img
-      const maxDim = 2560 // 限制最大边长不超过 2560px
-      if (width > maxDim || height > maxDim) {
-        if (width > height) {
-          height = Math.round((height * maxDim) / width)
-          width = maxDim
-        } else {
-          width = Math.round((width * maxDim) / height)
-          height = maxDim
-        }
-      }
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, width, height)
-      canvas.toBlob((blob) => {
-        if (blob && blob.size < file.size) {
-          const newName = file.name.replace(/\.[^.]+$/, '') + '.webp'
-          const webpFile = new File([blob], newName, { type: 'image/webp' })
-          resolve(webpFile)
-        } else {
-          resolve(file)
-        }
-      }, 'image/webp', 0.85)
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      resolve(file)
-    }
-    img.src = url
-  })
-}
-
 async function onUploadImg(files, callback) {
   const urls = []
   for (const file of files) {
-    const processedFile = await compressImageToWebP(file)
-    const formData = new FormData()
-    formData.append('file', processedFile)
-    try {
-      const res = await api.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      urls.push(res.url)
-    } catch {
-      // handled by interceptor
-    }
+    try { urls.push(await uploadImageFile(file)) }
+    catch (error) { ElMessage.error(error.response?.data?.error || error.message || '图片上传失败') }
   }
   callback(urls)
 }
-
 onMounted(() => {
   fetchTags()
   // Check for uploaded markdown content from Posts page
@@ -314,10 +266,14 @@ onMounted(() => {
 <style scoped>
 .edit-post-page {
   width: 100%;
-  max-width: 1200px;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 .editor-topbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
@@ -325,6 +281,8 @@ onMounted(() => {
 }
 .topbar-left {
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
   align-items: center;
   gap: 16px;
 }
@@ -358,16 +316,18 @@ onMounted(() => {
 }
 .editor-actions {
   display: flex;
+  margin-left: auto;
   gap: 8px;
 }
 .meta-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 }
 .meta-item {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 6px;
 }
@@ -385,16 +345,20 @@ onMounted(() => {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  height: calc(100vh - 240px);
-  min-height: 520px;
+  flex: 1;
+  min-height: min(28rem, 65dvh);
   position: relative;
-  isolation: isolate;
-  z-index: 1;
 }
 .vblog-md-editor {
+  position: absolute;
+  inset: 0;
   height: 100% !important;
 }
 .vblog-md-editor :deep(.md-editor-code-head) {
   z-index: 2 !important;
+}
+@media (max-width: 640px) {
+  .meta-grid { grid-template-columns: minmax(0, 1fr); }
+  .topbar-left { gap: 8px; }
 }
 </style>

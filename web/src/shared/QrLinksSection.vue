@@ -13,7 +13,7 @@
     <div class="qr-links-grid">
       <div v-for="(p, i) in projects" :key="p.url" class="qr-link-card">
         <span class="qr-link-badge" :title="p.url + ' · 点击变形为二维码'">
-          <EveryQrBadge :url="p.url" :model="model" :effect="effect" :palette="paletteOf(p, i)" />
+          <EveryQrBadge :url="p.url" :model="model" :effect="effect" :palette="paletteOf(p, i)" :background="settings.qr_bg" />
         </span>
         <a class="qr-link-name" :href="p.url" target="_blank" rel="noopener">{{ p.name }}</a>
         <a class="qr-link-host" :href="p.url" target="_blank" rel="noopener">{{ hostOf(p.url) }}</a>
@@ -129,8 +129,9 @@ onMounted(async () => {
   max-width: 260px;
   aspect-ratio: 1;
   border-radius: 10px;
+  border: 1px solid var(--border);
   overflow: hidden;
-  background: #fff;
+  background: var(--qr-model-bg);
   cursor: pointer;
   margin: 0 auto 8px;
 }

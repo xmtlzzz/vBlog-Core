@@ -5,8 +5,8 @@
     </div>
 
     <div class="filter-row">
-      <el-input v-model="filters.search" placeholder="搜索评论..." clearable style="width: 240px" @input="debounceFetch" />
-      <el-select v-model="filters.status" placeholder="状态" clearable style="width: 140px" @change="fetchComments">
+      <el-input v-model="filters.search" placeholder="搜索评论..." clearable class="search-filter" @input="debounceFetch" />
+      <el-select v-model="filters.status" placeholder="状态" clearable class="status-filter" @change="fetchComments">
         <el-option label="全部" value="" />
         <el-option label="待审核" value="pending" />
         <el-option label="已通过" value="approved" />
@@ -40,6 +40,7 @@
 
     <div class="pagination-wrap" v-if="total > perPage">
       <el-pagination
+        :pager-count="5"
         layout="prev, pager, next"
         :total="total"
         :page-size="perPage"
@@ -129,6 +130,8 @@ onMounted(fetchComments)
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
+.search-filter { width: 240px; max-width: 100%; }
+.status-filter { width: 140px; max-width: 100%; }
 .comment-list {
   display: flex;
   flex-direction: column;
@@ -158,6 +161,7 @@ onMounted(fetchComments)
 .comment-body {
   flex: 1;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .comment-header {
   display: flex;
@@ -183,6 +187,7 @@ onMounted(fetchComments)
 }
 .comment-footer {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   font-size: 12px;
   color: var(--muted);
@@ -216,6 +221,7 @@ onMounted(fetchComments)
   justify-content: center;
   margin-top: 20px;
 }
+.pagination-wrap :deep(.el-pagination) { max-width: 100%; flex-wrap: wrap; gap: 8px; }
 .empty-state {
   text-align: center;
   padding: 48px;

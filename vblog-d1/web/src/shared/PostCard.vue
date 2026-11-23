@@ -1,8 +1,5 @@
 <template>
-  <router-link
-    :to="`/post/${post.id}`"
-    :class="['post-card fade-in', { pinned: post.pinned || post.is_pinned }]"
-  >
+  <article :class="['post-card fade-in', { pinned: post.pinned || post.is_pinned }]">
     <div class="post-card-body">
       <div v-if="post.pinned || post.is_pinned" class="pin-badge">置顶 Pinned</div>
       <div class="post-meta">
@@ -11,28 +8,33 @@
           :key="tag.id || tag.name || tag"
           :to="`/tags?tag=${encodeURIComponent(tag.name || tag)}`"
           class="tag"
-          @click.stop
         >{{ tag.name || tag }}</router-link>
         <span class="meta-date">{{ formatDate(post.created_at) }}</span>
       </div>
-      <div class="post-title">{{ post.title }}</div>
+      <h2 class="post-title">
+        <router-link :to="`/post/${post.id}`" class="post-title-link">
+          {{ displayTitle }}
+        </router-link>
+      </h2>
       <div class="post-excerpt">{{ plainExcerpt(post.excerpt || post.content) }}</div>
     </div>
     <div class="post-stats">
       <span class="read-time">{{ displayReadTime }} min</span>
       <span class="views">{{ (post.views || 0).toLocaleString() }} views</span>
     </div>
-  </router-link>
+  </article>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { formatDate } from '../utils/format'
-import { plainExcerpt } from '../utils/markdown'
+import { cleanTitle, plainExcerpt } from '../utils/markdown'
 
 const props = defineProps({
   post: { type: Object, required: true }
 })
+
+const displayTitle = computed(() => cleanTitle(props.post.title))
 
 const displayReadTime = computed(() => {
   if (props.post.read_time) return props.post.read_time
@@ -44,6 +46,7 @@ const displayReadTime = computed(() => {
 
 <style scoped>
 .post-card {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
@@ -59,7 +62,8 @@ const displayReadTime = computed(() => {
   border-color: var(--accent);
 }
 .post-card-body { min-width: 0; overflow-wrap: anywhere; }
-.post-card:hover .post-title {
+.post-card:hover .post-title,
+.post-card:hover .post-title-link {
   color: var(--accent);
 }
 .post-card:last-child {
@@ -90,6 +94,8 @@ const displayReadTime = computed(() => {
   flex-wrap: wrap;
 }
 .tag {
+  position: relative;
+  z-index: 2;
   display: inline-block;
   background: var(--tag-bg);
   color: var(--tag-fg);
@@ -116,7 +122,22 @@ const displayReadTime = computed(() => {
   letter-spacing: -0.01em;
   line-height: 1.35;
   color: var(--fg);
-  margin-bottom: 6px;
+  margin: 0 0 6px;
+}
+.post-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.post-title-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.post-title-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 .post-excerpt {
   font-size: 14px;

@@ -1,6 +1,6 @@
 <template>
   <BlogNav />
-  <div id="main-content" class="page-enter">
+  <main id="main-content" class="page-enter">
   <div class="about-container">
     <div class="about-hero">
       <img class="about-avatar" src="/avatar.png" alt="avatar" />
@@ -65,7 +65,7 @@
       </ul>
     </section>
   </div>
-  </div>
+  </main>
   <CustomWidgets />
   <BlogFooter />
 </template>

@@ -3,5 +3,5 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue({ template: { transformAssetUrls: false } })],
-  test: { environment: 'jsdom' }
+  test: { environment: 'jsdom', css: { include: [/tokens\.css/] } }
 })

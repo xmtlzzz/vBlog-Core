@@ -1,6 +1,6 @@
 <template>
   <a href="#main-content" class="skip-link">跳至主要内容 Skip to Content</a>
-  <nav class="top">
+  <nav class="top" aria-label="主导航">
     <div class="inner">
       <router-link class="nav-brand" to="/">
         <img class="mascot" src="/nav-mascot.png" alt="vBlog" />vBlog
@@ -138,6 +138,8 @@ function handleSearch() {
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .mascot {
   width: 22px;
@@ -158,6 +160,7 @@ function handleSearch() {
   text-decoration: none;
   padding: 6px 12px;
   border-radius: 6px;
+  white-space: nowrap;
   transition: color 0.15s, background 0.15s;
 }
 .nav-links a:hover,
@@ -173,6 +176,7 @@ function handleSearch() {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 .admin-btn {
   font-size: 13px;
@@ -181,6 +185,7 @@ function handleSearch() {
   padding: 6px 12px;
   border-radius: 6px;
   border: 1px solid var(--border);
+  white-space: nowrap;
   transition: all 0.15s;
 }
 .admin-btn:hover {
@@ -264,8 +269,21 @@ function handleSearch() {
 
 button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-@media (max-width: 800px) {
-  /* 两行布局：品牌 + 右侧操作一行，导航链接第二行横向滑动，避免折行溢出 */
+@media (max-width: 1060px) {
+  .inner {
+    padding: 0 16px;
+  }
+  .nav-links {
+    gap: 2px;
+  }
+  .nav-links a {
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 920px) {
+  /* 折叠抽屉布局：避免中窄屏两行折行挤压首屏 */
   .inner {
     height: auto;
     flex-wrap: wrap;

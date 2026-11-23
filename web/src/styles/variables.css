@@ -1,45 +1,57 @@
-:root {
-  --bg: #faf9fc; --surface: #ffffff; --fg: #131316; --muted: #6e6e78;
-  --border: #e6e5ec; --accent: #2563eb; --accent-soft: #eff6ff;
-  --success: #16a34a; --warning: #f59e0b; --error: #dc2626;
-  --radius-sm: 6px; --radius: 8px; --radius-lg: 12px;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-  --nav-bg: rgba(250, 249, 252, 0.85);
-  --card-hover: #f5f4f8;
-  --tag-bg: #f0f0f4;
-  --tag-fg: #50505a;
-  --code-bg: #f4f3f8;
-  --code-border: #e4e3ec;
-  --blockquote-border: #d2d1dc;
-  --sidebar-bg: #f5f4f8;
-  --success-soft: #f0fdf4;
-  --warning-soft: #fffbeb;
-  --error-soft: #fef2f2;
-  --ambient-glow-1: rgba(37, 99, 235, 0.05);
-  --ambient-glow-2: rgba(147, 51, 234, 0.03);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-top: env(safe-area-inset-top, 0px);
+@import './tokens.css';
+
+/* Keep Element Plus and the Markdown editor in the same palette as the blog. */
+:root, html[data-theme="dark"] {
+  --el-color-primary: var(--accent);
+  --el-color-primary-light-3: color-mix(in srgb, var(--accent), var(--surface) 30%);
+  --el-color-primary-light-5: color-mix(in srgb, var(--accent), var(--surface) 50%);
+  --el-color-primary-light-7: color-mix(in srgb, var(--accent), var(--surface) 70%);
+  --el-color-primary-light-8: color-mix(in srgb, var(--accent), var(--surface) 80%);
+  --el-color-primary-light-9: var(--accent-soft);
+  --el-color-primary-dark-2: var(--accent-solid);
+  --el-color-success: var(--success); --el-color-warning: var(--warning); --el-color-danger: var(--error);
+  --el-color-success-light-9: var(--success-soft); --el-color-warning-light-9: var(--warning-soft); --el-color-danger-light-9: var(--error-soft);
+  --el-color-info: var(--muted); --el-color-info-light-9: var(--tag-bg);
+  --el-bg-color: var(--surface); --el-bg-color-page: var(--bg); --el-bg-color-overlay: var(--surface-elevated);
+  --el-fill-color-blank: var(--surface); --el-fill-color: var(--tag-bg);
+  --el-fill-color-light: var(--card-hover); --el-fill-color-lighter: var(--card-hover); --el-fill-color-extra-light: var(--card-hover);
+  --el-text-color-primary: var(--fg); --el-text-color-regular: var(--fg); --el-text-color-secondary: var(--muted); --el-text-color-placeholder: var(--placeholder);
+  --el-border-color: var(--field-border); --el-border-color-light: var(--border); --el-border-color-lighter: var(--border); --el-border-color-extra-light: var(--border);
 }
-[data-theme="dark"] {
-  --bg: #050505; --surface: #0e0e12; --fg: #f4f4f6; --muted: #9e9ea8;
-  --border: rgba(255, 255, 255, 0.08); --accent: #3b82f6; --accent-soft: #172554;
-  --success: #22c55e; --warning: #eab308; --error: #ef4444;
-  --nav-bg: rgba(5, 5, 5, 0.85);
-  --card-hover: #16161c;
-  --tag-bg: #141418;
-  --tag-fg: #d2d2d8;
-  --code-bg: #0c0c10;
-  --code-border: rgba(255, 255, 255, 0.09);
-  --blockquote-border: #2a2a34;
-  --sidebar-bg: #0a0a0d;
-  --success-soft: #052e16;
-  --warning-soft: #422006;
-  --error-soft: #450a0a;
-  --ambient-glow-1: rgba(59, 130, 246, 0.12);
-  --ambient-glow-2: rgba(168, 85, 247, 0.08);
+.el-button--primary { --action-fill: var(--accent-solid); --action-text: var(--accent); --action-soft: var(--accent-soft); }
+.el-button--success { --action-fill: var(--success-solid); --action-text: var(--success); --action-soft: var(--success-soft); }
+.el-button--warning { --action-fill: var(--warning-solid); --action-text: var(--warning); --action-soft: var(--warning-soft); }
+.el-button--danger { --action-fill: var(--error-solid); --action-text: var(--error); --action-soft: var(--error-soft); }
+.el-button:is(.is-text, .is-link, .is-plain) {
+  --el-button-hover-text-color: var(--action-text, var(--fg)); --el-button-active-text-color: var(--action-text, var(--fg));
 }
+.el-button.is-plain {
+  --el-button-text-color: var(--action-text, var(--fg)); --el-button-bg-color: var(--action-soft, var(--surface));
+  --el-button-hover-bg-color: var(--action-soft, var(--surface)); --el-button-active-bg-color: var(--action-soft, var(--surface));
+}
+.el-button:is(.el-button--primary, .el-button--success, .el-button--warning, .el-button--danger):not(.is-text):not(.is-link):not(.is-plain):not(.is-disabled) {
+  --el-button-text-color: var(--on-accent); --el-button-hover-text-color: var(--on-accent); --el-button-active-text-color: var(--on-accent);
+  --el-button-bg-color: var(--action-fill); --el-button-border-color: var(--action-fill);
+  --el-button-hover-bg-color: color-mix(in srgb, var(--action-fill), black 12%); --el-button-hover-border-color: var(--el-button-hover-bg-color);
+  --el-button-active-bg-color: color-mix(in srgb, var(--action-fill), black 20%); --el-button-active-border-color: var(--el-button-active-bg-color);
+}
+.md-editor, .md-editor-dark, .md-editor-modal-container {
+  --md-color: var(--fg); --md-hover-color: var(--fg);
+  --md-bk-color: var(--surface); --md-bk-color-outstand: var(--tag-bg); --md-bk-hover-color: var(--card-hover);
+  --md-border-color: var(--border); --md-border-hover-color: var(--field-border);
+}
+.md-editor .md-editor-preview {
+  --md-theme-link-color: var(--accent); --md-theme-link-hover-color: var(--accent);
+  --md-theme-bg-color: var(--surface); --md-theme-bg-color-inset: var(--code-bg);
+  --md-theme-border-color: var(--border);
+}
+.md-editor .md-editor-code { background: var(--code-bg); }
+.md-editor .md-editor-code :is(.hljs-string, .hljs-regexp) { color: var(--syntax-string); }
+.md-editor .md-editor-code :is(.hljs-keyword, .hljs-literal, .hljs-selector-tag) { color: var(--syntax-keyword); }
+.md-editor .md-editor-code :is(.hljs-comment, .hljs-quote) { color: var(--muted); }
+.md-editor .md-editor-code :is(.hljs-number, .hljs-title, .hljs-meta) { color: var(--accent); }
+.md-editor .md-editor-code :is(.hljs-attr, .hljs-built_in, .hljs-attribute) { color: var(--syntax-operator); }
+.search-input::placeholder, .form-input::placeholder, .form-textarea::placeholder { color: var(--placeholder); opacity: 1; }
 body {
   margin: 0;
   min-width: 320px;

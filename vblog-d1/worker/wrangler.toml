@@ -2,6 +2,7 @@
 # 全免费方案：Worker(API) + Static Assets(前端) + D1(数据库) + R2(图片) / KV(图片回退)
 
 name = "vblog-d1"
+account_id = "af597ff8b97691b4dec1cec8240e4065"
 main = "src/index.js"
 compatibility_date = "2025-08-01"
 
@@ -21,14 +22,12 @@ binding = "DB"
 database_name = "vblog-d1-db"
 database_id = "b90ee75d-d288-4ebe-9df4-6da6118136cf"
 
-# ── R2 图片存储（当前账号未启用 R2，注释掉；图片走 KV 回退）─────
-# 开通 R2（Cloudflare 控制台 → R2 → 首次访问即启用）后取消注释，
-# 并把 R2_PUBLIC_URL 填上公开域名即可无缝切换。
-# [[r2_buckets]]
-# binding = "R2"
-# bucket_name = "vblog-images"
+# ── R2 图片存储（私有桶，通过本站 /uploads/ 提供图片）──────────
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "vblog-images"
 
-# ── KV 图片回退（还没有 R2 时的免费图床，1GB）───────────────────
+# ── 历史 KV 图片兼容；只有未配置 R2 绑定时，新上传才写入这里 ─────
 [[kv_namespaces]]
 binding = "IMG"
 id = "e4f572377c1b4790bedd0e687016816c"
@@ -40,7 +39,7 @@ crons = ["5 0 * * *"]
 # ── 环境变量（非机密）──────────────────────────────────────────
 [vars]
 SITE_URL = "https://vblog.xmtlz.dev"
-# 未开通 R2 公开域前必须留空 ""，上传自动走 KV 图床；开通后填回地址即可切 R2
+# 留空时新图片存 R2、通过本站 /uploads/ 访问；也可填写 R2 自定义公开域名
 R2_PUBLIC_URL = ""
 # Turnstile 人机验证：后端允许的前端域名白名单（生产值不得含 localhost；
 # 本地开发在 .dev.vars 里覆盖为 localhost,127.0.0.1）

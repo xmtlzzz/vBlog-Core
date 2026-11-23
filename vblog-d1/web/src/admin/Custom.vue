@@ -87,14 +87,14 @@
     <div v-if="!components.length" class="empty-state">暂无组件</div>
 
     <!-- Preview Modal -->
-    <el-dialog v-model="previewVisible" :title="`预览：${previewComp?.name || ''}`" width="680px" @closed="previewComp = null">
+    <el-dialog v-model="previewVisible" :title="`预览：${previewComp?.name || ''}`" width="min(680px, calc(100vw - 32px))" @closed="previewComp = null">
       <div class="preview-container">
-        <iframe v-if="previewComp" :srcdoc="buildSrcdoc(previewComp.code)" class="preview-iframe" sandbox="allow-scripts"></iframe>
+        <ThemedFrame v-if="previewComp" :code="previewComp.code" padding="24px" empty-message="该组件没有代码内容" class="preview-iframe" :title="previewComp.name" />
       </div>
     </el-dialog>
 
     <!-- Upload Modal -->
-    <el-dialog v-model="dialogVisible" title="上传组件" width="560px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" title="上传组件" width="min(560px, calc(100vw - 32px))" destroy-on-close>
       <el-form label-position="top">
         <el-form-item label="名称">
           <el-input v-model="form.name" placeholder="组件名称" />
@@ -126,7 +126,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
-import { buildSrcdoc as _buildSrcdoc } from '../utils/component'
+import ThemedFrame from '../shared/ThemedFrame.vue'
 
 const components = ref([])
 const dialogVisible = ref(false)
@@ -134,11 +134,6 @@ const saving = ref(false)
 const form = reactive({ name: '', description: '', version: '', code: '' })
 const previewVisible = ref(false)
 const previewComp = ref(null)
-
-function buildSrcdoc(code) {
-  if (!code) return '<body style="padding:24px;color:#737373;font-family:system-ui">该组件没有代码内容</body>'
-  return _buildSrcdoc(code, { padding: '24px' })
-}
 
 const layoutComponents = computed(() => components.value.filter(c => c.category === 'layout'))
 const contentComponents = computed(() => components.value.filter(c => c.category === 'content'))
@@ -221,6 +216,8 @@ onMounted(fetchComponents)
 }
 .page-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
@@ -243,10 +240,12 @@ onMounted(fetchComponents)
 }
 .comp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 16px;
 }
 .comp-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -258,6 +257,8 @@ onMounted(fetchComponents)
 }
 .comp-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;

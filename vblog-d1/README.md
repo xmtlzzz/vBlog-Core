@@ -1,13 +1,13 @@
 # vBlog D1
 
-vBlog Core 的「纯 Cloudflare 版」克隆：**同一个 Vue 3 前端 + 零依赖 JS Worker + D1(SQLite) + KV/R2(图片)**，不要 Go 后端、不要 Neon、不要 Fly.io。全部运行在 Cloudflare 免费额度内。
+vBlog Core 的「纯 Cloudflare 版」：**同一套 Vue 3 前端 + JS Worker + D1(SQLite) + R2(新图片)/KV(历史图片)**，无需 Go 后端、Neon 或 Fly.io，全部运行在 Cloudflare。
 
-- 技术栈：Vue 3（前端零改动）+ 原生 JS Worker（零 npm 依赖，JWT/PBKDF2 用 WebCrypto）+ D1 + Workers KV（图片，R2 可选）
+- 技术栈：Vue 3 + 原生 JS Worker（Markdown 使用 markdown-it，JWT/PBKDF2 使用 WebCrypto）+ D1 + R2；Workers KV 兼容历史图片
 - 已部署上线，域名见下方「在线预览」
 
 ## 这个版本是什么
 
-`vblog-d1` 是 vBlog Core 的**纯 Cloudflare 便捷部署版**：保留同一套 Vue 3 前端与 API 契约，把 Go 后端替换为零依赖 JS Worker，数据库用 D1(SQLite)、图片用 KV/R2，全部运行在 Cloudflare 免费额度内——**不需要公网服务器、不需要 Go/Node 常驻进程**，`deploy.ps1` 一条命令即可构建并上线。
+`vblog-d1` 是 vBlog Core 的**纯 Cloudflare 便捷部署版**：保留同一套 Vue 3 前端与 API 契约，把 Go 后端替换为 JS Worker，数据库使用 D1(SQLite)、新图片存储到 R2，历史 KV 图片仍可读取。**不需要公网服务器、不需要 Go/Node 常驻进程**，`deploy.ps1` 一条命令即可构建并上线。
 
 部署细节见「部署」与「在线预览」；相对原版 Go 项目做了什么改动，见「与 vBlog Core 的差异」「性能优化记录」和下方「最近更新」。
 
@@ -19,7 +19,7 @@ vBlog Core 的「纯 Cloudflare 版」克隆：**同一个 Vue 3 前端 + 零依
 | 备用域名（workers.dev） | https://vblog-d1.xmtlzloveasuka.workers.dev（部分网络不可达） |
 | 后台入口 | https://vblog.xmtlz.dev/admin |
 | 数据库 | D1 `vblog-d1-db`（APAC 区域） |
-| 图片存储 | Workers KV（未启用 R2；启用后自动切换） |
+| 图片存储 | R2 `vblog-images`（新上传）；Workers KV 保留历史图片 |
 
 > ⚠️ **预览版不支持 gRPC**：Cloudflare Worker 仅提供 HTTP REST，没有 TCP 端口——依赖 gRPC 双向流与变更推送的 **Wails 桌面客户端无法连接此预览版**；Web 博客/后台功能不受影响。
 
@@ -30,7 +30,8 @@ vBlog Core 的「纯 Cloudflare 版」克隆：**同一个 Vue 3 前端 + 零依
            ├─ /api/*        → JS 路由（复刻 Go 后端 REST 契约，同源免 CORS）
            ├─ 其余路径      → Static Assets 静态资源（web/dist，SPA 兜底）
            ├─ D1 (SQLite)   → 文章/标签/评论/设置/组件/用户/统计（库位于 APAC 区域）
-           ├─ KV            → 图片上传（免费 1GB；配了 R2 自动切 R2）
+           ├─ R2            → 新图片上传；本站 /uploads/ 提供图片访问
+           ├─ KV            → 读取历史图片；无 R2 绑定时兼容上传
            └─ Cron(每日)    → 访问统计快照（00:05 UTC）
 ```
 
@@ -42,7 +43,7 @@ vBlog Core 的「纯 Cloudflare 版」克隆：**同一个 Vue 3 前端 + 零依
 | 数据库 | PostgreSQL（Neon） | D1（SQLite，APAC 区域） |
 | 部署 | CF Pages + Fly.io + Neon + R2 | CF 一家搞定 |
 | 前端 | Vue 3（`web/`） | **同一份 `web/`，零改动** |
-| 图片上传 | 本地磁盘/R2 | KV 图床（默认）→ R2（配了 R2_PUBLIC_URL 自动切） |
+| 图片上传 | 本地磁盘 | R2 优先；公开域名可选，保留历史 KV 图片 |
 | 桌面客户端 gRPC | ✅ | ❌（Worker 无 TCP） |
 | 认证 | bcrypt + golang-jwt | PBKDF2(WebCrypto) + HS256(WebCrypto) |
 
@@ -83,10 +84,10 @@ node node_modules\wrangler\bin\wrangler.js secret put JWT_SECRET
 # 3b) 注入 Turnstile 人机验证 secret（Cloudflare 控制台 → Turnstile → 你的 widget → Secret Key；勿贴进聊天）
 node node_modules\wrangler\bin\wrangler.js secret put TURNSTILE_SECRET
 
-# 4) 可选：R2 图床（需先在 Cloudflare 控制台 → R2 首次访问启用服务）
-#    - 控制台建桶 vblog-images，绑定自定义域（如 uploads.blog.xmtlz.dev）
-#    - wrangler.toml 取消 [[r2_buckets]] 注释，把公开地址填进 R2_PUBLIC_URL
-#    - 之后上传自动走 R2，历史 KV 图片不受影响
+# 4) R2 图床：新账号部署时先建桶，并更新 account_id 和 bucket_name
+#    node node_modules\wrangler\bin\wrangler.js r2 bucket create vblog-images --location apac
+#    - R2_PUBLIC_URL 留空即可：桶保持私有，通过本站 /uploads/ 访问图片
+#    - 可选绑定独立公开域名后填写 R2_PUBLIC_URL；历史 KV 图片仍可访问
 ```
 
 ### 绑定自定义域名
@@ -111,6 +112,18 @@ node node_modules\wrangler\bin\wrangler.js dev --port 8787
 # 本地 JWT 密钥写在 worker/.dev.vars（已 gitignore；远程密钥用 wrangler secret put）
 ```
 
+## Markdown 与本地图片导入
+
+后台「文章 → 导入文章文件夹」选择同时包含 `.md` 和图片的文件夹；多篇 Markdown 时先选择一篇。
+图片按 Markdown 所在目录解析相对路径（含 `../`、Windows 反斜杠、中文及 URL 编码文件名），仅上传正文引用到的图片。
+缺图时补选图片或图片文件夹；绝对路径、存在多个匹配结果及无法确定的匹配必须人工确认，不能直接继续。
+确认后点击「上传图片并进入编辑」，图片压缩上传后自动替换正文路径，再预览、保存草稿或发布。
+上传中断可在当前窗口重试，已经成功上传的文件不会再次上传。
+
+「Markdown 上传」仍支持单个文件：纯文字或网络图片直接进入编辑；本地图片则进入补选窗口。补选文档目录、`assets` 或 `images` 文件夹后，会按相对路径自动选择唯一匹配的图片，无需逐张选择。
+支持 PNG/JPEG/GIF/WebP，上传文件最大 10MB；普通位图复用编辑器的 WebP 压缩，GIF 保留动图。
+网络图片及本站 `/uploads/` 地址保留，代码块、行内代码与普通链接不会被当成图片上传。
+
 ## 备份与恢复
 
 ```powershell
@@ -122,8 +135,11 @@ pwsh ./backup.ps1
 # 或干脆删库重建（wrangler d1 create + 重新绑定 id）后再导入。
 node node_modules\wrangler\bin\wrangler.js d1 import vblog-d1-db --remote --file .\backup\vblog-xxx.sql
 
-# 图床图片恢复：backup/images-<时间戳>/ 里的文件名 __ 即原 key 的 /，
-# 用 wrangler kv key put 逐个写回 IMG 绑定（key 形如 uploads/<纳秒>.<ext>）
+# 图片备份：backup/images-kv-<时间戳>/ 与 images-r2-<时间戳>/ 各含 manifest.json。
+# manifest 中 objects[].key 是原始 key，objects[].file 是对应二进制文件名。
+# 恢复 KV：wrangler kv key put <key> --binding IMG --remote --path <file>
+# 恢复 R2：wrangler r2 object put vblog-images/<key> --remote --file <file> --content-type <原类型>
+# 旧版 images-<时间戳>/ 备份仍按文件名中的 __ 还原为 /，再写回 KV。
 
 # 时点恢复（Cloudflare 侧自动快照）
 node node_modules\wrangler\bin\wrangler.js d1 time-travel vblog-d1-db --remote
@@ -213,6 +229,7 @@ vblog-d1/
 ## 本地回归检查
 
 两套前端分别在 `web/` 和 `../web/` 运行 `npm test`、`npm run build`。Worker 在 `worker/` 运行 `npm test`。
+前端构建后，在 `worker/` 运行 `npm run test:storage:runtime`，验证真实 workerd 中的 R2 上传、图片读取、HEAD/ETag、历史 KV 兼容及健康检查；测试资源独立于生产绑定。
 
 运行完整 D1 回归时，在 `worker/` 依次执行下面命令；测试配置只使用本地数据库，不连接生产绑定。第二个终端执行最后一行，检查公开文章、登录后草稿访问、保留正文与标签的草稿转换，以及服务端分享元信息。
 

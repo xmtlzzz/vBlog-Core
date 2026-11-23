@@ -1,5 +1,6 @@
 // Shared component detection script and srcdoc builder for iframe-based component preview.
 // Used by: admin/Custom.vue, blog/Modules.vue, shared/CustomWidgets.vue
+import themeTokens from '../styles/tokens.css?inline'
 
 export const DETECT_SCRIPT =
   'try{' +
@@ -21,23 +22,23 @@ export const DETECT_SCRIPT =
   'var s=window[k].toString();' +
   'if(s.indexOf("[native ")===-1)__fns.push({name:k,fn:window[k]})' +
   '}}catch(x){}}' +
-  'if(__fns.length){try{__fns[0].fn(c)}catch(ex){document.body.innerHTML="<pre style=\\"color:red;padding:12px\\">Error calling "+__fns[0].name+": "+ex.message+"</pre>"}}' +
-  'else{document.body.innerHTML="<pre style=\\"color:orange;padding:12px\\">No component function found. Code may not define a function accepting a container argument.</pre>"}' +
-  '}catch(e){document.body.innerHTML="<pre style=\\"color:red;padding:12px\\">"+e.message+"\\n"+(e.stack||"")+"</pre>"}'
+  'if(__fns.length){try{__fns[0].fn(c)}catch(ex){document.body.innerHTML="<pre style=\\"color:var(--error);padding:12px\\">Error calling "+__fns[0].name+": "+ex.message+"</pre>"}}' +
+  'else{document.body.innerHTML="<pre style=\\"color:var(--warning);padding:12px\\">No component function found. Code may not define a function accepting a container argument.</pre>"}' +
+  '}catch(e){document.body.innerHTML="<pre style=\\"color:var(--error);padding:12px\\">"+e.message+"\\n"+(e.stack||"")+"</pre>"}'
 
-const BASE_STYLES =
-  'body{margin:0;font-family:system-ui,sans-serif}' +
-  ':root{--bg:#fafafa;--surface:#fff;--fg:#171717;--muted:#737373;--border:#e5e5e5;--accent:#2563eb;--success:#16a34a;--font-sans:system-ui,sans-serif;--radius:8px}'
+const BASE_STYLES = themeTokens + 'body{margin:0;font-family:var(--font-sans);color:var(--fg);background:var(--bg)}'
+const THEME_SCRIPT = 'window.addEventListener("message",function(event){if(event.source!==parent||event.data?.type!=="vblog-theme")return;document.documentElement.dataset.theme=event.data.theme==="dark"?"dark":"light"})'
 
-export function buildSrcdoc(code, { padding = '12px', data = null } = {}) {
+export function buildSrcdoc(code, { padding = '12px', data = null, theme = 'light' } = {}) {
   if (!code) return ''
   var dataScript = data ? '<script>window.__BLOG_DATA__=' + JSON.stringify(data) + '<\/script>' : ''
   return (
-    '<!DOCTYPE html><html><head><style>' +
+    '<!DOCTYPE html><html data-theme="' + (theme === 'dark' ? 'dark' : 'light') + '"><head><style>' +
     BASE_STYLES +
     'body{padding:' + padding + '}' +
     '</style></head><body><div id="root"></div>' +
     dataScript +
+    '<script>' + THEME_SCRIPT + '<\/script>' +
     '<script>' + code + '<\/script>' +
     '<script>' + DETECT_SCRIPT + '<\/script>' +
     '</body></html>'

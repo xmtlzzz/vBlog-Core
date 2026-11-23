@@ -154,7 +154,7 @@
         </el-form-item>
         <el-form-item label="徽章背景色">
           <el-color-picker v-model="qrBackground" />
-          <span class="field-hint" style="margin-left: 8px">默认白色；二维码为彩色模块，需浅色背景保证扫码对比度</span>
+          <span class="field-hint" style="margin-left: 8px">模型背景跟随主题；扫码视图使用柔和浅底，可自定义浅色背景，深色或透明色会自动适配</span>
         </el-form-item>
       </el-form>
     </div>
@@ -317,7 +317,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 <style scoped>
 .settings-page {
   width: 100%;
-  max-width: 960px;
+  min-width: 0;
 }
 .page-header {
   display: flex;
@@ -351,7 +351,7 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 20px;
 }
 .toggle-list {
@@ -381,10 +381,12 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
 }
 .api-key-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .api-key-row .el-input {
-  flex: 1;
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 .field-hint {
   font-size: 12px;

@@ -24,7 +24,7 @@
       <div v-if="tags.length === 0" class="empty-state">暂无标签</div>
     </div>
 
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑标签' : '新建标签'" width="420px">
+    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑标签' : '新建标签'" width="min(420px, calc(100vw - 32px))">
       <el-form label-position="top">
         <el-form-item label="标签名">
           <el-input v-model="tagName" placeholder="标签名称" />
@@ -126,6 +126,8 @@ onMounted(fetchTags)
 }
 .page-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
@@ -138,10 +140,12 @@ onMounted(fetchTags)
 }
 .tag-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: 16px;
 }
 .tag-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -153,6 +157,8 @@ onMounted(fetchTags)
 }
 .tag-card-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;

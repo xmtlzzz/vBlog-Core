@@ -54,17 +54,19 @@ onMounted(fetchTrash)
 </script>
 
 <style scoped>
-.trash-page { width: 100%; max-width: 960px; }
+.trash-page { width: 100%; min-width: 0; }
 .page-header { display: flex; align-items: center; margin-bottom: 24px; }
 .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--fg); }
 .trash-list { display: flex; flex-direction: column; gap: 8px; }
 .trash-item {
   display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
   padding: 16px; background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+.trash-info { flex: 1 1 16rem; min-width: 0; overflow-wrap: anywhere; }
 .trash-title { font-weight: 500; font-size: 14px; }
-.trash-meta { display: flex; gap: 12px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.trash-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); margin-top: 4px; }
 .trash-actions { display: flex; gap: 8px; }
 .empty-state { text-align: center; padding: 48px; color: var(--muted); }
 </style>

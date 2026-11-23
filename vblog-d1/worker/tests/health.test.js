@@ -53,3 +53,27 @@ test('health matches only the public GET endpoint', async () => {
     assert.deepEqual(env.calls, []);
   }
 });
+
+test('health checks R2 when bound and accepts an R2-only installation', async () => {
+  for (const broken of [false, true]) {
+    const env = environment();
+    delete env.IMG;
+    env.R2 = { async head(key) {
+      assert.equal(key, '__vpulse_health__');
+      if (broken) throw new Error('private R2 detail');
+      return null;
+    } };
+    const response = await worker.fetch(new Request('https://test.example/api/health'), env, {});
+    assert.equal(response.status, broken ? 503 : 200);
+    const body = await response.json();
+    assert.equal(body.components.r2.status, broken ? 'DOWN' : 'UP');
+    assert.ok(!JSON.stringify(body).includes('private'));
+  }
+});
+
+test('local development supports HTTP while production keeps HTTPS redirects', async () => {
+  assert.equal((await worker.fetch(new Request('http://127.0.0.1/api/health'), environment(), {})).status, 200);
+  const response = await worker.fetch(new Request('http://blog.example/api/health'), environment(), {});
+  assert.equal(response.status, 301);
+  assert.equal(response.headers.get('Location'), 'https://blog.example/api/health');
+});

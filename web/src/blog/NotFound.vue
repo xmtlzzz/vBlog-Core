@@ -80,8 +80,8 @@ onMounted(() => {
   gap: 0.5rem;
   padding: 0.65rem 1.4rem;
   border-radius: var(--radius, 8px);
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-solid);
+  color: var(--on-accent);
   font-size: 0.9rem;
   font-weight: 500;
   text-decoration: none;
@@ -89,7 +89,7 @@ onMounted(() => {
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
+  background: color-mix(in srgb, var(--accent-solid), black 12%);
   transform: translateY(-1px);
 }
 

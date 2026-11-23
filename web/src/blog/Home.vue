@@ -1,6 +1,6 @@
 <template>
   <BlogNav />
-  <div id="main-content" class="page-enter">
+  <main id="main-content" class="page-enter">
   <!-- Hero -->
   <header class="hero fade-in">
     <h1><span v-html="typedText"></span><span class="cursor" v-if="typing">|</span></h1>
@@ -58,6 +58,7 @@
   <!-- Pagination -->
   <section v-if="total > perPage" class="pagination-wrap fade-in">
     <el-pagination
+      :pager-count="5"
       layout="prev, pager, next, jumper"
       :total="total"
       :page-size="perPage"
@@ -66,7 +67,7 @@
     />
   </section>
 
-  </div>
+  </main>
   <CustomWidgets />
   <BlogFooter />
 </template>
@@ -380,6 +381,12 @@ onUnmounted(() => {
   padding: 0 24px 80px;
   display: flex;
   justify-content: center;
+}
+.pagination-wrap :deep(.el-pagination) {
+  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
 
 @media (max-width: 640px) {

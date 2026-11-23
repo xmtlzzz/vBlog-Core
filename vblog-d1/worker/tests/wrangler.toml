@@ -10,6 +10,12 @@ run_worker_first = true
 binding = "DB"
 database_name = "vblog-ui-local"
 database_id = "00000000-0000-0000-0000-000000000001"
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "vblog-local-images"
+[[kv_namespaces]]
+binding = "IMG"
+id = "00000000000000000000000000000001"
 [vars]
 SITE_URL = "http://127.0.0.1:8787"
 JWT_SECRET = "local-ui-regression-only"

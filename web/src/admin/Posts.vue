@@ -3,20 +3,20 @@
     <div class="page-header">
       <h1 class="page-title">全部文章 All Posts</h1>
       <div class="header-actions">
-        <el-button @click="triggerUpload">Markdown 上传</el-button>
+        <el-button @click="markdownImport.selectMarkdown()">Markdown 上传</el-button>
+        <el-button @click="markdownImport.selectDirectory()">导入文章文件夹</el-button>
         <el-button type="primary" @click="router.push('/admin/posts/new')">新文章 New Post</el-button>
-        <input ref="fileInput" type="file" accept=".md,.markdown" style="display:none" @change="handleUpload" />
       </div>
     </div>
 
     <div class="filter-row">
-      <el-input v-model="filters.search" placeholder="搜索标题或摘要 Search..." clearable style="width: 240px" @input="debounceFetch" />
-      <el-select v-model="filters.status" placeholder="全部状态 All Status" clearable style="width: 160px" @change="fetchPosts">
+      <el-input v-model="filters.search" placeholder="搜索标题或摘要 Search..." clearable class="search-filter" @input="debounceFetch" />
+      <el-select v-model="filters.status" placeholder="全部状态 All Status" clearable class="select-filter" @change="fetchPosts">
         <el-option label="已发布 Published" value="published" />
         <el-option label="草稿 Draft" value="draft" />
         <el-option label="已归档 Archived" value="archived" />
       </el-select>
-      <el-select v-model="filters.tag" placeholder="全部标签 All Tags" clearable style="width: 160px" @change="fetchPosts">
+      <el-select v-model="filters.tag" placeholder="全部标签 All Tags" clearable class="select-filter" @change="fetchPosts">
         <el-option v-for="t in allTags" :key="t.id" :label="t.name" :value="t.name" />
       </el-select>
     </div>
@@ -46,7 +46,7 @@
       <el-table-column label="日期 Date" width="120">
         <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
       </el-table-column>
-      <el-table-column label="操作 Actions" width="280" fixed="right">
+      <el-table-column label="操作 Actions" width="280" :fixed="pinActions ? 'right' : false">
         <template #default="{ row }">
           <div class="action-btn-group">
             <button class="action-btn" @click="viewPost(row)">查看 View</button>
@@ -68,6 +68,7 @@
         条
       </span>
       <el-pagination
+        :pager-count="5"
         layout="prev, pager, next, jumper"
         :total="total"
         :page-size="perPage"
@@ -76,6 +77,7 @@
       />
     </div>
 
+    <MarkdownImport ref="markdownImport" @imported="handleImport" />
   </div>
 </template>
 
@@ -85,9 +87,12 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
+import MarkdownImport from './MarkdownImport.vue'
+import { useMediaQuery } from '../composables/useMediaQuery'
 
 const router = useRouter()
-const fileInput = ref(null)
+const pinActions = useMediaQuery('(min-width: 768px)')
+const markdownImport = ref(null)
 const tableRef = ref(null)
 
 const posts = ref([])
@@ -170,23 +175,16 @@ async function toggleStatus(row) {
   }
 }
 
-function triggerUpload() {
-  fileInput.value.click()
-}
-
-function handleUpload(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = () => {
-    sessionStorage.setItem('md-upload-content', reader.result)
-    // Extract title from first heading if present
-    const match = reader.result.match(/^#\s+(.+)$/m)
-    if (match) sessionStorage.setItem('md-upload-title', match[1])
+function handleImport({ content, title }) {
+  try {
+    sessionStorage.setItem('md-upload-content', content)
+    sessionStorage.setItem('md-upload-title', title)
     router.push('/admin/posts/new')
+  } catch {
+    sessionStorage.removeItem('md-upload-content')
+    sessionStorage.removeItem('md-upload-title')
+    ElMessage.error('文章过大或浏览器存储不可用，无法导入')
   }
-  reader.readAsText(file)
-  e.target.value = ''
 }
 
 onMounted(() => {
@@ -201,12 +199,15 @@ onMounted(() => {
 }
 .page-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
 }
 .header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .page-title {
@@ -223,6 +224,8 @@ onMounted(() => {
 }
 .pagination-wrap {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
   margin-top: 20px;
@@ -231,6 +234,13 @@ onMounted(() => {
   font-size: 13px;
   color: var(--muted);
 }
+.pagination-wrap :deep(.el-pagination) {
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.search-filter { width: 240px; max-width: 100%; }
+.select-filter { width: 160px; max-width: 100%; }
 .status-badge {
   font-size: 11px;
   font-weight: 600;
@@ -240,7 +250,7 @@ onMounted(() => {
 }
 .status-published { background: var(--success-soft); color: var(--success); }
 .status-draft { background: var(--warning-soft); color: var(--warning); }
-.status-archived { background: var(--error-soft); color: var(--muted); }
+.status-archived { background: var(--tag-bg); color: var(--tag-fg); }
 .tag-pill {
   font-size: 11px;
   padding: 2px 7px;

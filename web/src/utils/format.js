@@ -1,7 +1,13 @@
 export function formatDate(dateStr) {
   if (!dateStr) return '-'
-  // Backend returns pre-formatted "YYYY-MM-DD" strings in local time
-  return dateStr
+  const raw = String(dateStr).trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
+  const d = new Date(raw)
+  if (isNaN(d.getTime())) return raw
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 export function formatDateTime(dateStr) {
@@ -26,7 +32,7 @@ export function formatRelativeTime(dateStr) {
   if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前'
   if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前'
   if (diff < 2592000000) return Math.floor(diff / 86400000) + ' 天前'
-  return formatDate(dateStr)
+  return formatDateTime(dateStr)
 }
 
 export function formatDay(dateStr) {

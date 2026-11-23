@@ -1,0 +1,41 @@
+:root {
+  color-scheme: light;
+  --bg: #faf9fc; --surface: #fdfdfe; --surface-elevated: #ffffff;
+  --fg: #131316; --muted: #62626e; --placeholder: #62626e;
+  --border: #e2e2ea; --field-border: #8a8a96;
+  --accent: #2563eb; --accent-soft: #eff6ff;
+  --accent-solid: #2563eb; --on-accent: #ffffff;
+  --syntax-keyword: #8250df; --syntax-string: #116329; --syntax-operator: #805100;
+  --success: #166534; --warning: #a16207; --error: #b91c1c;
+  --success-solid: #166534; --warning-solid: #a16207; --error-solid: #b91c1c;
+  --success-soft: #f0fdf4; --warning-soft: #fffbeb; --error-soft: #fef2f2;
+  --radius-sm: 6px; --radius: 8px; --radius-lg: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --nav-bg: rgba(250, 249, 252, 0.9);
+  --card-hover: #f2f2f7; --tag-bg: #f0f0f4; --tag-fg: #50505a;
+  --code-bg: #f4f3f8; --code-border: #e4e3ec; --blockquote-border: #d2d1dc;
+  --sidebar-bg: #f5f4f8;
+  --qr-model-bg: var(--surface); --qr-scan-bg: #f4f4f8;
+  --ambient-glow-1: rgba(37, 99, 235, 0.05);
+  --ambient-glow-2: rgba(37, 99, 235, 0.025);
+  --safe-bottom: env(safe-area-inset-bottom, 0px); --safe-top: env(safe-area-inset-top, 0px);
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #09090b; --surface: #141418; --surface-elevated: #1b1b21;
+  --fg: #f4f4f6; --muted: #a2a2ad; --placeholder: #a2a2ad;
+  --border: #2d2d35; --field-border: #747480;
+  --accent: #60a5fa; --accent-soft: #172554;
+  --syntax-keyword: #d2a8ff; --syntax-string: #8bd6a0; --syntax-operator: #e5b86a;
+  --success: #4ade80; --warning: #facc15; --error: #f87171;
+  --success-soft: #052e16; --warning-soft: #422006; --error-soft: #450a0a;
+  --nav-bg: rgba(9, 9, 11, 0.9);
+  --card-hover: #1d1d24; --tag-bg: #202027; --tag-fg: #d2d2d8;
+  --code-bg: #111115; --code-border: #2d2d35; --blockquote-border: #40404b;
+  --sidebar-bg: #101014;
+  --qr-scan-bg: #e8eaf0;
+  --ambient-glow-1: rgba(59, 130, 246, 0.08);
+  --ambient-glow-2: rgba(59, 130, 246, 0.04);
+}

@@ -18,6 +18,7 @@
             :model="qrModel"
             :effect="qrEffect"
             :palette="qrPalette"
+            :background="settings.qr_bg"
             @viewchange="qrZoomed = $event"
           />
         </span>
@@ -55,9 +56,6 @@ const qrPalette = computed(() => {
   const v = settings.value.qr_palette
   return ['sakura', 'forest', 'ocean', 'sunset'].includes(v) ? v : 'sakura'
 })
-const qrBackground = computed(() =>
-  /^#[0-9a-fA-F]{3,8}$/.test(settings.value.qr_bg || '') ? settings.value.qr_bg : '#ffffff'
-)
 // 徽章尺寸后台可调（28–120px），二维码放大视图按比例约 2.6 倍
 const badgeSize = computed(() => {
   const n = parseInt(settings.value.qr_size)
@@ -65,7 +63,6 @@ const badgeSize = computed(() => {
 })
 const zoomedSize = computed(() => Math.round(badgeSize.value * 2.6))
 const badgeStyle = computed(() => ({
-  background: qrBackground.value,
   width: (qrZoomed.value ? zoomedSize.value : badgeSize.value) + 'px',
   height: (qrZoomed.value ? zoomedSize.value : badgeSize.value) + 'px'
 }))
@@ -116,11 +113,13 @@ onUnmounted(() => {
   align-items: center;
 }
 .qr-badge {
+  background: var(--qr-model-bg);
   width: 40px;
   height: 40px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--field-border);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
   cursor: pointer;
   transition: width 0.25s ease, height 0.25s ease, border-color 0.15s;
   z-index: 5;

@@ -4,6 +4,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
 	restfulspec "github.com/emicklei/go-restful-openapi/v2"
@@ -89,10 +91,14 @@ func (r *RSSResource) feed(req *restful.Request, resp *restful.Response) {
 
 	var items []RSSItem
 	for _, p := range posts {
+		desc := p.Excerpt
+		if strings.TrimSpace(desc) == "" {
+			desc = p.Content
+		}
 		items = append(items, RSSItem{
-			Title:       p.Title,
+			Title:       cleanRSSTitle(p.Title),
 			Link:        fmt.Sprintf("%s/post/%d", baseURL, p.ID),
-			Description: p.Excerpt,
+			Description: cleanRSSDescription(desc),
 			PubDate:     p.CreatedAt.Format(time.RFC1123Z),
 			GUID: RSSGUID{
 				IsPermaLink: "true",
@@ -139,4 +145,35 @@ func (r *RSSResource) feed(req *restful.Request, resp *restful.Response) {
 	encoder := xml.NewEncoder(resp)
 	encoder.Indent("", "  ")
 	_ = encoder.Encode(feed)
+}
+
+var (
+	rssEscapePunctRe  = regexp.MustCompile(`\\([&_*~\[\]()!#])`)
+	rssContainerRe    = regexp.MustCompile(`(?m)^[ \t]*:::[ \t]*[a-zA-Z0-9_-]*[^\n]*$`)
+	rssCodeFenceRe    = regexp.MustCompile("(?s)```.*?```")
+	rssHeadingRe      = regexp.MustCompile(`(?m)^[ \t]*#{1,6}[ \t]+`)
+	rssImageRe        = regexp.MustCompile(`!\[([^\]]*)\]\([^)]*\)`)
+	rssLinkRe         = regexp.MustCompile(`\[([^\]]+)\]\([^)]*\)`)
+	rssTruncLinkRe    = regexp.MustCompile(`!?\[([^\]]+)\]\([^)]*$`)
+	rssWhitespaceRe   = regexp.MustCompile(`\s+`)
+)
+
+func cleanRSSTitle(title string) string {
+	return strings.TrimSpace(rssEscapePunctRe.ReplaceAllString(title, "$1"))
+}
+
+func cleanRSSDescription(source string) string {
+	text := rssCodeFenceRe.ReplaceAllString(source, " ")
+	text = rssContainerRe.ReplaceAllString(text, " ")
+	text = rssImageRe.ReplaceAllString(text, "$1")
+	text = rssLinkRe.ReplaceAllString(text, "$1")
+	text = rssTruncLinkRe.ReplaceAllString(text, "$1")
+	text = rssHeadingRe.ReplaceAllString(text, "")
+	text = rssEscapePunctRe.ReplaceAllString(text, "$1")
+	text = strings.TrimSpace(rssWhitespaceRe.ReplaceAllString(text, " "))
+	runes := []rune(text)
+	if len(runes) > 240 {
+		return string(runes[:240]) + "..."
+	}
+	return text
 }

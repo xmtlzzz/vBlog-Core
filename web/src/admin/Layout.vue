@@ -166,6 +166,7 @@ const breadcrumbs = computed(() => {
 .admin-layout {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--fg);
 }
@@ -268,8 +269,8 @@ const breadcrumbs = computed(() => {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+  background: var(--accent-solid);
+  color: var(--on-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,26 +303,33 @@ const breadcrumbs = computed(() => {
 }
 .main-area {
   flex: 1;
+  min-width: 0;
   margin-left: 220px;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 .topbar {
-  height: 56px;
+  min-height: 56px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--nav-bg);
   backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 8px 24px;
   position: sticky;
   top: 0;
   z-index: 50;
 }
 .topbar-left {
   display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
@@ -357,7 +365,7 @@ const breadcrumbs = computed(() => {
   color: var(--accent);
 }
 .breadcrumb-sep {
-  color: var(--border);
+  color: var(--muted);
   font-size: 14px;
   margin: 0 4px;
 }
@@ -386,8 +394,10 @@ const breadcrumbs = computed(() => {
 /* new-post-btn removed — not in topbar */
 .content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   padding: 24px;
-  overflow-x: hidden;
 }
 .sidebar-overlay {
   display: none;
@@ -413,5 +423,12 @@ const breadcrumbs = computed(() => {
     background: rgba(0,0,0,0.3);
     z-index: 99;
   }
+}
+
+@media (max-width: 640px) {
+  .content { padding: 16px; }
+  .topbar { padding: 8px 16px; }
+  .topbar-left { gap: 6px; }
+  .topbar-right { margin-left: auto; }
 }
 </style>

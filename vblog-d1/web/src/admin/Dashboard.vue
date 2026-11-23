@@ -27,8 +27,8 @@
       <div class="table-header">
         <span class="table-title">文章管理 Post Management</span>
         <div class="table-actions">
-          <el-input v-model="search" placeholder="搜索 Search..." style="width: 180px" clearable />
-          <el-select v-model="statusFilter" placeholder="全部状态 All Status" style="width: 160px" clearable>
+          <el-input v-model="search" placeholder="搜索 Search..." class="search-filter" clearable />
+          <el-select v-model="statusFilter" placeholder="全部状态 All Status" class="status-filter" clearable>
             <el-option label="全部状态 All Status" value="" />
             <el-option label="已发布 Published" value="published" />
             <el-option label="草稿 Draft" value="draft" />
@@ -63,7 +63,7 @@
         <el-table-column label="日期 Date" width="120">
           <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
         </el-table-column>
-        <el-table-column label="操作 Actions" width="280" fixed="right">
+        <el-table-column label="操作 Actions" width="280" :fixed="pinActions ? 'right' : false">
           <template #default="{ row }">
             <div class="action-btn-group">
               <button class="action-btn" @click="viewPost(row)">查看 View</button>
@@ -85,6 +85,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
 import { useCountUp } from '../composables/useCountUp'
+import { useMediaQuery } from '../composables/useMediaQuery'
+
+const pinActions = useMediaQuery('(min-width: 768px)')
 
 const stats = ref({ total_posts: 0, total_views: 0, total_comments: 0, total_tags: 0 })
 
@@ -206,11 +209,13 @@ onMounted(async () => {
 }
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }
 .stat-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -241,6 +246,8 @@ onMounted(async () => {
 }
 .table-header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
@@ -253,9 +260,13 @@ onMounted(async () => {
 }
 .table-actions {
   display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   gap: 8px;
   align-items: center;
 }
+.search-filter { width: 180px; max-width: 100%; }
+.status-filter { width: 160px; max-width: 100%; }
 .status-badge {
   font-size: 11px;
   font-weight: 600;
@@ -265,7 +276,7 @@ onMounted(async () => {
 }
 .status-published { background: var(--success-soft); color: var(--success); }
 .status-draft { background: var(--warning-soft); color: var(--warning); }
-.status-archived { background: var(--error-soft); color: var(--muted); }
+.status-archived { background: var(--tag-bg); color: var(--tag-fg); }
 .tag-pill {
   font-size: 11px;
   padding: 2px 7px;

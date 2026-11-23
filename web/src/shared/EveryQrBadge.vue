@@ -2,6 +2,8 @@
   <button
     type="button"
     class="eqr"
+    :class="{ 'is-flat': flat || fallback }"
+    :style="{ '--qr-scan-bg': scanBackground }"
     :aria-label="fallback ? 'QR code' : flat ? '恢复模型视图' : '显示二维码'"
     @click="toggleView"
   >
@@ -13,14 +15,14 @@
       shape-rendering="crispEdges"
       aria-hidden="true"
     >
-      <rect :width="fallback.size" :height="fallback.size" fill="#ffffff" />
+      <rect :width="fallback.size" :height="fallback.size" fill="var(--qr-scan-bg)" />
       <path :d="fallback.path" fill="#111111" />
     </svg>
   </button>
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import {
   CURRENT_GENERATOR_VERSION,
   createEveryQRCodeIdentity,
@@ -34,7 +36,18 @@ const props = defineProps({
   // ''（库默认）| calm | snow | rain | wind
   effect: { type: String, default: '' },
   // sakura（库默认樱花）| forest | ocean | sunset（仅作用于树模型）
-  palette: { type: String, default: 'sakura' }
+  palette: { type: String, default: 'sakura' },
+  background: { type: String, default: '' }
+})
+
+// Custom scan paper must remain opaque and light enough for the colored QR modules.
+const scanBackground = computed(() => {
+  let color = typeof props.background === 'string' ? props.background.toLowerCase() : ''
+  if (/^#[0-9a-f]{3}$/.test(color)) color = '#' + [...color.slice(1)].map(c => c + c).join('')
+  if (!/^#[0-9a-f]{6}$/.test(color) || color === '#ffffff') return undefined
+  const channels = [1, 3, 5].map(i => parseInt(color.slice(i, i + 2), 16) / 255)
+  const luminance = channels.reduce((sum, c, i) => sum + (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4) * [0.2126, 0.7152, 0.0722][i], 0)
+  return luminance >= 0.8 ? color : undefined
 })
 
 const emit = defineEmits(['viewchange'])
@@ -161,14 +174,19 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .eqr {
+  position: relative;
   display: block;
   width: 100%;
   height: 100%;
   padding: 0;
   border: 0;
-  background: transparent;
+  background: var(--qr-model-bg);
+  border-radius: inherit;
   cursor: pointer;
 }
+.eqr.is-flat { background: var(--qr-scan-bg); }
+.eqr:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.eqr svg { position: absolute; inset: 0; pointer-events: none; }
 .eqr canvas,
 .eqr svg {
   display: block;

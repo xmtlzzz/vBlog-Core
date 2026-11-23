@@ -185,6 +185,7 @@ onUnmounted(() => {
 }
 .comment-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   margin-bottom: 6px;
@@ -199,6 +200,7 @@ onUnmounted(() => {
   color: var(--muted);
 }
 .comment-body {
+  overflow-wrap: anywhere;
   font-size: 15px;
   line-height: 1.6;
   color: var(--fg);
@@ -220,12 +222,14 @@ onUnmounted(() => {
   min-height: 65px;
 }
 .form-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
 .form-input {
-  flex: 1;
+  min-width: 0;
+  width: 100%;
   font-size: 14px;
   padding: 10px 12px;
   border: 1px solid var(--border);
@@ -258,6 +262,8 @@ onUnmounted(() => {
 }
 .form-footer {
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
   margin-top: 12px;
@@ -272,13 +278,13 @@ onUnmounted(() => {
   padding: 8px 20px;
   border-radius: var(--radius);
   border: none;
-  background: var(--accent);
-  color: white;
+  background: var(--accent-solid);
+  color: var(--on-accent);
   cursor: pointer;
   transition: opacity 0.15s;
   font-family: var(--font-sans);
 }
-.submit-btn:hover { opacity: 0.9; }
+.submit-btn:hover { background: color-mix(in srgb, var(--accent-solid), black 12%); }
 .submit-btn:active { transform: scale(0.97); }
 .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

@@ -10,8 +10,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@codemirror/language": "6.12.3",
     "@element-plus/icons-vue": "^2.3.2",
     "@every-qrcode/web-component": "^0.1.2",
+    "@lezer/highlight": "1.2.3",
     "axios": "^1.16.0",
     "element-plus": "^2.14.0",
     "highlight.js": "^11.12.0",

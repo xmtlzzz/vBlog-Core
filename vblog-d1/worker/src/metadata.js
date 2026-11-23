@@ -1,4 +1,5 @@
 import { buildExcerpt } from './util.js';
+import { cleanTitle } from './markdown.js';
 
 const titles = { '/archives': '归档', '/modules': '模块', '/tags': '标签', '/friends': '友情链接', '/about': '关于' };
 const escape = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
@@ -16,7 +17,7 @@ export async function pageMetadata(env, url) {
     const match = url.pathname.match(/^\/post\/(\d+)$/);
     const post = match ? await env.DB.prepare("SELECT title, excerpt, content FROM posts WHERE id = ? AND status = 'published' AND deleted_at IS NULL").bind(Number(match[1])).first() : null;
     if (post) {
-      page.title = post.title;
+      page.title = cleanTitle(post.title);
       page.description = buildExcerpt(post.excerpt || post.content, 160);
       page.article = true;
     } else { page.title = '文章不存在'; page.missing = true; }

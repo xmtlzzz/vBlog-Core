@@ -74,8 +74,14 @@ jobs:
           npm ci || npm install --no-audit --no-fund
           npm test
 
-      - name: Build D1 Web
+      - name: Test and Build D1 Web
         run: |
           cd vblog-d1/web
           npm ci || npm install --no-audit --no-fund
+          npm test
           npm run build
+
+      - name: Test R2 Runtime
+        run: |
+          cd vblog-d1/worker
+          npm run test:storage:runtime

@@ -15,6 +15,7 @@ import {
   json, fail, signJWT, verifyJWT, hashPassword, checkPassword,
   fmtDate, fmtDateTime, calcReadTime, buildExcerpt, nowISO,
 } from './util.js';
+import { cleanTitle } from './markdown.js';
 import { pageMetadata, rewriteMetadata } from './metadata.js';
 
 export default {
@@ -25,7 +26,8 @@ export default {
 
     // 1. 强制 HTTP -> HTTPS 301 重定向
     const proto = request.headers.get('x-forwarded-proto');
-    if (url.protocol === 'http:' || proto === 'http') {
+    const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+    if (!local && (url.protocol === 'http:' || proto === 'http')) {
       url.protocol = 'https:';
       return Response.redirect(url.toString(), 301);
     }
@@ -53,7 +55,7 @@ export default {
 
     // 静态资源走 ASSETS（SPA fallback 由 not_found_handling 处理）
     if (path.startsWith('/uploads/') && (method === 'GET' || method === 'HEAD')) {
-      return serveImage(env, path, method);
+      return serveImage(env, path, method, request);
     }
     if ((path === '/sitemap.xml' || path === '/sitemap') && (method === 'GET' || method === 'HEAD')) {
       return sitemapXml(request, env);
@@ -95,10 +97,10 @@ export default {
 // 只读探针：不写入 KV，不产生页面统计，也不暴露依赖错误详情。
 async function health(env) {
   const components = {};
-  await Promise.all([
-    ['d1', () => env.DB.prepare('SELECT 1').first()],
-    ['kv', () => env.IMG.get('__vpulse_health__')],
-  ].map(async ([name, check]) => {
+  const checks = [['d1', () => env.DB.prepare('SELECT 1').first()]];
+  if (env.R2) checks.push(['r2', () => env.R2.head('__vpulse_health__')]);
+  if (env.IMG || !env.R2) checks.push(['kv', () => env.IMG.get('__vpulse_health__')]);
+  await Promise.all(checks.map(async ([name, check]) => {
     const start = performance.now();
     let status = 'UP';
     try { await check(); }
@@ -208,7 +210,7 @@ async function route(request, env, url, path, method) {
 
     // ── 上传（→ R2）──────────────────────────────────────────
     if (first === 'upload' && method === 'POST') {
-      return requireAuth(request, env, () => uploadImage(request, env));
+      return await requireAuth(request, env, () => uploadImage(request, env));
     }
 
     // ── RSS & Sitemap ───────────────────────────────────────
@@ -765,7 +767,7 @@ async function toggleComponent(env, id) {
 
 // ══════════════════════════ 上传 → R2 / KV 回退 ══════════════════════════
 // 图片存储策略：
-// · 配置了 R2（R2_PUBLIC_URL 非空）→ 上传到 R2 桶，返回 CDN URL
+// · 配置了 R2 → 上传到 R2；公开域名可选，留空时由本站 /uploads/ 提供图片
 // · 未配置 R2 但有 KV 命名空间（IMG 绑定）→ 存 KV，返回本站 /uploads/<name>（Worker 读取）
 const UPLOAD_MAX_SIZE = 10 * 1024 * 1024; // 10MB，对齐 Go 版
 const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
@@ -777,32 +779,64 @@ async function uploadImage(request, env) {
   if (!file || !ALLOWED_IMAGE_TYPES.has(file.type)) return fail('only png/jpeg/gif/webp images allowed', 400);
   if (file.size > UPLOAD_MAX_SIZE) return fail('文件超过 10MB 限制', 400);
 
-  const ext = (file.name || '').includes('.') ? '.' + file.name.split('.').pop().toLowerCase() : '.png';
-  const key = `uploads/${Date.now()}${Math.floor(Math.random() * 1e6)}${ext}`; // 对齐 Go 端纳秒时间戳命名
   const buf = await file.arrayBuffer();
-  const contentType = file.type;
+  const bytes = new Uint8Array(buf);
+  const startsWith = signature => signature.every((value, index) => bytes[index] === value);
+  let contentType;
+  if (startsWith([137, 80, 78, 71, 13, 10, 26, 10])) contentType = 'image/png';
+  else if (startsWith([255, 216, 255])) contentType = 'image/jpeg';
+  else if (startsWith([71, 73, 70, 56]) && [55, 57].includes(bytes[4]) && bytes[5] === 97) contentType = 'image/gif';
+  else if (startsWith([82, 73, 70, 70]) && bytes.length >= 12 && [87, 69, 66, 80].every((value, index) => bytes[index + 8] === value)) contentType = 'image/webp';
+  if (!contentType || contentType !== file.type) return fail('文件内容与图片类型不符', 400);
+  const extension = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp' }[contentType];
+  const key = `uploads/${crypto.randomUUID()}.${extension}`;
+  const origin = new URL(request.url).origin;
 
   // ── R2 路径（首选）─────────────────────────────────────────────
-  if (env.R2 && env.R2_PUBLIC_URL) {
-    await env.R2.put(key, buf, { httpMetadata: { contentType } });
-    return json({ url: String(env.R2_PUBLIC_URL).replace(/\/+$/, '') + '/' + key });
+  if (env.R2) {
+    await env.R2.put(key, buf, { httpMetadata: { contentType, cacheControl: 'public, max-age=31536000, immutable' } });
+    const base = (String(env.R2_PUBLIC_URL || '').trim() || origin).replace(/\/+$/, '');
+    return json({ url: base + '/' + key });
   }
 
-  // ── KV 回退路径（无 R2 / 未配置 R2_PUBLIC_URL）─────────────────
+  // ── KV 回退路径（无 R2 绑定）───────────────────────────────────
   if (!env.IMG) return fail('upload storage not configured', 500);
   await env.IMG.put(key, buf, { metadata: { contentType } });
-  const origin = new URL(request.url).origin;
   return json({ url: origin + '/' + key });
 }
 
-// 从 KV 读取图片（无 R2 时的回退图床）
+// R2 优先；未命中时读取历史 KV 图片，保留已有文章的 /uploads/ 地址。
 const IMAGE_MIME = {
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
   webp: 'image/webp', avif: 'image/avif', bmp: 'image/bmp',
 };
 
-async function serveImage(env, path, method = 'GET') {
+async function serveImage(env, path, method = 'GET', request) {
   const key = path.replace(/^\//, '');
+  if (env.R2) {
+    try {
+      const object = await env.R2.get(key);
+      if (object) {
+        const headers = new Headers({
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          'Content-Length': String(object.size),
+          'ETag': object.httpEtag,
+          'X-Content-Type-Options': 'nosniff',
+        });
+        object.writeHttpMetadata(headers);
+        const condition = request?.headers.get('If-None-Match');
+        const unchanged = condition === '*' || condition?.split(',').some(tag => tag.trim().replace(/^W\//, '') === object.httpEtag);
+        if (unchanged || method === 'HEAD') await object.body.cancel();
+        if (unchanged) {
+          headers.delete('Content-Length');
+          return new Response(null, { status: 304, headers });
+        }
+        return new Response(method === 'HEAD' ? null : object.body, { headers });
+      }
+    } catch {
+      return fail('图片存储暂时不可用', 503);
+    }
+  }
   if (!env.IMG) return fail('not found', 404);
   const obj = await env.IMG.get(key, { type: 'arrayBuffer', cacheTtl: 86400 });
   if (!obj) return fail('not found', 404);
@@ -826,16 +860,16 @@ async function rssFeed(request, env) {
   const setting = await env.DB.prepare("SELECT value FROM settings WHERE key = 'site_title'").first();
   const siteTitle = (setting && setting.value) || 'vBlog';
   const rows = await env.DB.prepare(
-    `SELECT id, title, excerpt, created_at FROM posts WHERE status = 'published' AND deleted_at IS NULL
+    `SELECT id, title, excerpt, content, created_at FROM posts WHERE status = 'published' AND deleted_at IS NULL
      ORDER BY created_at DESC LIMIT 20`
   ).all();
 
   const rfc1123 = (iso) => new Date(iso).toUTCString().replace('GMT', '+0000');
   const items = (rows.results || []).map((p) =>
     `      <item>\n` +
-    `        <title>${escapeXml(p.title)}</title>\n` +
+    `        <title>${escapeXml(cleanTitle(p.title))}</title>\n` +
     `        <link>${baseUrl}/post/${p.id}</link>\n` +
-    `        <description>${escapeXml(p.excerpt)}</description>\n` +
+    `        <description>${escapeXml(buildExcerpt(p.excerpt || p.content, 240))}</description>\n` +
     `        <pubDate>${rfc1123(p.created_at)}</pubDate>\n` +
     `        <guid isPermaLink="true">${baseUrl}/post/${p.id}</guid>\n` +
     `      </item>`

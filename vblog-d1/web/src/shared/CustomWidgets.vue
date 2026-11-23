@@ -1,12 +1,12 @@
 <template>
   <section v-if="widgets.length" class="custom-widgets">
     <div v-for="w in widgets" :key="w.id" class="widget-slot">
-      <iframe
-        :srcdoc="srcdoc(w.code)"
+      <ThemedFrame
+        :code="w.code"
+        :data="blogData"
         class="widget-iframe"
-        sandbox="allow-scripts"
         :title="w.name"
-      ></iframe>
+      />
     </div>
   </section>
 </template>
@@ -14,14 +14,10 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../api/request'
-import { buildSrcdoc } from '../utils/component'
+import ThemedFrame from './ThemedFrame.vue'
 
 const widgets = ref([])
 const blogData = ref(null)
-
-function srcdoc(code) {
-  return buildSrcdoc(code, { data: blogData.value })
-}
 
 onMounted(async () => {
   try {
@@ -37,7 +33,7 @@ onMounted(async () => {
         views: s.total_views || 0,
         comments: s.total_comments || 0,
         tags: s.total_tags || 0,
-        visitors: Math.floor(Math.random() * 9000) + 1000
+        visitors: s.total_views || 0
       }
     }
   } catch {}

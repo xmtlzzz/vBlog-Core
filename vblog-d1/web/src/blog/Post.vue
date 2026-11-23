@@ -5,10 +5,11 @@
     aria-hidden="true"
   ></div>
   <BlogNav />
+  <main id="main-content">
   <div :class="['post-layout', 'fade-in', { 'has-toc': tocItems.length }]" v-if="post">
     <!-- 宽屏对称占位：与右侧目录等宽，确保文章主体绝对居中 -->
     <div class="toc-spacer" v-if="tocItems.length" aria-hidden="true"></div>
-    <article id="main-content" class="article" :data-print-url="currentUrl">
+    <article class="article" :data-print-url="currentUrl">
       <router-link to="/" class="back-link">← 返回首页</router-link>
 
       <header class="article-header">
@@ -21,7 +22,7 @@
           >{{ tag.name || tag }}</router-link>
           <span>{{ formatDate(post.created_at) }}</span>
           <span v-if="readingStats.words">{{ readingStats.words.toLocaleString() }} 字</span>
-          <span>约 {{ post.read_time || readingStats.minutes }} min</span>
+          <span>约 {{ displayReadMinutes }} min</span>
           <span>{{ (post.views || 0).toLocaleString() }} views</span>
           <button
             type="button"
@@ -39,7 +40,7 @@
             <span>分享 / 海报</span>
           </button>
         </div>
-        <h1 class="article-title">{{ post.title }}</h1>
+        <h1 class="article-title">{{ displayTitle }}</h1>
       </header>
 
       <div class="article-author">
@@ -50,7 +51,7 @@
         </div>
       </div>
 
-      <div class="article-body" @click="handleBodyClick">
+      <div class="article-body" @click="handleBodyClick" @error.capture="handleBodyImageError">
         <MdPreview
           :editorId="editorId"
           :modelValue="articleMarkdown(post.content || '')"
@@ -64,7 +65,7 @@
         />
       </div>
 
-      <footer class="article-footer">
+      <div class="article-footer" v-if="post.tags && post.tags.length">
         <div class="footer-tags">
           <router-link
             v-for="tag in (post.tags || [])"
@@ -73,29 +74,30 @@
             class="tag"
           >{{ tag.name || tag }}</router-link>
         </div>
-      </footer>
+      </div>
 
-      <nav class="post-nav" v-if="prevPost || nextPost">
+      <nav class="post-nav" aria-label="文章上下篇导航" v-if="prevPost || nextPost">
         <router-link v-if="prevPost" :to="'/post/' + prevPost.id" class="post-nav-item prev">
           <div class="post-nav-label">← 上一篇 Previous</div>
-          <div class="post-nav-title">{{ prevPost.title }}</div>
+          <div class="post-nav-title">{{ cleanTitle(prevPost.title) }}</div>
         </router-link>
         <router-link v-if="nextPost" :to="'/post/' + nextPost.id" class="post-nav-item next">
           <div class="post-nav-label">下一篇 Next →</div>
-          <div class="post-nav-title">{{ nextPost.title }}</div>
+          <div class="post-nav-title">{{ cleanTitle(nextPost.title) }}</div>
         </router-link>
       </nav>
 
       <CommentSection :post-id="route.params.id" />
     </article>
 
-    <aside class="toc" v-if="tocItems.length">
+    <aside class="toc" aria-label="文章目录" v-if="tocItems.length">
       <div class="toc-title">目录 Contents</div>
       <MdCatalog
         :editorId="editorId"
         :theme="editorTheme"
         :scrollElement="scrollElement"
         :offsetTop="80"
+        :scrollElementOffsetTop="80"
       />
     </aside>
   </div>
@@ -105,6 +107,7 @@
     <p>该文章可能已被删除或链接无效。</p>
     <router-link to="/" class="back-link">← 返回首页</router-link>
   </article>
+  </main>
 
   <CustomWidgets />
   <BlogFooter />
@@ -156,6 +159,7 @@
               :theme="editorTheme"
               :scrollElement="scrollElement"
               :offsetTop="80"
+              :scrollElementOffsetTop="80"
             />
           </div>
         </div>
@@ -246,7 +250,7 @@ import { useRoute } from 'vue-router'
 import { createEveryQRCodeIdentity, createQRSvgPath } from '@every-qrcode/core'
 import api from '../api/request'
 import { formatDate } from '../utils/format'
-import { articleMarkdown } from '../utils/markdown'
+import { articleMarkdown, cleanTitle, plainExcerpt } from '../utils/markdown'
 import { updateMetadata } from '../utils/metadata'
 import BlogNav from '../shared/BlogNav.vue'
 import BlogFooter from '../shared/BlogFooter.vue'
@@ -299,20 +303,31 @@ const editorTheme = computed(() => themeStore.theme === 'dark' ? 'dark' : 'light
 
 function calcReadingStats(raw) {
   if (!raw) return { words: 0, minutes: 1 }
-  const clean = raw
-    .replace(/```[\s\S]*?```/g, '')
+  let codeWords = 0
+  const withoutCode = raw.replace(/```[\s\S]*?```/g, (block) => {
+    const inner = block.replace(/^```[^\n]*\n?/, '').replace(/```$/, '')
+    codeWords += (inner.match(/[a-zA-Z0-9_\u4e00-\u9fa5]+/g) || []).length
+    return ''
+  })
+  const clean = withoutCode
+    .replace(/^[ \t]*:::[ \t]*[a-zA-Z0-9_-]*[^\n]*$/gm, '')
     .replace(/!\[.*?\]\(.*?\)/g, '')
     .replace(/\[(.*?)\]\(.*?\)/g, '$1')
     .replace(/<[^>]+>/g, '')
   const cjkMatches = clean.match(/[\u4e00-\u9fa5]/g) || []
   const nonCjk = clean.replace(/[\u4e00-\u9fa5]/g, ' ')
   const wordMatches = nonCjk.match(/[a-zA-Z0-9_\u00C0-\u024F]+/g) || []
-  const total = cjkMatches.length + wordMatches.length
+  const proseTotal = cjkMatches.length + wordMatches.length
+  const total = proseTotal + Math.round(codeWords * 0.5)
   const minutes = Math.max(1, Math.ceil(total / 350))
-  return { words: total, minutes }
+  return { words: proseTotal || total, minutes }
 }
 
 const readingStats = computed(() => calcReadingStats(post.value?.content || ''))
+const displayTitle = computed(() => cleanTitle(post.value?.title || ''))
+const displayReadMinutes = computed(() =>
+  post.value?.content ? readingStats.value.minutes : (post.value?.read_time || 1)
+)
 
 let scrollTicking = false
 function onScroll() {
@@ -480,23 +495,19 @@ async function generatePoster() {
     ctx.fillStyle = isDark ? '#ffffff' : '#0f172a'
     ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif'
     let currentY = 120
-    currentY = wrapPosterText(ctx, post.value.title, 36, currentY, width - 72, 38, 3)
+    currentY = wrapPosterText(ctx, displayTitle.value, 36, currentY, width - 72, 38, 3)
 
     currentY += 12
     ctx.fillStyle = isDark ? '#9ca3af' : '#64748b'
     ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif'
     const dateStr = formatDate(post.value.created_at)
-    const readMin = post.value.read_time || readingStats.value.minutes || 1
+    const readMin = displayReadMinutes.value || 1
     const words = readingStats.value.words || 0
     const metaStr = `${dateStr}  ·  约 ${readMin} 分钟阅读  ·  ${words.toLocaleString()} 字`
     ctx.fillText(metaStr, 36, currentY)
 
     currentY += 28
-    const rawExcerpt = (post.value.excerpt || post.value.content || '')
-      .replace(/```[\s\S]*?```/g, '')
-      .replace(/!\[.*?\]\(.*?\)/g, '')
-      .replace(/[#*`>~_-]/g, '')
-      .trim()
+    const rawExcerpt = plainExcerpt(post.value.excerpt || post.value.content || '', 180)
     const boxHeight = 240
     fillRoundRect(ctx, 36, currentY, width - 72, boxHeight, 12, isDark ? '#14171e' : '#f8fafc')
     strokeRoundRect(ctx, 36, currentY, width - 72, boxHeight, 12, isDark ? '#232834' : '#e5e7eb', 1)
@@ -559,9 +570,18 @@ async function generatePoster() {
   }
 }
 
+function handleBodyImageError(e) {
+  const img = e.target
+  if (!img || img.tagName !== 'IMG' || img.dataset.brokenHandled) return
+  img.dataset.brokenHandled = '1'
+  img.classList.add('is-broken-img')
+  const figure = img.closest('figure')
+  if (figure) figure.classList.add('has-broken-img')
+}
+
 function handleBodyClick(e) {
   const img = e.target.closest('img')
-  if (img && img.src && !img.closest('.author-avatar')) {
+  if (img && img.src && !img.dataset.brokenHandled && !img.closest('.author-avatar')) {
     previewImage.value = img.src
     previewImageAlt.value = img.alt || ''
     return
@@ -618,7 +638,7 @@ async function loadPost(id) {
     if (currentRequest !== requestId) return
     settings.value = siteSettings || {}
     post.value = res
-    updateMetadata(settings.value, { title: res.title, description: res.excerpt || res.content, article: true, path: `/post/${id}` })
+    updateMetadata(settings.value, { title: cleanTitle(res.title), description: res.excerpt || res.content, article: true, path: `/post/${id}` })
     fetchAdjacentPosts()
   } catch {
     if (currentRequest === requestId) {
@@ -767,8 +787,8 @@ onUnmounted(() => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--accent);
-  color: white;
+  background: var(--accent-solid);
+  color: var(--on-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -845,6 +865,18 @@ onUnmounted(() => {
 .article-body :deep(img:hover) {
   opacity: 0.94;
 }
+.article-body :deep(img.is-broken-img),
+.article-body :deep(figure.has-broken-img) {
+  display: none;
+}
+.article-body :deep(h1),
+.article-body :deep(h2),
+.article-body :deep(h3),
+.article-body :deep(h4),
+.article-body :deep(h5),
+.article-body :deep(h6) {
+  scroll-margin-top: 80px;
+}
 .article-body :deep(pre), .article-body :deep(.md-editor-code) { max-width: 100%; overflow-x: auto; }
 .article-body :deep(table) { display: block; max-width: 100%; overflow-x: auto; }
 .article-body :deep(.md-editor-previewOnly) {
@@ -856,6 +888,20 @@ onUnmounted(() => {
   padding: 0;
   font-family: var(--font-sans);
   color: var(--fg);
+  word-break: normal !important;
+  overflow-wrap: break-word;
+}
+.article-body :deep(.md-editor-preview p),
+.article-body :deep(.md-editor-preview li),
+.article-body :deep(.md-editor-preview blockquote),
+.article-body :deep(.md-editor-preview td),
+.article-body :deep(.md-editor-preview th) {
+  word-break: normal !important;
+  overflow-wrap: break-word;
+}
+.article-body :deep(.md-editor-preview a) {
+  color: var(--accent);
+  overflow-wrap: anywhere;
 }
 .article-body :deep(code),
 .article-body :deep(pre),
@@ -1262,14 +1308,14 @@ onUnmounted(() => {
 }
 
 .poster-btn-primary {
-  background: var(--accent);
-  color: #ffffff;
-  border-color: var(--accent);
+  background: var(--accent-solid);
+  color: var(--on-accent);
+  border-color: var(--accent-solid);
 }
 
 .poster-btn-primary:hover {
-  filter: brightness(1.1);
-  color: #ffffff;
+  background: color-mix(in srgb, var(--accent-solid), black 12%);
+  color: var(--on-accent);
 }
 
 @media (max-width: 640px) {

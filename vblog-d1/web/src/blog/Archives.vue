@@ -1,51 +1,60 @@
 <template>
   <BlogNav />
-  <div id="main-content" class="page-enter">
+  <main id="main-content" class="page-enter">
   <header class="page-header">
     <h1>归档 Archives</h1>
     <p>按时间线浏览所有文章。</p>
-    <div class="archive-count">共 {{ allPosts.length }} 篇文章</div>
+    <div v-if="!loading && !error" class="archive-count">共 {{ allPosts.length }} 篇文章</div>
   </header>
 
-  <main class="archive-list">
-    <div v-for="group in yearGroups" :key="group.year" class="year-group">
-      <div class="year-label">
-        {{ group.year }} <span class="year-count">({{ group.posts.length }} 篇)</span>
-      </div>
-      <div class="timeline">
-        <router-link
-          v-for="post in group.posts"
-          :key="post.id"
-          :to="`/post/${post.id}`"
-          class="archive-item"
-        >
-          <div class="timeline-dot"></div>
-          <span class="archive-date">{{ formatDay(post.created_at) }}</span>
-          <div class="archive-content">
-            <div class="archive-title">{{ post.title }}</div>
-            <div class="archive-excerpt">{{ plainExcerpt(post.excerpt || post.content) }}</div>
-            <div class="archive-tags">
-              <span
-                v-for="tag in (post.tags || [])"
-                :key="tag.id || tag.name || tag"
-                class="archive-tag"
-              >{{ tag.name || tag }}</span>
-            </div>
-          </div>
-          <div class="archive-stats">
-            <span>{{ (post.views || 0).toLocaleString() }} views</span>
-            <span>{{ calcReadTime(post) }} min</span>
-          </div>
-        </router-link>
-      </div>
+  <section class="archive-list">
+    <div v-if="loading" class="empty-state" role="status">
+      <p>正在加载归档…</p>
     </div>
+    <div v-else-if="error" class="empty-state" role="alert">
+      <p>归档加载失败，请稍后重试。</p>
+      <button type="button" class="retry-btn" @click="fetchArchives">重新加载</button>
+    </div>
+    <template v-else-if="yearGroups.length">
+      <div v-for="group in yearGroups" :key="group.year" class="year-group">
+        <div class="year-label">
+          {{ group.year }} <span class="year-count">({{ group.posts.length }} 篇)</span>
+        </div>
+        <div class="timeline">
+          <router-link
+            v-for="post in group.posts"
+            :key="post.id"
+            :to="`/post/${post.id}`"
+            class="archive-item"
+          >
+            <div class="timeline-dot"></div>
+            <span class="archive-date">{{ formatDay(post.created_at) }}</span>
+            <div class="archive-content">
+              <div class="archive-title">{{ cleanTitle(post.title) }}</div>
+              <div class="archive-excerpt">{{ plainExcerpt(post.excerpt || post.content) }}</div>
+              <div class="archive-tags">
+                <span
+                  v-for="tag in (post.tags || [])"
+                  :key="tag.id || tag.name || tag"
+                  class="archive-tag"
+                >{{ tag.name || tag }}</span>
+              </div>
+            </div>
+            <div class="archive-stats">
+              <span>{{ (post.views || 0).toLocaleString() }} views</span>
+              <span>{{ calcReadTime(post) }} min</span>
+            </div>
+          </router-link>
+        </div>
+      </div>
+    </template>
 
-    <div v-if="allPosts.length === 0" class="empty-state">
+    <div v-else class="empty-state" role="status">
       <p>暂无文章</p>
     </div>
-  </main>
+  </section>
 
-  </div>
+  </main>
   <CustomWidgets />
   <BlogFooter />
 
@@ -59,7 +68,7 @@
 </template>
 
 <script setup>
-import { plainExcerpt } from '../utils/markdown'
+import { cleanTitle, plainExcerpt } from '../utils/markdown'
 import { updateMetadata } from '../utils/metadata'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import api from '../api/request'
@@ -69,6 +78,8 @@ import BlogFooter from '../shared/BlogFooter.vue'
 import CustomWidgets from '../shared/CustomWidgets.vue'
 
 const allPosts = ref([])
+const loading = ref(true)
+const error = ref(false)
 const showTop = ref(false)
 
 function calcReadTime(post) {
@@ -104,11 +115,24 @@ const yearGroups = computed(() => {
     .map(year => ({ year: Number(year), posts: groups[year] }))
 })
 
+async function fetchArchives() {
+  loading.value = true
+  error.value = false
+  try {
+    const res = await api.get('/posts', { params: { per_page: 100, status: 'published' } })
+    allPosts.value = Array.isArray(res) ? res : (res?.data || [])
+  } catch {
+    error.value = true
+    allPosts.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(async () => {
   updateMetadata({}, { title: '归档', description: '按时间线浏览所有文章。', path: '/archives' })
   window.addEventListener('scroll', onScroll, { passive: true })
-  const res = await api.get('/posts', { params: { per_page: 100, status: 'published' } }).catch(() => ({ data: [] }))
-  allPosts.value = res.data || []
+  await fetchArchives()
 })
 
 onUnmounted(() => {
@@ -256,6 +280,20 @@ onUnmounted(() => {
   text-align: center;
   padding: 64px 24px;
   color: var(--muted);
+}
+.retry-btn {
+  margin-top: 12px;
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+}
+.retry-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* Back to top */

@@ -66,13 +66,15 @@ async function handleLogin() {
 <style scoped>
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
+  padding: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg);
 }
 .login-card {
-  width: 360px;
+  width: min(100%, 360px);
   padding: 40px 32px;
   background: var(--surface);
   border: 1px solid var(--border);
